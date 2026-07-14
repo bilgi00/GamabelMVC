@@ -1,0 +1,200 @@
+@{
+    ViewData["Title"] = "Fabrika Siparişleri";
+    var firmalar = (ViewBag.Firmalar as IEnumerable<dynamic>)?.ToList() ?? new List<dynamic>();
+    var seciiliFirma = ViewBag.SeciiliFirma ?? "";
+}
+
+<style>
+    .sts-table-sticky thead th {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+    }
+</style>
+
+<div class="container-fluid mt-4">
+    <div class="row mb-4 sts-mobile-title-row align-items-center">
+        <div class="col-md-6">
+            <h1>Fabrika Siparişleri</h1>
+        </div>
+        <div class="col-md-6 text-md-end">
+            <a href="/Siparis/ExportPDF" class="btn btn-danger">📄 PDF İndir</a>
+        </div>
+    </div>
+
+    <div class="row mb-3 sts-mobile-stack">
+        <div class="col-md-3 mb-2 mb-md-0">
+            <form method="get" action="/Siparis/FabrikaListe" class="d-flex gap-2">
+                <select name="firma" class="form-select" onchange="this.form.submit();">
+                    <option value="">Tüm Firmalar</option>
+                    @foreach (var firma in firmalar)
+                    {
+                        <option value="@firma.Firma" selected="@(seciiliFirma == firma.Firma ? "selected" : "")">@firma.Firma</option>
+                    }
+                </select>
+            </form>
+        </div>
+        <div class="col-md-3">
+            @if (!string.IsNullOrWhiteSpace(seciiliFirma))
+            {
+                <button type="button" class="btn btn-info w-100" data-bs-toggle="modal" data-bs-target="#ozetModal" onclick="firmaOzetGoster('@seciiliFirma')">
+                    📋 Firma Özet Siparişi
+                </button>
+            }
+        </div>
+    </div>
+
+    @if (TempData["Basari"] != null)
+    {
+        <div class="alert alert-success">@TempData["Basari"]</div>
+    }
+
+    @if (TempData["Hata"] != null)
+    {
+        <div class="alert alert-danger">@TempData["Hata"]</div>
+    }
+
+    @if (Model != null && Model.Count > 0)
+    {
+        <div class="table-responsive">
+            <table class="table table-striped table-hover sts-table-sticky sts-mobile-table">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Sipariş No</th>
+                        <th>Firma</th>
+                        <th>Ürün</th>
+                        <th>Miktar</th>
+                        <th>Durum</th>
+                        <th>Sipariş Tarihi</th>
+                        <th>Tahmini Teslim</th>
+                        <th>Not</th>
+                        <th>İşlem</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var siparis in Model)
+                    {
+                        var durumClass = siparis.Durum == "Bekliyor" ? "bg-warning text-dark"
+                            : siparis.Durum == "SiparisVerildi" ? "bg-primary"
+                            : siparis.Durum == "Uretimde" ? "bg-info"
+                            : siparis.Durum == "Yolda" ? "bg-warning text-dark"
+                            : siparis.Durum == "TeslimAlindi" ? "bg-success"
+                            : "bg-secondary";
+                        <tr>
+                            <td data-label="Sipariş No"><strong>@siparis.SiparisTarihi.ToString("yyyyMMdd")-@siparis.Id</strong></td>
+                            <td data-label="Firma">@(string.IsNullOrWhiteSpace(siparis.Firma) ? "-" : siparis.Firma)</td>
+                            <td data-label="Ürün">@siparis.UrunAdi</td>
+                            <td data-label="Miktar" class="sts-mobile-actions">
+                                <form method="post" action="/Siparis/MiktarGuncelle" class="d-flex gap-1 align-items-center" style="display:inline-flex;">
+                                    <input type="hidden" name="id" value="@siparis.Id" />
+                                    <div class="input-group input-group-sm" style="width: 130px;">
+                                        <input type="number" name="miktar" class="form-control" value="@((int)siparis.Miktar)" step="1" min="1" required />
+                                        <button type="submit" class="btn btn-outline-secondary btn-sm" title="Güncelle">✓</button>
+                                    </div>
+                                </form>
+                            </td>
+                            <td data-label="Durum">
+                                <span class="badge @(string.IsNullOrWhiteSpace(siparis.Durum) ? "bg-secondary" : durumClass)">
+                                    @(string.IsNullOrWhiteSpace(siparis.Durum) ? "-" : siparis.Durum)
+                                </span>
+                            </td>
+                            <td data-label="Sipariş Tarihi">@siparis.SiparisTarihi.ToString("dd.MM.yyyy")</td>
+                            <td data-label="Tahmini Teslim">@(siparis.TahminiTeslimTarihi?.ToString("dd.MM.yyyy") ?? "-")</td>
+                            <td data-label="Not">@siparis.Not</td>
+                            <td data-label="İşlem" class="sts-mobile-actions">
+                                <form method="post" action="/Siparis/DurumGuncelle" class="d-flex gap-2 align-items-center">
+                                    <input type="hidden" name="id" value="@siparis.Id" />
+                                    <select name="durum" class="form-select form-select-sm">
+                                        <option value="SiparisVerildi" selected="@(siparis.Durum == "SiparisVerildi")">Sipariş Verildi</option>
+                                        <option value="Uretimde" selected="@(siparis.Durum == "Uretimde")">Üretimde</option>
+                                        <option value="Yolda" selected="@(siparis.Durum == "Yolda")">Yolda</option>
+                                        <option value="TeslimAlindi" selected="@(siparis.Durum == "TeslimAlindi")">Teslim Alındı</option>
+                                    </select>
+                                    <button type="submit" class="btn btn-sm btn-primary">Güncelle</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info">
+            Bu hafta fabrika siparişi yok.
+            <a href="/Sevkiyat/Index" class="btn btn-sm btn-primary ms-2">Onaylanan Sevkiyatlara Git</a>
+        </div>
+    }
+</div>
+
+<!-- Özet Sipariş Modal -->
+<div class="modal fade" id="ozetModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Firma Özet Siparişi</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table class="table table-striped" id="ozetTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Ürün Adı</th>
+                                <th class="text-end">Toplam Miktar</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ozetTbody">
+                            <tr>
+                                <td colspan="2" class="text-center">
+                                    <div class="spinner-border spinner-border-sm"></div> Yükleniyor...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function firmaOzetGoster(firma) {
+        fetch(`/Siparis/OzetSiparis?firma=${encodeURIComponent(firma)}`)
+            .then(response => response.json())
+            .then(data => {
+                const tbody = document.getElementById('ozetTbody');
+                tbody.innerHTML = '';
+
+                if (data.error) {
+                    tbody.innerHTML = `<tr><td colspan="2" class="text-danger">Hata: ${data.error}</td></tr>`;
+                    return;
+                }
+
+                if (data.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="2" class="text-center">Bu firma için sipariş bulunamadı</td></tr>`;
+                    return;
+                }
+
+                data.forEach(item => {
+                    const row = `<tr>
+                        <td>${item.urunAdi}</td>
+                        <td class="text-end"><strong>${parseInt(item.toplamMiktar)}</strong></td>
+                    </tr>`;
+                    tbody.innerHTML += row;
+                });
+
+                // Total row
+                const total = data.reduce((sum, item) => sum + parseInt(item.toplamMiktar), 0);
+                tbody.innerHTML += `<tr class="table-dark">
+                    <td><strong>TOPLAM</strong></td>
+                    <td class="text-end"><strong>${total}</strong></td>
+                </tr>`;
+            })
+            .catch(err => {
+                document.getElementById('ozetTbody').innerHTML = 
+                    `<tr><td colspan="2" class="text-danger">Hata: ${err.message}</td></tr>`;
+            });
+    }
+</script>

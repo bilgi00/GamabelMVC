@@ -1,0 +1,286 @@
+@model List<gamabelmvc.Models.PRS.KullaniciModel>
+@{
+    ViewData["Title"] = "Yetkilendirme Yönetimi";
+    Layout = "_Layout";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3 mt-3">
+    <h3>Yetkilendirme Yönetimi</h3>
+    <div>
+        <span class="badge bg-secondary me-2">Hoş geldin, @ViewBag.KullaniciAdi</span>
+        <a asp-controller="Account" asp-action="Logout" class="btn btn-outline-danger btn-sm">Çıkış Yap</a>
+    </div>
+</div>
+
+@if (ViewBag.Hata != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @ViewBag.Hata
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<div class="alert alert-info">
+    <i class="bi bi-info-circle"></i>
+    Bu sayfada tüm kullanıcıların rollerini yönetebilirsiniz. Her kullanıcı "Admin" veya "Birim Amiri" yetkisine sahip olabilir.
+</div>
+
+@if (Model != null && Model.Count > 0)
+{
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>ID</th>
+                    <th>Kullanıcı Adı</th>
+                    <th>Ad Soyad</th>
+                    <th>Birim</th>
+                    <th>Mevcut Rol</th>
+                    <th>Durum</th>
+                    <th>İşlem</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var k in Model)
+                {
+                    <tr class="@(k.AktifMi ? "" : "table-secondary")">
+                        <td>@k.Id</td>
+                        <td><strong>@k.KullaniciAdi</strong></td>
+                        <td>
+                            @if (!string.IsNullOrEmpty(k.Ad) || !string.IsNullOrEmpty(k.Soyad))
+                            {
+                                @($"{k.Ad} {k.Soyad}".Trim())
+                            }
+                            else
+                            {
+                                <span class="text-muted">Belirtilmemiş</span>
+                            }
+                        </td>
+                        <td>
+                            @if (!string.IsNullOrEmpty(k.Birim))
+                            {
+                                @k.Birim
+                            }
+                            else
+                            {
+                                <span class="text-muted">Belirtilmemiş</span>
+                            }
+                        </td>
+                        <td>
+                            @if (k.Rol == "admin")
+                            {
+                                <span class="badge bg-danger">Admin</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-info">Birim Amiri</span>
+                            }
+                        </td>
+                        <td>
+                            @if (k.AktifMi)
+                            {
+                                <span class="badge bg-success">Aktif</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">Pasif</span>
+                            }
+                        </td>
+                        <td>
+                            <div class="btn-group" role="group" aria-label="Rol Yönetimi">
+                                @if (k.Rol != "admin")
+                                {
+                                    <button type="button" class="btn btn-sm btn-success" onclick="rolDegistir(@k.Id, 'admin')">
+                                        <i class="bi bi-shield-check"></i> Admin Yap
+                                    </button>
+                                }
+                                @if (k.Rol != "birim_amiri")
+                                {
+                                    <button type="button" class="btn btn-sm btn-warning" onclick="rolDegistir(@k.Id, 'birim_amiri')">
+                                        <i class="bi bi-person-fill"></i> Birim Amiri Yap
+                                    </button>
+                                }
+                                @if (k.AktifMi)
+                                {
+                                    <button type="button" class="btn btn-sm btn-secondary" onclick="aktifDegistir(@k.Id, false)">
+                                        Pasif Yap
+                                    </button>
+                                }
+                                else
+                                {
+                                    <button type="button" class="btn btn-sm btn-info text-white" onclick="aktifDegistir(@k.Id, true)">
+                                        Aktif Yap
+                                    </button>
+                                }
+                                <button type="button" class="btn btn-sm btn-danger" onclick="kullaniciSil(@k.Id, '@k.KullaniciAdi')">
+                                    <i class="bi bi-trash"></i> Sil
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <p class="text-muted">Toplam: @Model.Count kullanıcı</p>
+}
+else if (ViewBag.Hata == null)
+{
+    <div class="alert alert-info">Henüz kayıtlı kullanıcı bulunmuyor.</div>
+}
+
+<div class="mt-4">
+    <a asp-controller="Kullanici" asp-action="Index" class="btn btn-secondary">Geri Dön</a>
+</div>
+
+<!-- Ay Kilidi Bölümü -->
+<div class="card mt-4 mb-4">
+    <div class="card-header bg-dark text-white">
+        <h5 class="mb-0">🔒 Ay Kilidi Yönetimi</h5>
+    </div>
+    <div class="card-body">
+        <p class="text-muted mb-3">Kilitli aylar için puantaj ve ek mesai tablolarına kayıt yapılamaz.</p>
+        <div class="row mb-3">
+            <div class="col-md-3">
+                <label class="form-label fw-bold">Yıl:</label>
+                <select id="kilitYilSelect" class="form-select"></select>
+            </div>
+        </div>
+        <div class="row" id="ayKilitContainer">
+            @{
+                var aylar = new[] { "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık" };
+            }
+            @for (int i = 0; i < aylar.Length; i++)
+            {
+                <div class="col-md-2 col-sm-3 col-4 mb-2">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input ay-kilit-cb" type="checkbox" id="ayKilit_@(i+1)" data-ay="@(i+1)">
+                        <label class="form-check-label" for="ayKilit_@(i+1)">@aylar[i]</label>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    function rolDegistir(id, yeniRol) {
+        var rol = yeniRol === 'admin' ? 'Admin' : 'Birim Amiri';
+        if (!confirm(`Bu kullanıcıyı ${rol} yetkisine taşıyacaksınız. Devam etmek istiyor musunuz?`)) {
+            return;
+        }
+
+        fetch('@Url.Action("RolDegistir", "Kullanici")', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: id, yeniRol: yeniRol })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.basarili) { alert(data.mesaj); location.reload(); }
+                else { alert('Hata: ' + data.mesaj); }
+            })
+            .catch(error => { alert('İstek gönderilemedi: ' + error); });
+    }
+
+    function aktifDegistir(id, aktif) {
+        var durum = aktif ? 'aktif' : 'pasif';
+        if (!confirm(`Bu kullanıcıyı ${durum} yapmak istediğinize emin misiniz?`)) {
+            return;
+        }
+
+        fetch('@Url.Action("AktifDegistir", "Kullanici")', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: id, aktif: aktif })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.basarili) { alert(data.mesaj); location.reload(); }
+                else { alert('Hata: ' + data.mesaj); }
+            })
+            .catch(error => { alert('İstek gönderilemedi: ' + error); });
+    }
+
+    function kullaniciSil(id, kullaniciAdi) {
+        if (!confirm(`"${kullaniciAdi}" kullanıcısını silmek istediğinize emin misiniz? Bu işlem geri alınamaz!`)) {
+            return;
+        }
+
+        fetch('@Url.Action("KullaniciSil", "Kullanici")', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: id })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.basarili) { alert(data.mesaj); location.reload(); }
+                else { alert('Hata: ' + data.mesaj); }
+            })
+            .catch(error => { alert('İstek gönderilemedi: ' + error); });
+    }
+
+    // --- Ay Kilidi ---
+    var kilitliAylar = @Html.Raw(ViewBag.KilitliAylar ?? "[]");
+
+    (function() {
+        var ySel = document.getElementById('kilitYilSelect');
+        var now = new Date();
+        for (var y = now.getFullYear() - 1; y <= now.getFullYear() + 1; y++) {
+            var o = document.createElement('option');
+            o.value = y; o.textContent = y;
+            if (y === now.getFullYear()) o.selected = true;
+            ySel.appendChild(o);
+        }
+        ySel.addEventListener('change', kilitDurumuYukle);
+        kilitDurumuYukle();
+    })();
+
+    function kilitDurumuYukle() {
+        var yil = parseInt(document.getElementById('kilitYilSelect').value);
+        for (var ay = 1; ay <= 12; ay++) {
+            var cb = document.getElementById('ayKilit_' + ay);
+            var kilitli = kilitliAylar.some(function(k) { return k.yil === yil && k.ay === ay; });
+            cb.checked = kilitli;
+        }
+    }
+
+    document.querySelectorAll('.ay-kilit-cb').forEach(function(cb) {
+        cb.addEventListener('change', function() {
+            var ay = parseInt(this.dataset.ay);
+            var yil = parseInt(document.getElementById('kilitYilSelect').value);
+            var kilitli = this.checked;
+            var ayAdlari = ['','Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+            var islem = kilitli ? 'kilitlemek' : 'kilidini açmak';
+
+            if (!confirm(ayAdlari[ay] + ' ' + yil + ' ayını ' + islem + ' istediğinize emin misiniz?')) {
+                this.checked = !kilitli;
+                return;
+            }
+
+            fetch('@Url.Action("AyKilidiDegistir", "Kullanici")', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ yil: yil, ay: ay, kilitli: kilitli })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.basarili) {
+                        alert(data.mesaj);
+                        // Local listeyi güncelle
+                        if (kilitli) {
+                            kilitliAylar.push({ yil: yil, ay: ay });
+                        } else {
+                            kilitliAylar = kilitliAylar.filter(function(k) { return !(k.yil === yil && k.ay === ay); });
+                        }
+                    } else {
+                        alert('Hata: ' + data.mesaj);
+                        cb.checked = !kilitli;
+                    }
+                })
+                .catch(error => { alert('İstek gönderilemedi: ' + error); cb.checked = !kilitli; });
+        });
+    });
+</script>
+}

@@ -1,0 +1,943 @@
+@{
+    ViewData["Title"] = "Proje Dokümantasyonu";
+}
+
+<style>
+    .doc-container { max-width: 1100px; margin: 0 auto; padding: 20px; }
+    .doc-header { background: linear-gradient(135deg, #1a237e, #283593); color: white; padding: 30px; border-radius: 12px; margin-bottom: 30px; }
+    .doc-header h2 { margin: 0; font-weight: 700; }
+    .doc-header p { margin: 5px 0 0; opacity: 0.85; font-size: 14px; }
+    .doc-section { background: white; border: 1px solid #dee2e6; border-radius: 10px; margin-bottom: 20px; overflow: hidden; }
+    .doc-section-header { background: #f8f9fa; padding: 14px 20px; border-bottom: 1px solid #dee2e6; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+    .doc-section-header h5 { margin: 0; font-weight: 600; color: #1a237e; }
+    .doc-section-header .badge { font-size: 11px; }
+    .doc-section-body { padding: 20px; }
+    .doc-section-body.collapsed { display: none; }
+    .page-card { background: #f8f9fa; border-radius: 8px; padding: 15px; margin-bottom: 12px; border-left: 4px solid #1a237e; }
+    .page-card h6 { color: #1a237e; font-weight: 700; margin-bottom: 8px; }
+    .page-card p { margin: 0; font-size: 13px; color: #555; line-height: 1.6; }
+    .page-card .endpoint { font-family: monospace; font-size: 12px; background: #e8eaf6; padding: 2px 8px; border-radius: 4px; color: #283593; display: inline-block; margin: 2px 0; }
+    .page-card .table-badge { font-size: 11px; background: #e3f2fd; color: #1565c0; padding: 2px 8px; border-radius: 4px; display: inline-block; margin: 1px 2px; }
+    .tree-container { font-family: 'Consolas', 'Courier New', monospace; font-size: 13px; background: #1e1e2e; color: #cdd6f4; padding: 20px; border-radius: 10px; line-height: 1.8; }
+    .tree-container .folder { color: #89b4fa; font-weight: bold; }
+    .tree-container .file-cs { color: #a6e3a1; }
+    .tree-container .file-cshtml { color: #f9e2af; }
+    .tree-container .file-json { color: #fab387; }
+    .tree-container .file-css { color: #f38ba8; }
+    .tree-container .file-js { color: #cba6f7; }
+    .tree-container .arrow { color: #6c7086; }
+    .oneri-card { background: white; border: 1px solid #dee2e6; border-radius: 10px; padding: 16px 20px; margin-bottom: 10px; display: flex; align-items: flex-start; gap: 14px; }
+    .oneri-no { background: #dc3545; color: white; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; flex-shrink: 0; }
+    .oneri-no.medium { background: #fd7e14; }
+    .oneri-no.low { background: #0d6efd; }
+    .oneri-content h6 { margin: 0 0 4px; font-weight: 600; }
+    .oneri-content p { margin: 0; font-size: 13px; color: #555; }
+    .severity-badge { font-size: 10px; padding: 2px 8px; border-radius: 4px; font-weight: 600; }
+    .severity-critical { background: #f8d7da; color: #842029; }
+    .severity-high { background: #fff3cd; color: #664d03; }
+    .severity-medium { background: #cff4fc; color: #055160; }
+    .conn-diagram { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; padding: 10px; }
+    .conn-node { background: #e8eaf6; border: 2px solid #3949ab; border-radius: 10px; padding: 10px 16px; text-align: center; font-size: 12px; font-weight: 600; color: #1a237e; min-width: 120px; }
+    .conn-node.view-node { background: #fff8e1; border-color: #f9a825; color: #e65100; }
+    .conn-node.model-node { background: #e8f5e9; border-color: #43a047; color: #1b5e20; }
+    .conn-node.service-node { background: #fce4ec; border-color: #e91e63; color: #880e4f; }
+    .conn-arrow { display: flex; align-items: center; color: #9e9e9e; font-size: 20px; }
+    .db-table { font-family: monospace; font-size: 12px; background: #263238; color: #80cbc4; padding: 3px 8px; border-radius: 4px; display: inline-block; margin: 1px 2px; }
+    .flow-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-top: 12px; }
+    .flow-card { background: linear-gradient(180deg, #ffffff, #f8f9fa); border: 1px solid #d7dee8; border-radius: 10px; padding: 14px; min-height: 150px; position: relative; }
+    .flow-card h6 { margin: 0 0 8px; color: #1a237e; font-weight: 700; font-size: 14px; }
+    .flow-card p { margin: 0; font-size: 12px; color: #495057; line-height: 1.55; }
+    .flow-time { display: inline-block; margin-bottom: 8px; background: #1a237e; color: white; border-radius: 999px; padding: 3px 10px; font-size: 11px; font-weight: 700; }
+    .flow-arrow-row { display: flex; align-items: center; justify-content: center; margin: 10px 0 2px; color: #6c757d; font-size: 22px; }
+</style>
+
+<div class="doc-container">
+    <!-- HEADER -->
+    <div class="doc-header">
+        <h2>📋 GAMABEL MVC - Proje Dokümantasyonu</h2>
+        <p>ASP.NET Core MVC (.NET 9.0) | MySQL | Bootstrap 5 — Otomatik oluşturulma tarihi: @DateTime.Now.ToString("dd MMMM yyyy")</p>
+    </div>
+
+    <!-- İNDEKS (İçindekiler) -->
+    <nav class="mb-4" style="background:#f8f9fa; border:1px solid #dee2e6; border-radius:10px; padding:18px 24px;">
+        <h5 style="color:#1a237e; font-weight:700; margin-bottom:10px;">🔗 İçindekiler</h5>
+        <ul style="list-style:none; padding-left:0; font-size:15px;">
+            <li><a href="#sts-genel-akis">🧭 0. STS Projesi: Başlangıçtan Bugüne Genel Akış</a></li>
+            <li><a href="#genel-bakis">📌 1. Genel Bakış</a></li>
+            <li><a href="#sayfa-ozetleri">📑 2. Sayfa Özetleri ve Çalışma Prensipleri</a>
+                <ul style="font-size:14px; margin-top:4px;">
+                    <li><a href="#account">🔐 Giriş / Kayıt</a></li>
+                    <li><a href="#home">🏠 Ana Sayfa</a></li>
+                    <li><a href="#kullanici">👥 Kullanıcı Yönetimi</a></li>
+                    <li><a href="#puantaj">📊 Puantaj</a></li>
+                    <li><a href="#mesai">⏰ Ek Mesai</a></li>
+                    <li><a href="#rapor">📈 Raporlar</a></li>
+                    <li><a href="#resmitatil">🎌 Resmi Tatiller</a></li>
+                </ul>
+            </li>
+            <li><a href="#dosya-agaci">🌳 3. Dosya Ağacı ve Bağlantı Şeması</a></li>
+            <li><a href="#oneriler">💡 4. Öneriler</a></li>
+            <li><a href="#sts-rapor">🧾 5. STS Modülü — Bugün Yapılan Eklemeler ve Değişiklikler</a></li>
+        </ul>
+    </nav>
+
+    <!-- 0. STS BAŞLANGIÇTAN BUGÜNE -->
+    <div class="doc-section">
+        <div class="doc-section-header" onclick="toggleSection(this)">
+            <h5>🧭 0. STS Projesi: Başlangıçtan Bugüne Genel Akış</h5>
+            <span class="badge bg-dark">Öncelikli Özet</span>
+        </div>
+        <div class="doc-section-body">
+
+            <div class="page-card">
+                <h6>🎯 Projenin Amacı</h6>
+                <p>
+                    STS modülü; şubelerin haftalık/operasyonel eksik ürün taleplerini merkezi olarak toplamak,
+                    ana depodan sevkiyat planını yönetmek, sipariş/rapor süreçlerini izlemek ve kullanıcı-yetki yönetimini
+                    tek bir iş akışı altında standartlaştırmak için tasarlanmıştır.
+                    Temel hedef: <strong>hızlı giriş + doğru takip + izlenebilir raporlama</strong>.
+                </p>
+            </div>
+
+            <div class="page-card">
+                <h6>🗺️ Sayfa Yapısı (STS Modülü)</h6>
+                <p><strong>Kimlik & Yönlendirme:</strong> STS Login, STS Dashboard, modül bazlı menü ayrımı</p>
+                <p><strong>Eksik Yönetimi:</strong> Şube Liste, Yeni Eksik Ekle (arama + barkod + satır tablosu), Toplu Yükle, Tüm Şubelerin Eksikleri (A4 baskı)</p>
+                <p><strong>Sevkiyat:</strong> Sevkiyat listeleri, şube onay ekranı</p>
+                <p><strong>Sipariş:</strong> Fabrika sipariş listeleme/çıktı akışı</p>
+                <p><strong>Raporlama:</strong> STS rapor ekranları, geçmiş hareket takibi</p>
+                <p><strong>Admin:</strong> Şube, Ürün, Kullanıcı yönetimi + Excel ile ürün toplu giriş</p>
+            </div>
+
+            <div class="page-card">
+                <h6>📅 Raporlama Tarihleri (En Baştan Sıralı)</h6>
+                <p><strong>09 Nisan 2026:</strong> Puantaj yazıcı çıktısı düzenlemeleri (başlık, imza, açıklama sadeleştirme).</p>
+                <p><strong>13 Nisan 2026:</strong> Puantaj görsel/UX iyileştirmeleri ve deploy script hata düzeltmeleri.</p>
+                <p><strong>27 Nisan 2026:</strong> STS modülü çekirdek entegrasyonu, STS login ayrımı, view-path stabilizasyonu, eksik kayıt SQL uyum düzeltmeleri.</p>
+                <p><strong>28 Nisan 2026:</strong> STS kullanıcı CRUD tamamlama, ürün yönetimi excel toplu giriş (A=Kod, B=Ad, C=Barkod, D=Birim), barkod destekli eksik giriş, son 15 gün filtrelemesi, A4 dikey rapor ekranı.</p>
+            </div>
+
+            <div class="page-card">
+                <h6>⚙️ İşleyiş Detayları (Uçtan Uca)</h6>
+                <p>
+                    <strong>1) Giriş:</strong> Kullanıcı STS Login üzerinden doğrulanır ve role göre yetki kapsamı belirlenir.
+                </p>
+                <p>
+                    <strong>2) Şube Tarafı:</strong> Eksik ürünler ürün adı arama veya barkod okutarak satır tablosuna eklenir; adet/açıklama güncellenir;
+                    tek gönderimde çoklu kayıt olarak sisteme yazılır.
+                </p>
+                <p>
+                    <strong>3) Ana Depo Tarafı:</strong> Bekleyen eksikler şube bazlı görülür, sevkiyat planına alınır ve sevk/onay süreci izlenir.
+                </p>
+                <p>
+                    <strong>4) Ürün Yönetimi:</strong> Tekil ürün ekleme ve Excel toplu giriş ile veri genişletilir;
+                    aynı ürün kodunun tekrar eklenmesi engellenir, sadece yeni kayıtlar kabul edilir.
+                </p>
+                <p>
+                    <strong>5) Raporlama:</strong> Tüm şubelerin eksikleri A4 dikey baskı formatında,
+                    şube bazlı ayrı tablolar ve alfabetik ürün sıralamasıyla çıktı alınır.
+                </p>
+                <p>
+                    <strong>6) İzlenebilirlik:</strong> Son 15 günlük şube eksik listesi operasyonel görünürlük sağlar;
+                    dokümantasyon sayfasında yapılan değişiklikler tarihçe olarak güncellenir.
+                </p>
+            </div>
+
+            <div class="page-card">
+                <h6>👤 Depo Sorumlusu: Görev Tanımı ve Yetki Notu</h6>
+                <p><strong>Görev Kapsamı:</strong> Depo sorumlusu; Tüm Eksikler, Sevkiyat Yönetimi ve Fabrika Siparişleri ekranları üzerinden eksik taleplerin sevke dönüşümünü, sevkiyat takibini ve sipariş sürecini yönetir.</p>
+                <p><strong>Operasyonel Sorumluluk:</strong> Şube onayı bekleyen kayıtları izler, SLA aşımı olan sevkiyatları takip eder ve gerekli aksiyonu planlar.</p>
+                <p><strong>İş Kuralı:</strong> Gelen sevkiyatın teslim onayı şube tarafında, Şube Onay ekranından verilmelidir.</p>
+                <p><strong>Teknik Güvenlik Notu:</strong> Mevcut sürümde Sevkiyat/SubeOnay, Sevkiyat/OnayEt ve Sevkiyat/Reddet aksiyonlarında rol/sahiplik doğrulaması güçlendirilmelidir; endpoint bazlı ilave yetki kontrolü önerilir.</p>
+            </div>
+
+            <div class="page-card">
+                <h6>🗓️ Uygulamanın Çalışma Mantığı (Haftalık Akış)</h6>
+                <p><strong>Pazartesi 09:00:</strong> Şubeler sisteme girer ve eksik kayıtlarını tek tek veya Excel toplu yükleme ile ekler. Kayıtlarda Acil ve Not bilgisi işlenebilir.</p>
+                <p><strong>Pazartesi gün içi:</strong> Kopya kontrolü çalışır; aynı ürün aynı hafta ikinci kez eklenemez.</p>
+                <p><strong>Pazartesi 17:00:</strong> Eksik giriş süresi biter. Bu saatten sonra girilen kayıtlar gecikmiş olarak işaretlenir ve rapora düşer.</p>
+                <p><strong>Salı 10:00:</strong> Ana depo Tüm Eksikler ekranını açar, tüm şubelerin taleplerini tek görünümde inceler ve uygun kalemleri Sevk Edildi akışına alır.</p>
+                <p><strong>Salı sonrası:</strong> Sevkiyatı yapılan kayıtlar Sevkiyat Yönetimi ekranına düşer; teslim süresi ve fabrika siparişine aktarım burada takip edilir.</p>
+                <p><strong>Çarşamba:</strong> Şubeler ürünleri teslim aldığında Şube Onay ekranından onay verir. Onay sonrası eksik kaydı Tamamlandi durumuna geçer.</p>
+                <p><strong>Onaylanmayanlar:</strong> Şube onayı geciktiğinde süreç Sevkiyat Yönetimi ekranında görünür kalır ve operasyon takibine devam eder.</p>
+                <p><strong>SLA (Hizmet Seviyesi Süresi):</strong> Sevkiyat yapıldıktan sonra şubenin teslim alıp onaylaması için belirlenen maksimum süre <strong>48 saattir (2 gün)</strong>. Bu süre aşıldığı hâlde şube onayı gelmemişse Sevkiyat Yönetimi ekranında ilgili kayıt <span class="badge bg-danger">SLA Aşıldı</span> rozeti ile işaretlenir; operasyon sorumlusu tarafından takip edilmesi gerekir.</p>
+                <p><strong>Perşembe:</strong> Ana depo Fabrika Siparişleri sayfasında sevkiyat sonrası oluşturulan siparişleri görür, durumlarını günceller ve PDF çıktısı alarak fabrikaya iletir.</p>
+                <p><strong>Cuma:</strong> Raporlar ekranından haftalık özet alınır; en çok eksik ürünler, acil eksikler, trend ve geç girişler değerlendirilir.</p>
+            </div>
+
+            <div class="page-card">
+                <h6>🧩 Haftalık Süreç Diyagramı</h6>
+                <div class="flow-grid">
+                    <div class="flow-card">
+                        <div class="flow-time">Pazartesi 09:00</div>
+                        <h6>Şube Girişi</h6>
+                        <p>Şubeler STS sistemine giriş yapar. Eksikler tekil giriş, barkod okutma veya Excel toplu yükleme ile sisteme kaydedilir.</p>
+                    </div>
+                    <div class="flow-card">
+                        <div class="flow-time">Pazartesi Gün İçi</div>
+                        <h6>Kontrol ve Doğrulama</h6>
+                        <p>Kopya ürün engellenir. Acil kayıtlar önceliklenir. Notlar eklenir. Aynı ürün tekrar ediyorsa stok problemi uyarısı üretilir.</p>
+                    </div>
+                    <div class="flow-card">
+                        <div class="flow-time">Pazartesi 17:00</div>
+                        <h6>Kesim Saati</h6>
+                        <p>Bu saatten sonraki girişler gecikmiş işaretlenir. Depo ve admin tarafında bildirim ve rapor görünürlüğü oluşur.</p>
+                    </div>
+                    <div class="flow-card">
+                        <div class="flow-time">Salı 10:00</div>
+                        <h6>Ana Depo Planlama</h6>
+                        <p>Ana depo Tüm Eksikler ekranını açar, tüm şubeleri tek görünümde inceler ve uygun kayıtları sevkiyata dönüştürür.</p>
+                    </div>
+                    <div class="flow-card">
+                        <div class="flow-time">Çarşamba</div>
+                        <h6>Şube Onayı</h6>
+                        <p>Şubeler gelen ürünleri Şube Onay ekranından onaylar. Onaylanan kayıtlar tamamlandıya çekilir, teslim süresi hesaplanır.</p>
+                    </div>
+                    <div class="flow-card">
+                        <div class="flow-time">Perşembe</div>
+                        <h6>Fabrika Siparişi</h6>
+                        <p>Onaylı sevkiyatlar gerekiyorsa fabrikaya siparişe dönüştürülür. Sipariş durumu yönetilir, PDF çıktı alınır.</p>
+                    </div>
+                    <div class="flow-card">
+                        <div class="flow-time">Cuma</div>
+                        <h6>Haftalık Rapor</h6>
+                        <p>Rapor ekranında trend, acil kayıtlar, geç girişler ve en çok eksik ürünler değerlendirilir.</p>
+                    </div>
+                </div>
+                <div class="flow-arrow-row">Pazartesi → Salı → Çarşamba → Perşembe → Cuma</div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- 1. GENEL BAKIŞ -->
+    <div class="doc-section">
+        <div class="doc-section-header" onclick="toggleSection(this)">
+            <h5>📌 1. Genel Bakış</h5>
+            <span class="badge bg-primary">Özet</span>
+        </div>
+        <div class="doc-section-body">
+            <p>Bu uygulama <strong>GAMABEL YATIRIM</strong> firmasının personel yönetimi, puantaj takibi, ek mesai hesaplama ve raporlama ihtiyaçlarını karşılamak için geliştirilmiş bir web uygulamasıdır.</p>
+            <div class="row mt-3">
+                <div class="col-md-3">
+                    <div class="text-center p-3" style="background:#e8eaf6; border-radius:8px;">
+                        <div style="font-size:28px;">🏗️</div>
+                        <strong>7 Controller</strong><br><small class="text-muted">1.642+ satır backend kodu</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center p-3" style="background:#e8f5e9; border-radius:8px;">
+                        <div style="font-size:28px;">📄</div>
+                        <strong>14 View</strong><br><small class="text-muted">Razor + JavaScript</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center p-3" style="background:#fff8e1; border-radius:8px;">
+                        <div style="font-size:28px;">🗃️</div>
+                        <strong>5 Model</strong><br><small class="text-muted">Veri yapıları</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center p-3" style="background:#fce4ec; border-radius:8px;">
+                        <div style="font-size:28px;">🗄️</div>
+                        <strong>7 DB Tablosu</strong><br><small class="text-muted">MySQL veritabanı</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. SAYFA ÖZETLERİ -->
+    <div class="doc-section">
+        <div class="doc-section-header" onclick="toggleSection(this)">
+            <h5>📑 2. Sayfa Özetleri ve Çalışma Prensipleri</h5>
+            <span class="badge bg-success">Detaylı</span>
+        </div>
+        <div class="doc-section-body">
+
+            <!-- Account -->
+            <div class="page-card">
+                <h6>🔐 Giriş / Kayıt (AccountController)</h6>
+                <p>
+                    Kullanıcı kimlik doğrulama ve kayıt işlemlerini yönetir. Giriş yapıldığında <code>admin_kullanicilar</code> tablosundan kullanıcı adı ve şifre kontrol edilir, 
+                    aktif olmayan hesaplar reddedilir. Başarılı girişte Session'a <strong>KullaniciAdi</strong>, <strong>Birim</strong>, <strong>Rol</strong> bilgileri atanır. 
+                    Kayıt formunda birim seçimi <code>birimler</code> tablosundan yüklenir.
+                </p>
+                <div>
+                    <span class="endpoint">GET /Account/Login</span>
+                    <span class="endpoint">POST /Account/Login</span>
+                    <span class="endpoint">GET /Account/Register</span>
+                    <span class="endpoint">POST /Account/Register</span>
+                    <span class="endpoint">GET /Account/Logout</span>
+                </div>
+                <div class="mt-1">
+                    <span class="table-badge">admin_kullanicilar</span>
+                    <span class="table-badge">birimler</span>
+                </div>
+            </div>
+
+            <!-- Home -->
+            <div class="page-card">
+                <h6>🏠 Ana Sayfa (HomeController)</h6>
+                <p>Uygulamanın karşılama sayfası. Giriş yapılmışsa navigasyon menüsünden tüm bölümlere erişim sağlar. Hata yönetimi için Error sayfasını içerir.</p>
+                <div>
+                    <span class="endpoint">GET /Home/Index</span>
+                    <span class="endpoint">GET /Home/Privacy</span>
+                    <span class="endpoint">GET /Home/Error</span>
+                </div>
+            </div>
+
+            <!-- Kullanici -->
+            <div class="page-card">
+                <h6>👥 Kullanıcı Yönetimi (KullaniciController)</h6>
+                <p>
+                    <strong>694 satır</strong> ile en büyük controller. Kullanıcı listesi (sadece admin), personel listesi (birime göre filtreleme), Excel'den personel aktarımı (UPSERT), 
+                    profil yönetimi, şifre değiştirme, yetkilendirme (rol değiştirme, aktif/pasif, kullanıcı silme) ve <strong>ay kilidi yönetimi</strong> işlemlerini kapsar. 
+                    Excel import işlemi ClosedXML kütüphanesiyle yapılır, AD ve SOYAD sütunları zorunludur.
+                </p>
+                <div>
+                    <span class="endpoint">GET /Kullanici/Index</span>
+                    <span class="endpoint">GET /Kullanici/Liste2</span>
+                    <span class="endpoint">GET /Kullanici/PersonelByBirim</span>
+                    <span class="endpoint">POST /Kullanici/ExcelAktar</span>
+                    <span class="endpoint">GET /Kullanici/Profil</span>
+                    <span class="endpoint">POST /Kullanici/SifreDegistir</span>
+                    <span class="endpoint">GET /Kullanici/Yetkilendirme</span>
+                    <span class="endpoint">POST /Kullanici/RolDegistir</span>
+                    <span class="endpoint">POST /Kullanici/AktifDegistir</span>
+                    <span class="endpoint">POST /Kullanici/KullaniciSil</span>
+                    <span class="endpoint">POST /Kullanici/AyKilidiDegistir</span>
+                    <span class="endpoint">GET /Kullanici/AyKilitliMi</span>
+                </div>
+                <div class="mt-1">
+                    <span class="table-badge">admin_kullanicilar</span>
+                    <span class="table-badge">personeller</span>
+                    <span class="table-badge">birimler</span>
+                    <span class="table-badge">ay_kilitleri</span>
+                </div>
+            </div>
+
+            <!-- Puantaj -->
+            <div class="page-card">
+                <h6>📊 Puantaj (PuantajController)</h6>
+                <p>
+                    Personel izin/devamsızlık kayıtlarını yönetir. Ay bazlı takvim görünümünde her personel için günlük durum girilir 
+                    (İ=İzin, Gİ=Görevli İzin, ÇH=Çalışma Harici, Vİ=Vizite İzin, Öİ=Özel İzin, H=Hasta). Hafta sonu sütunları 
+                    pembe arkaplanla gösterilir. <strong>Hakediş hesabı: 30 - izin günleri</strong>. Otomatik kaydetme ve toplu izin atama desteklenir. 
+                    Kilitli aylara kayıt yapılamaz (popup ile bilgilendirilir). PDF ve Excel çıktı alınabilir.
+                </p>
+                <div style="margin-top: 10px; padding: 10px; background: #f0f8ff; border-left: 4px solid #0066cc; border-radius: 4px; font-size: 13px;">
+                    <strong>📝 Yazıcı Çıktısı Güncellemesi (9 Nisan 2026):</strong>
+                    <ul style="margin: 5px 0 0; padding-left: 20px;">
+                        <li>Kontrol eden imzası kaldırılmıştır (2 imza kalacak: Birim Sorumlusu, Başkan)</li>
+                        <li>Personel adlarının altındaki birim isimleri gizlenmiştir</li>
+                        <li>Başlık "BİRİM ADI PUANTAJ CETVELİ" olarak sabitlenmiştir</li>
+                        <li>Açıklamalar bölümü tablodan ayrılmış, renkli kutular kaldırılmış, yazı ve font boyutu küçültülmüştür</li>
+                    </ul>
+                </div>
+                <div style="margin-top: 10px; padding: 10px; background: #f0fff0; border-left: 4px solid #28a745; border-radius: 4px; font-size: 13px;">
+                    <strong>🎨 Puantaj Sayfası Görsel İyileştirmeler (13 Nisan 2026):</strong>
+                    <ul style="margin: 5px 0 0; padding-left: 20px;">
+                        <li><strong>Yapışkan Personel Sütunu:</strong> Yatay kaydırmada personel isimleri artık sabit kalır (sticky column)</li>
+                        <li><strong>Bugün Vurgulama:</strong> Mevcut ay görüntülendiğinde bugünün sütunu mavi başlık + altın çerçeve ile belirginleştirilir</li>
+                        <li><strong>Katlanabilir Renk Açıklamaları:</strong> Legend paneli toggle butonu ile açılıp kapanır, kontrol alanı sadeleştirildi</li>
+                        <li><strong>Font Boyutu Artırıldı:</strong> Tablo hücreleri ve başlıklar 10px → 12px olarak büyütüldü (okunabilirlik)</li>
+                        <li><strong>Mini Özet Kartları:</strong> Tablo üstüne Personel, Toplam Çalışma, Toplam İzin, Ort. Hakediş istatistik kartları eklendi</li>
+                        <li><strong>Responsive Tasarım:</strong> 768px altı ekranlar için medya sorguları eklendi (mobil uyumluluk)</li>
+                        <li><strong>Gelişmiş Hücre Geri Bildirimi:</strong> Hover efekti scale-up + gölge, active efekti scale-down olarak iyileştirildi</li>
+                        <li><strong>Hakediş Koşullu Renklendirme:</strong> 28+ gün = yeşil, 25-27 = sarı, &lt;25 = kırmızı arka plan</li>
+                        <li><strong>Modal Animasyonu:</strong> Düzenleme pencereleri backdrop-blur, slide-up animasyonu ve gölge ile zenginleştirildi</li>
+                    </ul>
+                </div>
+                <div>
+                    <span class="endpoint">GET /Puantaj/Index</span>
+                    <span class="endpoint">GET /Puantaj/GetPersoneller</span>
+                    <span class="endpoint">GET /Puantaj/GetIzinler</span>
+                    <span class="endpoint">POST /Puantaj/KaydetIzin</span>
+                    <span class="endpoint">GET /Puantaj/GetResmiTatiller</span>
+                    <span class="endpoint">GET /Puantaj/Cikti</span>
+                </div>
+                <div class="mt-1">
+                    <span class="table-badge">puantaj_izin</span>
+                    <span class="table-badge">personeller</span>
+                    <span class="table-badge">ay_kilitleri</span>
+                    <span class="table-badge">kktc_resmi_tatiller</span>
+                </div>
+            </div>
+
+            <!-- Mesai -->
+            <div class="page-card">
+                <h6>⏰ Ek Mesai (MesaiController)</h6>
+                <p>
+                    Personel fazla mesai kayıtlarını yönetir. Tarih, başlangıç/bitiş saati girilerek otomatik hesaplama yapılır: 
+                    <strong>Hafta içi × 0.1 = Zam01</strong>, <strong>Hafta sonu + Resmi Tatil × 0.5 = Zam05</strong>. 
+                    Resmi tatiller <code>kktc_resmi_tatiller</code> tablosundan yüklenir. Kayıt ekleme, silme, toplu kaydetme, 
+                    Excel ve PDF çıktı desteklenir. Kilitli aylarda kayıt/silme engellenir.
+                </p>
+                <div>
+                    <span class="endpoint">GET /Mesai/Index</span>
+                    <span class="endpoint">GET /Mesai/GetPersoneller</span>
+                    <span class="endpoint">GET /Mesai/GetMesaiKayitlari</span>
+                    <span class="endpoint">POST /Mesai/KaydetMesai</span>
+                    <span class="endpoint">POST /Mesai/SilMesai</span>
+                    <span class="endpoint">GET /Mesai/GetSaatlikBrut</span>
+                </div>
+                <div class="mt-1">
+                    <span class="table-badge">mesai_kayitlari</span>
+                    <span class="table-badge">personeller</span>
+                    <span class="table-badge">ay_kilitleri</span>
+                    <span class="table-badge">mesaisaat</span>
+                </div>
+            </div>
+
+            <!-- Rapor -->
+            <div class="page-card">
+                <h6>📈 Raporlar (RaporController)</h6>
+                <p>
+                    Üç farklı rapor sunar: <strong>Personel Statü Raporu</strong> (birim bazlı personel dağılımı), 
+                    <strong>İzin Kullanan Personeller</strong> (kişi bazlı izin türü ve gün sayısı), 
+                    <strong>Mesai Yapan Personeller</strong> (kişi bazlı fiili saat, zam saatleri, toplam saat). 
+                    Checkbox filtreleme ile seçili raporlar yüklenir. Yıl/ay/birim seçimi ile filtreleme yapılır. Admin tüm birimleri görebilir.
+                </p>
+                <div>
+                    <span class="endpoint">GET /Rapor/Index</span>
+                    <span class="endpoint">GET /Rapor/GetStatuRapor</span>
+                    <span class="endpoint">GET /Rapor/GetIzinRapor</span>
+                    <span class="endpoint">GET /Rapor/GetMesaiRapor</span>
+                </div>
+                <div class="mt-1">
+                    <span class="table-badge">personeller</span>
+                    <span class="table-badge">puantaj_izin</span>
+                    <span class="table-badge">mesai_kayitlari</span>
+                </div>
+            </div>
+
+            <!-- Resmi Tatil -->
+            <div class="page-card">
+                <h6>🎌 Resmi Tatiller (ResmiTatilController)</h6>
+                <p>KKTC resmi tatillerini listeler. Bu veriler puantaj ve mesai hesaplamalarında referans olarak kullanılır (hafta sonu + resmi tatil = Zam05).</p>
+                <div>
+                    <span class="endpoint">GET /ResmiTatil/Index</span>
+                </div>
+                <div class="mt-1">
+                    <span class="table-badge">kktc_resmi_tatiller</span>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- 3. DOSYA AĞACI -->
+    <div class="doc-section">
+        <div class="doc-section-header" onclick="toggleSection(this)">
+            <h5>🌳 3. Dosya Ağacı ve Bağlantı Şeması</h5>
+            <span class="badge bg-info text-dark">Yapı</span>
+        </div>
+        <div class="doc-section-body">
+            <div class="tree-container">
+<pre style="margin:0;">
+<span class="folder">📁 gamabelmvc/</span>
+├── <span class="file-cs">Program.cs</span>                          <span class="arrow">← Uygulama başlangıç noktası, middleware konfigürasyonu</span>
+├── <span class="file-json">appsettings.json</span>                    <span class="arrow">← Veritabanı bağlantı ayarları</span>
+├── <span class="file-cs">gamabelmvc.csproj</span>                   <span class="arrow">← Proje bağımlılıkları (.NET 9.0)</span>
+│
+├── <span class="folder">📁 Controllers/</span>
+│   ├── <span class="file-cs">AccountController.cs</span>             <span class="arrow">← Giriş, Kayıt, Çıkış (161 satır)</span>
+│   ├── <span class="file-cs">HomeController.cs</span>                <span class="arrow">← Ana sayfa, Hata (31 satır)</span>
+│   ├── <span class="file-cs">KullaniciController.cs</span>           <span class="arrow">← Kullanıcı/Personel yönetimi (694 satır)</span>
+│   ├── <span class="file-cs">MesaiController.cs</span>               <span class="arrow">← Ek mesai kayıtları (259 satır)</span>
+│   ├── <span class="file-cs">PuantajController.cs</span>             <span class="arrow">← Puantaj/İzin kayıtları (252 satır)</span>
+│   ├── <span class="file-cs">RaporController.cs</span>               <span class="arrow">← Raporlama (209 satır)</span>
+│   ├── <span class="file-cs">ResmiTatilController.cs</span>          <span class="arrow">← Resmi tatiller (36 satır)</span>
+│   └── <span class="file-cs">DokumantasyonController.cs</span>      <span class="arrow">← Bu sayfa (admin only)</span>
+│
+├── <span class="folder">📁 Models/</span>
+│   ├── <span class="file-cs">KullaniciModel.cs</span>                <span class="arrow">← Kullanıcı veri modeli (9 alan)</span>
+│   ├── <span class="file-cs">PersonelModel.cs</span>                 <span class="arrow">← Personel veri modeli (4 alan)</span>
+│   ├── <span class="file-cs">PuantajIzinModel.cs</span>              <span class="arrow">← İzin kayıt modeli (7 alan)</span>
+│   ├── <span class="file-cs">LoginViewModel.cs</span>                <span class="arrow">← Giriş form modeli (3 alan)</span>
+│   └── <span class="file-cs">ErrorViewModel.cs</span>                <span class="arrow">← Hata sayfa modeli</span>
+│
+├── <span class="folder">📁 Services/</span>
+│   └── <span class="file-cs">DbConnectionFactory.cs</span>           <span class="arrow">← DB bağlantı fabrikası (kullanılmıyor!)</span>
+│
+├── <span class="folder">📁 Views/</span>
+│   ├── <span class="folder">📁 Account/</span>
+│   │   ├── <span class="file-cshtml">Login.cshtml</span>              <span class="arrow">← Giriş formu</span>
+│   │   └── <span class="file-cshtml">Register.cshtml</span>           <span class="arrow">← Kayıt formu</span>
+│   ├── <span class="folder">📁 Home/</span>
+│   │   ├── <span class="file-cshtml">Index.cshtml</span>              <span class="arrow">← Ana sayfa</span>
+│   │   └── <span class="file-cshtml">Privacy.cshtml</span>            <span class="arrow">← Gizlilik</span>
+│   ├── <span class="folder">📁 Kullanici/</span>
+│   │   ├── <span class="file-cshtml">Index.cshtml</span>              <span class="arrow">← Kullanıcı listesi (admin)</span>
+│   │   ├── <span class="file-cshtml">Liste2.cshtml</span>             <span class="arrow">← Personel listesi + Excel import</span>
+│   │   ├── <span class="file-cshtml">Profil.cshtml</span>             <span class="arrow">← Profil ve şifre değiştirme</span>
+│   │   └── <span class="file-cshtml">Yetkilendirme.cshtml</span>      <span class="arrow">← Rol, aktif/pasif, ay kilidi yönetimi</span>
+│   ├── <span class="folder">📁 Puantaj/</span>
+│   │   ├── <span class="file-cshtml">Index.cshtml</span>              <span class="arrow">← Puantaj tablosu (takvim görünümü)</span>
+│   │   └── <span class="file-cshtml">Cikti.cshtml</span>              <span class="arrow">← PDF/Excel çıktı</span>
+│   ├── <span class="folder">📁 Mesai/</span>
+│   │   └── <span class="file-cshtml">Index.cshtml</span>              <span class="arrow">← Ek mesai tablosu</span>
+│   ├── <span class="folder">📁 Rapor/</span>
+│   │   └── <span class="file-cshtml">Index.cshtml</span>              <span class="arrow">← Rapor sayfası (3 rapor türü)</span>
+│   ├── <span class="folder">📁 ResmiTatil/</span>
+│   │   └── <span class="file-cshtml">Index.cshtml</span>              <span class="arrow">← Tatil listesi</span>
+│   ├── <span class="folder">📁 Dokumantasyon/</span>
+│   │   └── <span class="file-cshtml">Index.cshtml</span>              <span class="arrow">← Bu dokümantasyon sayfası</span>
+│   └── <span class="folder">📁 Shared/</span>
+│       ├── <span class="file-cshtml">_Layout.cshtml</span>            <span class="arrow">← Master layout (navbar + footer)</span>
+│       ├── <span class="file-css">_Layout.cshtml.css</span>          <span class="arrow">← Layout stilleri</span>
+│       └── <span class="file-cshtml">Error.cshtml</span>              <span class="arrow">← Hata sayfası</span>
+│
+└── <span class="folder">📁 wwwroot/</span>
+    ├── <span class="folder">📁 css/</span> → <span class="file-css">site.css</span>
+    ├── <span class="folder">📁 js/</span> → <span class="file-js">site.js</span>
+    └── <span class="folder">📁 lib/</span> → bootstrap, jquery, jquery-validation
+</pre>
+            </div>
+
+            <!-- BAĞLANTI ŞEMASI -->
+            <h6 class="mt-4 mb-3" style="color:#1a237e; font-weight:700;">🔗 Controller → View → Veritabanı Bağlantı Şeması</h6>
+            <div class="table-responsive">
+                <table class="table table-sm table-bordered" style="font-size:12px;">
+                    <thead style="background:#1a237e; color:white;">
+                        <tr>
+                            <th>Controller</th>
+                            <th>View(ler)</th>
+                            <th>Model(ler)</th>
+                            <th>Veritabanı Tabloları</th>
+                            <th>Erişim</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>AccountController</strong></td>
+                            <td>Login.cshtml, Register.cshtml</td>
+                            <td>LoginViewModel</td>
+                            <td><span class="db-table">admin_kullanicilar</span> <span class="db-table">birimler</span></td>
+                            <td><span class="badge bg-success">Herkese açık</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>HomeController</strong></td>
+                            <td>Index.cshtml, Privacy.cshtml, Error.cshtml</td>
+                            <td>ErrorViewModel</td>
+                            <td>—</td>
+                            <td><span class="badge bg-success">Herkese açık</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>KullaniciController</strong></td>
+                            <td>Index.cshtml, Liste2.cshtml, Profil.cshtml, Yetkilendirme.cshtml</td>
+                            <td>KullaniciModel, PersonelModel</td>
+                            <td><span class="db-table">admin_kullanicilar</span> <span class="db-table">personeller</span> <span class="db-table">birimler</span> <span class="db-table">ay_kilitleri</span></td>
+                            <td><span class="badge bg-danger">Admin</span> <span class="badge bg-warning text-dark">Oturum</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>PuantajController</strong></td>
+                            <td>Index.cshtml, Cikti.cshtml</td>
+                            <td>PuantajIzinModel</td>
+                            <td><span class="db-table">puantaj_izin</span> <span class="db-table">personeller</span> <span class="db-table">ay_kilitleri</span> <span class="db-table">kktc_resmi_tatiller</span></td>
+                            <td><span class="badge bg-warning text-dark">Oturum</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>MesaiController</strong></td>
+                            <td>Index.cshtml</td>
+                            <td>—</td>
+                            <td><span class="db-table">mesai_kayitlari</span> <span class="db-table">personeller</span> <span class="db-table">ay_kilitleri</span> <span class="db-table">mesaisaat</span></td>
+                            <td><span class="badge bg-warning text-dark">Oturum</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>RaporController</strong></td>
+                            <td>Index.cshtml</td>
+                            <td>—</td>
+                            <td><span class="db-table">personeller</span> <span class="db-table">puantaj_izin</span> <span class="db-table">mesai_kayitlari</span></td>
+                            <td><span class="badge bg-warning text-dark">Oturum</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>ResmiTatilController</strong></td>
+                            <td>Index.cshtml</td>
+                            <td>—</td>
+                            <td><span class="db-table">kktc_resmi_tatiller</span></td>
+                            <td><span class="badge bg-warning text-dark">Oturum</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- VERİTABANI TABLOLARI -->
+            <h6 class="mt-4 mb-3" style="color:#1a237e; font-weight:700;">🗄️ Veritabanı Tabloları</h6>
+            <div class="row">
+                <div class="col-md-4 mb-2">
+                    <div class="p-3" style="background:#263238; border-radius:8px; color:#80cbc4; font-size:12px;">
+                        <strong style="color:#fff;">admin_kullanicilar</strong><br>
+                        Kullanıcı hesapları, roller, aktiflik durumu
+                    </div>
+                </div>
+                <div class="col-md-4 mb-2">
+                    <div class="p-3" style="background:#263238; border-radius:8px; color:#80cbc4; font-size:12px;">
+                        <strong style="color:#fff;">personeller</strong><br>
+                        Personel bilgileri (ad, soyad, birim, statü, görev)
+                    </div>
+                </div>
+                <div class="col-md-4 mb-2">
+                    <div class="p-3" style="background:#263238; border-radius:8px; color:#80cbc4; font-size:12px;">
+                        <strong style="color:#fff;">birimler</strong><br>
+                        Birim/departman listesi
+                    </div>
+                </div>
+                <div class="col-md-4 mb-2">
+                    <div class="p-3" style="background:#263238; border-radius:8px; color:#80cbc4; font-size:12px;">
+                        <strong style="color:#fff;">puantaj_izin</strong><br>
+                        Günlük izin/devamsızlık kayıtları
+                    </div>
+                </div>
+                <div class="col-md-4 mb-2">
+                    <div class="p-3" style="background:#263238; border-radius:8px; color:#80cbc4; font-size:12px;">
+                        <strong style="color:#fff;">mesai_kayitlari</strong><br>
+                        Ek mesai başlangıç/bitiş, zam hesapları
+                    </div>
+                </div>
+                <div class="col-md-4 mb-2">
+                    <div class="p-3" style="background:#263238; border-radius:8px; color:#80cbc4; font-size:12px;">
+                        <strong style="color:#fff;">kktc_resmi_tatiller</strong><br>
+                        KKTC resmi tatil tarihleri
+                    </div>
+                </div>
+                <div class="col-md-4 mb-2">
+                    <div class="p-3" style="background:#263238; border-radius:8px; color:#80cbc4; font-size:12px;">
+                        <strong style="color:#fff;">ay_kilitleri</strong><br>
+                        Kilitli aylar (yıl, ay)
+                    </div>
+                </div>
+                <div class="col-md-4 mb-2">
+                    <div class="p-3" style="background:#263238; border-radius:8px; color:#80cbc4; font-size:12px;">
+                        <strong style="color:#fff;">mesaisaat</strong><br>
+                        Saatlik brüt mesai ücreti
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. ÖNERİLER -->
+    <div class="doc-section">
+        <div class="doc-section-header" onclick="toggleSection(this)">
+            <h5>💡 4. Öneriler — Yapılması Gereken 10 İyileştirme</h5>
+            <span class="badge bg-danger">Önemli</span>
+        </div>
+        <div class="doc-section-body">
+
+            <div style="margin-bottom: 20px; padding: 14px; background: #fff3e0; border-left: 4px solid #ff9800; border-radius: 4px; font-size: 13px;">
+                <strong>🔧 Deploy Script (deploy.ps1) Hata Düzeltmeleri (13 Nisan 2026):</strong>
+                <ul style="margin: 5px 0 0; padding-left: 20px;">
+                    <li><strong>NETSDK1194 Uyarısı Giderildi:</strong> <code>dotnet publish</code> komutu .sln dosyasını yanlışlıkla çözüyordu. <code>/p:SolutionFilePath=""</code> parametresi eklenerek çözüm düzeyinde output uyarısı engellendi.</li>
+                    <li><strong>DirectoryNotFoundException Düzeltildi:</strong> Publish sırasında .br sıkıştırması orijinal dosyayı sildiğinde hash hesaplama çöküyordu. Dosya varlık kontrolü (<code>Test-Path -LiteralPath</code>) eklendi, bulunamayan dosyalar atlanır.</li>
+                    <li><strong>Script Çökme Sorunu Giderildi:</strong> <code>$ErrorActionPreference = "Stop"</code> ayarı .NET exception'ların try-catch'i aşmasına neden oluyordu. Fallback hash hesaplamasına <code>-ErrorAction SilentlyContinue</code> eklendi, hash alınamayan dosyalar sessizce atlanır.</li>
+                    <li><strong>Kaynak Sızıntısı (Resource Leak) Düzeltildi:</strong> <code>$stream.Close()</code> finally bloğunda değildi, crash durumunda dosya handle'ları açık kalıyordu. <code>finally { $stream.Dispose() }</code> ve MD5 nesnesi için <code>try/finally</code> sarmalayıcı eklendi.</li>
+                </ul>
+            </div>
+
+            <div class="oneri-card">
+                <div class="oneri-no">1</div>
+                <div class="oneri-content">
+                    <h6>Şifreleri Hashleyerek Saklayın <span class="severity-badge severity-critical">KRİTİK</span></h6>
+                    <p>Şifreler veritabanında düz metin olarak saklanıyor. <strong>BCrypt</strong> veya <strong>Argon2</strong> ile hashlenmelidir. Bir veri ihlalinde tüm kullanıcı şifreleri doğrudan okunabilir durumda.</p>
+                </div>
+            </div>
+
+            <div class="oneri-card">
+                <div class="oneri-no">2</div>
+                <div class="oneri-content">
+                    <h6>ASP.NET Core Authentication Middleware Kullanın <span class="severity-badge severity-critical">KRİTİK</span></h6>
+                    <p>Tüm controller'larda manuel <code>Session.GetString("Rol")</code> kontrolü yapılıyor. Bunun yerine <code>[Authorize]</code> attribute ve ASP.NET Core Identity framework entegre edilmeli. Mevcut yöntem kolayca atlanabilir.</p>
+                </div>
+            </div>
+
+            <div class="oneri-card">
+                <div class="oneri-no">3</div>
+                <div class="oneri-content">
+                    <h6>CSRF (Cross-Site Request Forgery) Koruması Ekleyin <span class="severity-badge severity-critical">KRİTİK</span></h6>
+                    <p>Hiçbir POST formunda <code>@@Html.AntiForgeryToken()</code> bulunmuyor. Controller'lara <code>[ValidateAntiForgeryToken]</code> eklenmeli. Bu, kötü niyetli sitelerin kullanıcı adına işlem yapmasını önler.</p>
+                </div>
+            </div>
+
+            <div class="oneri-card">
+                <div class="oneri-no medium">4</div>
+                <div class="oneri-content">
+                    <h6>DbConnectionFactory'yi DI ile Kullanın <span class="severity-badge severity-high">YÜKSEK</span></h6>
+                    <p><code>Services/DbConnectionFactory.cs</code> dosyası mevcut ancak hiçbir yerde kullanılmıyor. <code>Program.cs</code>'de DI container'a kaydedilip tüm controller'lara inject edilmeli. Bağlantı yönetimi merkezi ve tutarlı hale gelir.</p>
+                </div>
+            </div>
+
+            <div class="oneri-card">
+                <div class="oneri-no medium">5</div>
+                <div class="oneri-content">
+                    <h6>Hata Mesajlarında Sistem Detaylarını Gizleyin <span class="severity-badge severity-high">YÜKSEK</span></h6>
+                    <p>Controller'larda <code>ex.Message</code> doğrudan kullanıcıya döndürülüyor. Üretim ortamında bu bilgi saldırganlara yol gösterir. Genel bir hata mesajı gösterilip detaylar loglanmalıdır.</p>
+                </div>
+            </div>
+
+            <div class="oneri-card">
+                <div class="oneri-no medium">6</div>
+                <div class="oneri-content">
+                    <h6>Model Validasyon Attribute'leri Ekleyin <span class="severity-badge severity-high">YÜKSEK</span></h6>
+                    <p>Modellerde <code>[Required]</code>, <code>[Range]</code>, <code>[StringLength]</code> gibi doğrulama attribute'leri yok. Örneğin <code>Ay</code> alanı <code>[Range(1,12)]</code> olmalı. Geçersiz veri doğrudan veritabanına ulaşabiliyor.</p>
+                </div>
+            </div>
+
+            <div class="oneri-card">
+                <div class="oneri-no medium">7</div>
+                <div class="oneri-content">
+                    <h6>Güvenlik Header'ları Ekleyin <span class="severity-badge severity-high">YÜKSEK</span></h6>
+                    <p><code>Program.cs</code>'de <strong>Content-Security-Policy</strong>, <strong>X-Frame-Options</strong>, <strong>X-Content-Type-Options</strong> gibi güvenlik header'ları tanımlı değil. Bu, XSS ve clickjacking saldırılarına açık kapı bırakıyor.</p>
+                </div>
+            </div>
+
+            <div class="oneri-card">
+                <div class="oneri-no low">8</div>
+                <div class="oneri-content">
+                    <h6>Excel Import'a Transaction Ekleyin <span class="severity-badge severity-medium">ORTA</span></h6>
+                    <p><code>KullaniciController.ExcelAktar</code> metodu döngüde satır satır kayıt yapıyor. İşlem ortasında hata olursa kısmi veri kalır. <strong>MySQL Transaction</strong> ile sarmalanmalıdır.</p>
+                </div>
+            </div>
+
+            <div class="oneri-card">
+                <div class="oneri-no low">9</div>
+                <div class="oneri-content">
+                    <h6>Magic String'leri Sabit (Constant) Olarak Tanımlayın <span class="severity-badge severity-medium">ORTA</span></h6>
+                    <p><code>"admin"</code>, <code>"birim_amiri"</code>, <code>"__TUMU__"</code> gibi string değerler kod genelinde tekrarlanıyor. Bir <code>Constants</code> sınıfında merkezi olarak tanımlanmalı, yazım hatası ve tutarsızlık riski azaltılmalıdır.</p>
+                </div>
+            </div>
+
+            <div class="oneri-card">
+                <div class="oneri-no low">10</div>
+                <div class="oneri-content">
+                    <h6>Loglama ve Audit Trail Sistemi Kurun <span class="severity-badge severity-medium">ORTA</span></h6>
+                    <p>Uygulamada yapılandırılmış loglama yok. Serilog veya NLog entegre edilmeli; kullanıcı silme, rol değişikliği, ay kilitleme gibi kritik işlemler loglanmalıdır. Olası güvenlik ihlallerinin tespiti için gereklidir.</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- 5. STS MODÜLÜ RAPORU -->
+    <div class="doc-section">
+        <div class="doc-section-header" onclick="toggleSection(this)">
+            <h5>🧾 5. STS Modülü — Bugün Yapılan Eklemeler ve Değişiklikler</h5>
+            <span class="badge bg-dark">Güncel Rapor</span>
+        </div>
+        <div class="doc-section-body">
+
+            <div class="page-card" style="border-left: 4px solid #1565c0; background: #f3f8ff;">
+                <h6>🗓️ Güncelleme Raporlama Standardı</h6>
+                <p>
+                    Bu bölümde yapılan her geliştirme <strong>tarih bilgisi ile</strong> raporlanır.
+                    Yeni kayıtlar en üstte yer alır ve kapsam kısa/izlenebilir maddelerle yazılır.
+                </p>
+            </div>
+
+            <div class="page-card" style="border-left: 4px solid #2e7d32; background: #f1f8e9;">
+                <h6>🆕 5-6 Haziran 2026 — STS Admin Araçları ve Excel Operasyon Güncellemeleri</h6>
+                <p>
+                    Admin paneline <strong>tablo seçmeli veritabanı yedekleme ve geri yükleme</strong> ekranı eklendi.
+                    Böylece admin kullanıcı yalnızca ihtiyaç duyduğu tabloları seçerek SQL yedeği alabilir ve uygun yedek dosyalarını aynı panelden geri yükleyebilir.
+                </p>
+                <p>
+                    <strong>Ürün Toplu Yükleme</strong> ekranı iki aşamalı hale getirildi: önce <strong>Ön İzleme</strong>, sonra <strong>Uygula</strong>.
+                    Ön izleme sonucunda eklenecek, güncellenecek, uyarı verecek ve silinecek kayıtlar ayrı ayrı gösterilir; ayrıca son işlemler için log tablosu ve özet kartları sunulur.
+                </p>
+                <p>
+                    Ön izleme ekranına <strong>veritabanı temizle</strong> seçeneği eklendi.
+                    Excel dosyasında olmayan ama veritabanında bulunan ürünler silinecekse, bu kayıtlar uygulama öncesinde ayrı listede görünür hale getirildi.
+                    Sadece silme yapılacak senaryolarda da onay butonunun görünmemesi problemi giderildi.
+                </p>
+                <p>
+                    Toplu yükleme sırasında alınan <strong>Barkod tekil anahtar çakışmaları</strong> artık tüm işlemi durduran kritik hata yerine açıklayıcı uyarı olarak raporlanır.
+                    Böylece işlenebilir satırlar devam eder ve operatör hangi ürünlerin atlandığını rapordan görebilir.
+                </p>
+                <p>
+                    <strong>Sevkiyat Yönetimi</strong> ekranında <strong>Excel'e Aktar</strong> butonu görünür hale getirildi.
+                    Dışa aktarma akışı seçili bölüm, firma ve grup filtrelerini korur; Excel kolon sırası da operasyon kullanımına göre güncellendi.
+                </p>
+                <div>
+                    <span class="endpoint">GET /Admin/VeritabaniYedekleme</span>
+                    <span class="endpoint">POST /Admin/VeritabaniYedekle</span>
+                    <span class="endpoint">POST /Admin/VeritabaniGeriYukle</span>
+                    <span class="endpoint">GET /Admin/UrunTopluYukle</span>
+                    <span class="endpoint">POST /Admin/UrunTopluYukle</span>
+                    <span class="endpoint">POST /Admin/UrunTopluYukleUygula</span>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 16px; padding: 12px; background: #eef7ee; border-left: 4px solid #2e7d32; border-radius: 4px; font-size: 13px;">
+                <strong>Tarih:</strong> 5-6 Haziran 2026<br>
+                <strong>Kapsam:</strong> STS admin bakım araçları, ürün toplu yükleme güvenliği, ön izleme tabanlı veri senkronizasyonu ve sevkiyat Excel dışa aktarım iyileştirmeleri.
+            </div>
+
+            <div class="page-card">
+                <h6>🆕 28 Nisan 2026 — Son STS Güncellemeleri</h6>
+                <p>
+                    STS Dashboard ekranında <strong>Hızlı Erişim</strong> butonları en üste taşındı,
+                    metinler kısaltıldı ve tek satır düzene geçirildi.
+                </p>
+                <p>
+                    Şube personeli yetkisinde <strong>Excel Yükle</strong> menü butonu kaldırıldı.
+                    Ayrıca doğrudan URL erişimine karşı backend tarafında da yetki kontrolü eklendi.
+                </p>
+                <p>
+                    Sevkiyat/Sipariş akışında <strong>stk_FabrikaSiparisi</strong> tablosu eksikse
+                    otomatik oluşturma kontrolü eklendi ve sayfa açılışında tablo yokluğu kaynaklı hata önlendi.
+                </p>
+                <p>
+                    Eksik ekleme ekranında aynı ürün tekrar eklenmek istendiğinde kullanıcıya net uyarı verilecek şekilde davranış güncellendi.
+                </p>
+                <p>
+                    Sevkiyat Yönetimi ekranına <strong>sevk bekleyen eksikler</strong> bölümü eklendi.
+                    Böylece gecikti uyarısı alan ama henüz sevk edilmemiş ürünler doğrudan sevkiyat ekranında görülebilir ve aynı ekrandan sevk işlemi başlatılabilir.
+                </p>
+                <p>
+                    Gecikti uyarısının anlamı ekran üzerinde açıklama olarak gösterildi:
+                    Pazartesi 17:00 sonrası girilen eksikler, giriş zamanı yeni olsa bile gecikmiş kabul edilmektedir.
+                </p>
+                <p>
+                    Tüm Eksikler ekranı altına gecikme hesabını açıklayan bilgi notu eklendi.
+                    Not içinde ilk değerlendirme başlangıcı <strong>Pazartesi 00:00</strong>, zamanında son giriş saati ise <strong>Pazartesi 17:00</strong> olarak belirtildi.
+                </p>
+            </div>
+
+            <div style="margin-bottom: 16px; padding: 12px; background: #f5f5f5; border-left: 4px solid #424242; border-radius: 4px; font-size: 13px;">
+                <strong>Tarih:</strong> 28 Nisan 2026<br>
+                <strong>Kapsam:</strong> STS modülünde kullanıcı yönetimi, ürün yönetimi, eksik kayıt ekranları ve raporlama görünüm iyileştirmeleri.
+            </div>
+
+            <div class="page-card">
+                <h6>👤 STS Kullanıcı Yönetimi (Admin)</h6>
+                <p>
+                    Kullanıcı ekleme, düzenleme ve silme akışları aktif hale getirildi. Eksik view dosyaları tamamlandı,
+                    liste ekranındaki düğmeler gerçek route'lara bağlandı ve işlem sonucunda başarı/hata mesajları gösterilecek şekilde güncellendi.
+                </p>
+                <div>
+                    <span class="endpoint">GET /Admin/KullaniciEkle</span>
+                    <span class="endpoint">POST /Admin/KullaniciEkle</span>
+                    <span class="endpoint">GET /Admin/KullaniciDuzenle/{id}</span>
+                    <span class="endpoint">POST /Admin/KullaniciDuzenle</span>
+                    <span class="endpoint">POST /Admin/KullaniciSil</span>
+                </div>
+            </div>
+
+            <div class="page-card">
+                <h6>📦 STS Ürün Yönetimi — Excel ile Toplu Giriş</h6>
+                <p>
+                    Ürün yönetimine Excel ile toplu kayıt eklendi. Dosya kolon eşleşmesi A=Kod, B=Ad, C=Barkod, D=Birim olarak tanımlandı.
+                    Aynı kodun tekrar yüklenmesi engellendi; hem dosya içi tekrar eden kodlar hem de veritabanında mevcut kodlar atlanarak sadece yeni kayıtlar eklenecek şekilde düzenlendi.
+                </p>
+                <div>
+                    <span class="endpoint">GET /Admin/UrunTopluYukle</span>
+                    <span class="endpoint">POST /Admin/UrunTopluYukle</span>
+                </div>
+            </div>
+
+            <div class="page-card">
+                <h6>🛠️ STS Eksik Kaydı Ekleme Deneyimi</h6>
+                <p>
+                    Yeni Eksik Kaydı Ekle ekranı barkod okutma ve ürün adı ile arama destekleyecek şekilde yenilendi.
+                    Barkod okutma sonrası ürünler tabloya art arda eklenebilir hale getirildi.
+                    Ekran soldan sağa tablo formatında Eklenen Ürün, Adeti ve Açıklama sütunlarıyla güncellendi.
+                    Çoklu satır kaydı tek seferde gönderilecek backend desteği eklendi.
+                </p>
+                <div>
+                    <span class="endpoint">POST /Eksik/Ekle (satirlarJson toplu kayıt)</span>
+                </div>
+            </div>
+
+            <div class="page-card">
+                <h6>📋 STS Eksik Listesi ve Rapor Görünümleri</h6>
+                <p>
+                    Eksik Kaydı Listesi ekranında ürün adı boş gelme problemi giderildi.
+                    Listeleme son 15 günü gösterecek şekilde filtrelendi ve sayfa altına kalıcı bilgilendirme notu eklendi.
+                    Tüm Şubelerin Eksikleri ekranı A4 dikey yazdırma formatına taşındı; her şube ayrı tablo olarak düzenlendi,
+                    ürünler şube içinde alfabetik sıralandı ve her tablo altına "Öneri ve Gerekenler" alanı eklendi.
+                </p>
+            </div>
+
+            <div class="page-card">
+                <h6>🚚 STS Operasyon ve Bildirim Güncellemeleri</h6>
+                <p>
+                    Eksik kayıtlarına otomatik sipariş numarası eklendi.
+                    Pazartesi 17:00 sonrası girilen kayıtlar gecikmiş olarak işaretlenmeye başlandı.
+                    Aynı ürün son 3 haftada tekrar ediyorsa stok problemi uyarısı gösterilmektedir.
+                    Şube bazlı geçmiş eksik listesi eklendi.
+                </p>
+                <p>
+                    Şube onayı sonrası eksik kaydı Tamamlandi durumuna geçirilmekte,
+                    sevkiyat ekranında teslim süresi gün bazında izlenebilmektedir.
+                    Sevkiyat yapıldıktan sonra şube onayı için belirlenen SLA süresi <strong>48 saattir</strong>; bu süre aşılırsa Sevkiyat Yönetimi ekranında <em>SLA Aşıldı</em> uyarısı görüntülenir.
+                    Onaylanan sevkiyatlar için Fabrikaya Sipariş Ver butonu eklenmiş,
+                    fabrika sipariş durumları ekran üzerinden güncellenebilir hale getirilmiştir.
+                </p>
+                <p>
+                    STS dashboard ekranına uygulama içi bildirim paneli ve tarayıcı bildirimi desteği eklenmiştir.
+                    Şube eksik kaydettiğinde depo/admin, ana depo sevkiyat yaptığında ilgili şube bilgilendirilmektedir.
+                    Şube yönetiminde sorumlu kullanıcı atama desteği de eklenmiştir.
+                </p>
+            </div>
+
+            <div class="page-card" style="border-left: 4px solid #0d47a1; background: #e3f2fd;">
+                <h6>🆕 12 Mayıs 2026 — Mobil Uyum ve STS Operasyon Revizyonları</h6>
+                <ul>
+                    <li><strong>Mobil uyumluluk:</strong> Fabrika Siparişleri, Sevkiyat Yönetimi ve Şube Onay ekranları mobilde kart benzeri görünümle güncellendi; tablo satırlarına etiket yapısı eklendi, dokunma alanları büyütüldü.</li>
+                    <li><strong>Dashboard uyarısı:</strong> Şube personeli için onay bekleyen sevkiyat varsa bilgi mesajı popup (modal) olarak otomatik açılacak şekilde güncellendi.</li>
+                    <li><strong>Sevkiyat geçmiş filtresi:</strong> Sevkiyat Geçmişi ve Onay Süreci listesinde <em>Onaylandi</em> durumundaki kayıtlar gösterimden çıkarıldı.</li>
+                    <li><strong>Filtre varsayılanları:</strong> Sevkiyat ekranında Bölüm/Firma filtre seçiminde varsayılan değerlerin Tüm Bölümler / Tüm Firmalar gelmesi için selected bağlama düzeltildi.</li>
+                    <li><strong>Buton metni:</strong> Filtre uygulama butonunun metni <em>Güncelle</em> yerine <em>Listele</em> olarak değiştirildi.</li>
+                    <li><strong>Yedekleme aracı:</strong> Derlenmemiş kaynak kodu yedekleme/geri alma için <code>source-backup.ps1</code> eklendi (backup, list, restore).</li>
+                </ul>
+                <div style="margin-top:8px; font-size:12px; color:#0d47a1;">Tarih: 12 Mayıs 2026</div>
+            </div>
+
+            <div style="margin-top: 12px; font-size: 12px; color: #616161;">
+                Not: Bu rapor, bugünkü STS geliştirme oturumunda canlıya alınan sayfa ve backend değişikliklerini özetler.
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+<script>
+    function toggleSection(header) {
+        var body = header.nextElementSibling;
+        body.classList.toggle('collapsed');
+        var badge = header.querySelector('.badge');
+        if (body.classList.contains('collapsed')) {
+            badge.textContent = '▶ Aç';
+            badge.className = 'badge bg-secondary';
+        } else {
+            var original = header.dataset.originalBadge || badge.textContent;
+            if (!header.dataset.originalBadge) header.dataset.originalBadge = badge.textContent;
+            badge.textContent = original;
+            badge.className = header.dataset.originalClass || badge.className;
+            if (!header.dataset.originalClass) header.dataset.originalClass = badge.className;
+        }
+    }
+    // Store original badges
+    document.querySelectorAll('.doc-section-header').forEach(function(h) {
+        var b = h.querySelector('.badge');
+        h.dataset.originalBadge = b.textContent;
+        h.dataset.originalClass = b.className;
+    });
+</script>
+
+            <div class="page-card" style="border-left: 4px solid #388e3c; background: #e8f5e9;">
+                <h6>🆕 30 Nisan 2026 — Son Geliştirmeler</h6>
+                <ul>
+                    <li>Menüde <strong>admin</strong> kullanıcılar için <b>Şikayet Yönetimi (Admin)</b> linki profil dropdown menüsüne eklendi. Adminler doğrudan <code>/Sikayet/Admin</code> sayfasına erişebilir.</li>
+                    <li>"Eksik" terimi kod ve arayüzde <b>Sipariş</b> olarak güncellendi. Tüm başlıklar, fonksiyonlar ve view dosyalarında toplu değişiklik yapıldı.</li>
+                    <li><b>Sipariş Ekle</b> ekranı modern ve dinamik hale getirildi: Adet ve açıklama inputları düzenlenebilir, ürünler barkod/arama ile eklenebilir, kayıt işlemi AJAX ile toplu ve gerçek veritabanına kaydediliyor.</li>
+                    <li>Kayıt sonrası kullanıcı uygun şekilde yönlendiriliyor, demo kayıt kaldırıldı.</li>
+                    <li>Port çakışması nedeniyle <b>launchSettings.json</b> dosyasında port <b>5010</b> olarak güncellendi.</li>
+                    <li>Admin şikayet yönetimi için <b>durum/sonuç güncelleme</b> fonksiyonu ve <b>şikayetler</b> menüsüne erişim kolaylaştırıldı.</li>
+                    <li><b>30 Nisan 2026:</b> Dokümantasyonun en üstüne tıklanabilir <b>İçindekiler (indeks)</b> tablosu eklendi. Tüm ana başlık ve alt başlıklara anchor (id) eklendi, böylece indeks üzerinden doğrudan ilgili bölüme atlanabiliyor.</li>
+                    <li><b>3. Dosya Ağacı ve Bağlantı Şeması</b> bölümü workspace’in güncel yapısına göre revize edildi ve eksik controller/model/view klasörleri eklendi.</li>
+                </ul>
+                <div style="margin-top:8px; font-size:12px; color:#388e3c;">Tarih: 30 Nisan 2026<br>Kapsam: Menü erişimi, terim değişikliği, modern sipariş ekleme, port değişikliği, gerçek kayıt işlemi, admin şikayet yönetimi, dokümantasyon indeks ve dosya ağacı güncellemesi.</div>
+            </div>

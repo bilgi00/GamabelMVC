@@ -1,0 +1,412 @@
+@{
+    ViewData["Title"] = "Ayrıntılı Rapor";
+}
+
+<div class="container-fluid mt-4">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h1>🔍 Ayrıntılı Rapor</h1>
+            <p class="text-muted">Büfe, Firma ve Tarih Aralığına Göre Detaylı İşlem Raporları</p>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(ViewBag.Hata))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <strong>⚠️ Hata!</strong> @ViewBag.Hata
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Filtre Formu -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h6 class="mb-0">🔎 Filtre Seçenekleri</h6>
+        </div>
+        <div class="card-body">
+            <form method="get" action="/RaporSts/DetailedRapor" class="form-horizontal-3col">
+                <!-- Büfe Seçimi -->
+                <div class="form-group">
+                    <label for="subeId" class="form-label">Büfe<span class="text-danger">*</span></label>
+                    <select class="form-select" id="subeId" name="subeId" required>
+                        <option value="">-- Büfe Seçiniz --</option>
+                        @{
+                            try
+                            {
+                                var subeleri = ViewBag.Subeleri as List<dynamic>;
+                                if (subeleri != null)
+                                {
+                                    object seciliSubeId = ViewBag.SeciliSubeId;
+                                    foreach (var sube in subeleri)
+                                    {
+                                        string subeId = sube.Id.ToString();
+                                        string seciliAttr = (seciliSubeId != null && seciliSubeId.ToString() == subeId) ? " selected" : "";
+                                        <text>@Html.Raw($"<option value=\"{subeId}\"{seciliAttr}>{sube.Ad}</option>")</text>
+                                    }
+                                }
+                            }
+                            catch { }
+                        }
+                    </select>
+                </div>
+
+                <!-- Firma Seçimi -->
+                <div class="form-group">
+                    <label for="firma" class="form-label">Firma <small class="text-muted">(İsteğe Bağlı)</small></label>
+                    <select class="form-select" id="firma" name="firma">
+                        <option value="">-- Tüm Firmalar --</option>
+                        @{
+                            try
+                            {
+                                var firmalar = ViewBag.Firmalar as List<string>;
+                                string seciliFirma = ViewBag.SeciliFirma?.ToString() ?? "";
+                                if (firmalar != null)
+                                {
+                                    foreach (var f in firmalar)
+                                    {
+                                        string seciliAttr = (f == seciliFirma) ? " selected" : "";
+                                        <text>@Html.Raw($"<option value=\"{f}\"{seciliAttr}>{f}</option>")</text>
+                                    }
+                                }
+                            }
+                            catch { }
+                        }
+                    </select>
+                </div>
+
+                <!-- Başlangıç Tarihi -->
+                <div class="form-group">
+                    <label for="baslangicTarihi" class="form-label">Başlangıç<span class="text-danger">*</span></label>
+                    <input type="date" class="form-control" id="baslangicTarihi" name="baslangicTarihi" value="@(ViewBag.BaslangicTarihi ?? "")" required>
+                </div>
+
+                <!-- Bitiş Tarihi -->
+                <div class="form-group">
+                    <label for="bitisTarihi" class="form-label">Bitiş<span class="text-danger">*</span></label>
+                    <input type="date" class="form-control" id="bitisTarihi" name="bitisTarihi" value="@(ViewBag.BitisTarihi ?? "")" required>
+                </div>
+
+                <!-- Filtrele Butonu -->
+                <div class="form-group">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="submit" class="btn btn-primary w-100">🔍 Filtrele</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Sonuçlar -->
+    @{
+        string subeAdi = "Bilinmiyor";
+        try
+        {
+            var subeleri = ViewBag.Subeleri as List<dynamic>;
+            if (subeleri != null && ViewBag.SeciliSubeId != null)
+            {
+                foreach (var sube in subeleri)
+                {
+                    try
+                    {
+                        if (sube.Id.ToString() == ViewBag.SeciliSubeId.ToString())
+                        {
+                            subeAdi = sube.Ad;
+                            break;
+                        }
+                    }
+                    catch { }
+                }
+            }
+        }
+        catch { }
+
+        var islemler = ViewBag.Islemler as List<dynamic>;
+        if (islemler != null && islemler.Count > 0)
+        {
+            <div class="card mt-4">
+                <div class="card-header bg-success text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">✅ Sorgu Sonuçları</h6>
+                        <small>@subeAdi • @(ViewBag.BaslangicTarihi ?? "") - @(ViewBag.BitisTarihi ?? "")</small>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-sm table-striped">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Eksik Tarihi</th>
+                                    <th>Hafta</th>
+                                    <th>Ürün</th>
+                                    <th>Firma</th>
+                                    <th class="text-center">Miktar</th>
+                                    <th>Durum</th>
+                                    <th class="text-center">Acil</th>
+                                    <th>Sevk Tarihi</th>
+                                    <th class="text-center">Sevk</th>
+                                    <th>Sevkiyat</th>
+                                    <th>Onay</th>
+                                    <th>Not</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @{
+                                    foreach (var islemItem in islemler)
+                                    {
+                                        try
+                                        {
+                                            dynamic islem = islemItem;
+                                            object girisTarihi = null;
+                                            object haftaNo = null;
+                                            object urunAdi = null;
+                                            object firma = null;
+                                            object eksikMiktar = null;
+                                            object eksikDurum = null;
+                                            object acilMi = false;
+                                            object sevkTarihi = null;
+                                            object sevkMiktari = null;
+                                            object sevkiyatDurum = null;
+                                            object subeOnayTarihi = null;
+                                            object eksikNotu = null;
+
+                                            try { girisTarihi = islem.GirisTarihi; } catch { }
+                                            try { haftaNo = islem.HaftaNo; } catch { }
+                                            try { urunAdi = islem.UrunAdi; } catch { }
+                                            try { firma = islem.Firma; } catch { }
+                                            try { eksikMiktar = islem.EksikMiktar; } catch { }
+                                            try { eksikDurum = islem.EksikDurum; } catch { }
+                                            try { acilMi = islem.AcilMi; } catch { acilMi = false; }
+                                            try { sevkTarihi = islem.SevkTarihi; } catch { }
+                                            try { sevkMiktari = islem.SevkMiktari; } catch { }
+                                            try { sevkiyatDurum = islem.SevkiyatDurum; } catch { }
+                                            try { subeOnayTarihi = islem.SubeOnayTarihi; } catch { }
+                                            try { eksikNotu = islem.EksikNotu; } catch { }
+
+                                            <tr>
+                                                <td>
+                                                    @{
+                                                        if (girisTarihi != null)
+                                                        {
+                                                            DateTime dt = (DateTime)girisTarihi;
+                                                            string formatted = dt.ToString("dd.MM.yyyy HH:mm");
+                                                            <text><strong>@formatted</strong></text>
+                                                        }
+                                                        else
+                                                        {
+                                                            <text>-</text>
+                                                        }
+                                                    }
+                                                </td>
+                                                <td>
+                                                    @{
+                                                        if (haftaNo != null)
+                                                        {
+                                                            <text>@haftaNo</text>
+                                                        }
+                                                        else
+                                                        {
+                                                            <text>-</text>
+                                                        }
+                                                    }
+                                                </td>
+                                                <td>
+                                                    @{
+                                                        if (urunAdi != null)
+                                                        {
+                                                            <text>@urunAdi</text>
+                                                        }
+                                                        else
+                                                        {
+                                                            <text>-</text>
+                                                        }
+                                                    }
+                                                </td>
+                                                <td>
+                                                    @{
+                                                        if (firma != null && !string.IsNullOrEmpty(firma.ToString()))
+                                                        {
+                                                            <text>@Html.Raw($"<span class='badge bg-info'>{firma}</span>")</text>
+                                                        }
+                                                        else
+                                                        {
+                                                            <text>-</text>
+                                                        }
+                                                    }
+                                                </td>
+                                                <td class="text-center">
+                                                    @{
+                                                        if (eksikMiktar != null)
+                                                        {
+                                                            <text><strong>@eksikMiktar</strong></text>
+                                                        }
+                                                        else
+                                                        {
+                                                            <text>-</text>
+                                                        }
+                                                    }
+                                                </td>
+                                                <td>
+                                                    @{
+                                                        string eksikDurumStr = eksikDurum?.ToString() ?? "";
+                                                        string badgeClass = "secondary";
+                                                        if (eksikDurumStr == "Tamamlandi")
+                                                            badgeClass = "success";
+                                                        else if (eksikDurumStr == "SevkEdildi")
+                                                            badgeClass = "info";
+                                                        else if (!string.IsNullOrEmpty(eksikDurumStr))
+                                                            badgeClass = "warning";
+                                                        
+                                                        if (!string.IsNullOrEmpty(eksikDurumStr))
+                                                        {
+                                                            <text>@Html.Raw($"<span class='badge bg-{badgeClass}'>{eksikDurumStr}</span>")</text>
+                                                        }
+                                                        else
+                                                        {
+                                                            <text>-</text>
+                                                        }
+                                                    }
+                                                </td>
+                                                <td>
+                                                    @{
+                                                        bool acilMiBool = false;
+                                                        try { acilMiBool = (bool)acilMi; } catch { acilMiBool = false; }
+                                                        
+                                                        if (acilMiBool)
+                                                        {
+                                                            <text>@Html.Raw("<span class='badge bg-danger'>Acil</span>")</text>
+                                                        }
+                                                        else
+                                                        {
+                                                            <text>-</text>
+                                                        }
+                                                    }
+                                                </td>
+                                                <td>
+                                                    @{
+                                                        DateTime? sevkTarihiVal = null;
+                                                        try { sevkTarihiVal = (DateTime?)sevkTarihi; } catch { }
+                                                        
+                                                        if (sevkTarihiVal.HasValue)
+                                                        {
+                                                            string formattedSevkTarihi = sevkTarihiVal.Value.ToString("dd.MM.yyyy HH:mm");
+                                                            <text><strong>@formattedSevkTarihi</strong></text>
+                                                        }
+                                                        else
+                                                        {
+                                                            <text>-</text>
+                                                        }
+                                                    }
+                                                </td>
+                                                <td class="text-center">
+                                                    @{
+                                                        decimal sevkMiktariVal = 0;
+                                                        try { sevkMiktariVal = (decimal)sevkMiktari; } catch { }
+                                                        
+                                                        if (sevkMiktariVal > 0)
+                                                        {
+                                                            <text><strong>@sevkMiktariVal</strong></text>
+                                                        }
+                                                        else
+                                                        {
+                                                            <text>-</text>
+                                                        }
+                                                    }
+                                                </td>
+                                                <td>
+                                                    @{
+                                                        string sevkiyatDurumStr = sevkiyatDurum?.ToString() ?? "";
+                                                        if (!string.IsNullOrEmpty(sevkiyatDurumStr))
+                                                        {
+                                                            string badgeClass2 = "secondary";
+                                                            if (sevkiyatDurumStr == "TeslimEdildi")
+                                                                badgeClass2 = "success";
+                                                            else if (sevkiyatDurumStr == "OnayBekliyor")
+                                                                badgeClass2 = "warning";
+                                                            
+                                                            <text>@Html.Raw($"<span class='badge bg-{badgeClass2}'>{sevkiyatDurumStr}</span>")</text>
+                                                        }
+                                                        else
+                                                        {
+                                                            <text>-</text>
+                                                        }
+                                                    }
+                                                </td>
+                                                <td>
+                                                    @{
+                                                        DateTime? subeOnayTarihiVal = null;
+                                                        try { subeOnayTarihiVal = (DateTime?)subeOnayTarihi; } catch { }
+                                                        
+                                                        if (subeOnayTarihiVal.HasValue)
+                                                        {
+                                                            string formattedSubeOnayTarihi = subeOnayTarihiVal.Value.ToString("dd.MM.yyyy HH:mm");
+                                                            <text><strong>@formattedSubeOnayTarihi</strong></text>
+                                                        }
+                                                        else
+                                                        {
+                                                            <text>-</text>
+                                                        }
+                                                    }
+                                                </td>
+                                                <td>
+                                                    @{
+                                                        string notStr = eksikNotu?.ToString() ?? "";
+                                                        if (!string.IsNullOrEmpty(notStr))
+                                                        {
+                                                            string displayText = notStr.Length > 20 ? notStr.Substring(0, 20) + "..." : notStr;
+                                                            <text>@Html.Raw($"<small title='{System.Net.WebUtility.HtmlEncode(notStr)}'>{System.Net.WebUtility.HtmlEncode(displayText)}</small>")</text>
+                                                        }
+                                                        else
+                                                        {
+                                                            <text>-</text>
+                                                        }
+                                                    }
+                                                </td>
+                                            </tr>
+                                        }
+                                        catch
+                                        {
+                                            <!-- Satır işlemesi başarısız, atla -->
+                                        }
+                                    }
+                                }
+                        </table>
+                    </div>
+                    <div class="mt-4">
+                        <div class="alert alert-light border border-secondary">
+                            <strong class="text-secondary">📊 Toplam Kayıt:</strong> <span class="badge bg-info">@islemler.Count</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-info alert-dismissible fade show mt-4" role="alert">
+                <strong>ℹ️ Bilgi:</strong> Verileri görmek için filtreleri doldurup "Filtrele" butonuna tıklayınız.
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+    }
+
+    <!-- Navigation -->
+    <div class="mt-5 mb-4">
+        <a href="/RaporSts/Index" class="btn btn-secondary">← Raporlara Dön</a>
+    </div>
+</div>
+
+<script>
+    document.getElementById('baslangicTarihi').addEventListener('change', function() {
+        var bitisTarihiInput = document.getElementById('bitisTarihi');
+        if (bitisTarihiInput.value && this.value > bitisTarihiInput.value) {
+            bitisTarihiInput.value = this.value;
+        }
+        bitisTarihiInput.min = this.value;
+    });
+
+    document.getElementById('bitisTarihi').addEventListener('change', function() {
+        var baslangicTarihiInput = document.getElementById('baslangicTarihi');
+        if (baslangicTarihiInput.value && this.value < baslangicTarihiInput.value) {
+            baslangicTarihiInput.value = this.value;
+        }
+    });
+</script>

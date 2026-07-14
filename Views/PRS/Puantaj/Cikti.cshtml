@@ -1,0 +1,212 @@
+@{
+    ViewData["Title"] = "Puantaj Çıktı";
+    Layout = null;
+    var yil = (int)ViewBag.Yil;
+    var ay = (int)ViewBag.Ay;
+    var birim = (string)ViewBag.Birim;
+    var rol = (string)(ViewBag.Rol ?? "birim_amiri");
+}
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Puantaj Çıktısı</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Calibri', 'Segoe UI', Tahoma, Arial, sans-serif; background: #e9ecef; padding: 40px 20px; display: flex; justify-content: center; }
+        .excel-container { max-width: 1400px; width: 100%; background: white; box-shadow: 0 10px 40px rgba(0,0,0,0.1); padding: 40px 30px; border-radius: 4px; }
+        .puantaj-table { width: 100%; border-collapse: collapse; font-family: 'Calibri', 'Segoe UI', Tahoma, sans-serif; font-size: 10pt; margin-top: 20px; }
+        .puantaj-table th, .puantaj-table td { border: 1px solid #000000; padding: 6px 4px; text-align: center; vertical-align: middle; }
+        .puantaj-table th { background-color: #f0f0f0; font-weight: bold; font-size: 10pt; }
+        .personel-info { text-align: left !important; font-weight: 500; background-color: #fafafa; }
+        .total-cell { background-color: #f5f5f5; font-weight: bold; }
+        .hakkedis-cell { background-color: #e8f4f8; font-weight: bold; }
+        .weekend { background-color: #f9f9f9; }
+        .main-title { text-align: center; font-size: 18pt; font-weight: bold; margin-bottom: 8px; }
+        .sub-title { text-align: center; font-size: 12pt; font-weight: normal; color: #555; margin-bottom: 5px; }
+        .date-info { text-align: center; font-size: 11pt; font-weight: normal; margin-top: 5px; margin-bottom: 20px; font-style: italic; }
+        .signature-area { margin-top: 50px; display: flex; justify-content: space-around; align-items: flex-end; }
+        .signature-box { text-align: center; width: 30%; }
+        .signature-line { border-top: 1px solid #000; margin-top: 40px; margin-bottom: 8px; width: 100%; }
+        .signature-title { font-size: 10pt; font-weight: bold; margin-bottom: 5px; }
+        .signature-name { font-size: 9pt; margin-bottom: 5px; }
+        .legend-print { margin-top: 20px; margin-bottom: 20px; font-size: 8pt; border: none; padding: 0; background: transparent; }
+        .legend-item { display: none; }
+        .legend-color { display: none; }
+        @@media print {
+            body { background: white; padding: 0; margin: 0; }
+            .excel-container { padding: 20px; box-shadow: none; }
+            .no-print { display: none !important; }
+            .puantaj-table th, .puantaj-table td { border: 1px solid #000 !important; }
+        }
+        .button-group { text-align: right; margin-bottom: 20px; }
+        .print-btn { background: #2a5298; color: white; border: none; padding: 10px 24px; font-size: 14px; border-radius: 6px; cursor: pointer; margin-left: 10px; display: inline-block; text-decoration: none; }
+        .print-btn:hover { background: #1e3c72; }
+        .excel-btn { background: #28a745; }
+        .excel-btn:hover { background: #218838; }
+        .back-btn { background: #6c757d; }
+        .back-btn:hover { background: #5a6268; }
+        .loading { text-align: center; padding: 60px; font-size: 16pt; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="excel-container" id="excelContainer">
+        <div class="button-group no-print">
+            <a href="/Puantaj" class="print-btn back-btn">🔙 Puantaj Sayfasına Dön</a>
+            <button class="print-btn" onclick="window.print();">🖨️ Yazdır / PDF Kaydet</button>
+            <button class="print-btn excel-btn" onclick="exportToExcel();">📎 Excel İndir</button>
+        </div>
+
+        <div class="main-title">GAMABEL YATIRIM LTD</div>
+        <div class="sub-title">PERSONEL PUANTAJ ÇİZELGESİ</div>
+        <div class="date-info" id="dateInfo">Yükleniyor...</div>
+
+        <div style="height: 20px;"></div>
+
+        <div id="loadingArea" class="loading">⏳ Veriler yükleniyor...</div>
+
+        <table class="puantaj-table" id="puantajTable" style="display:none;">
+            <thead id="tableHeader"></thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+
+        <div style="height: 30px;"></div>
+
+        <div class="signature-area" id="signatureArea" style="display:none;">
+            <div class="signature-box">
+                <div class="signature-title">BİRİM SORUMLUSU</div>
+                <div class="signature-line"></div>
+                <div class="signature-name">[Adı Soyadı]</div>
+                <div style="font-size: 8pt; color: #666;">İmza</div>
+            </div>
+
+            <div class="signature-box">
+                <div class="signature-title">BAŞKAN</div>
+                <div class="signature-line"></div>
+                <div class="signature-name">[Adı Soyadı]</div>
+                <div style="font-size: 8pt; color: #666;">İmza / Onay</div>
+            </div>
+        </div>
+
+        <div class="legend-print" id="legendArea" style="display:none;">
+            <div style="font-size: 8pt;">Açıklamalar: Çalıştı (X), Yıllık İzin (İ), Görev İzni (Gİ), Çocuk Hastalık (ÇH), Vefat İzni (Vİ), Özel İzin (Öİ), Hastalık (H) - 30 Gün Bazlı Hakediş Hesaplanmıştır</div>
+        </div>
+    </div>
+
+    <script>
+        var currentYear = @yil;
+        var currentMonth = @ay;
+        var seciliBirim = '@Html.Raw(birim ?? "all")';
+        var izinTurleri = ['İ', 'Gİ', 'ÇH', 'Vİ', 'Öİ', 'H'];
+        var personeller = [];
+        var calismaVerileri = {};
+
+        function getMonthName(m) {
+            return ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'][m-1];
+        }
+        function isWeekend(y, m, d) { var dt = new Date(y, m-1, d); return dt.getDay()===0||dt.getDay()===6; }
+        function getDurumDisplay(d) { return {'X':'X','İ':'İ','Gİ':'Gİ','ÇH':'ÇH','Vİ':'Vİ','Öİ':'Öİ','H':'H'}[d]||'X'; }
+        function getDurumBgColor(d) {
+            return {'X':'#d4edda','İ':'#fff3cd','Gİ':'#ffe5d0','ÇH':'#d1f7e9','Vİ':'#e2d9f3','Öİ':'#f8d7e6','H':'#f8d7da'}[d]||'white';
+        }
+        function calculateHakkedis(pid) {
+            var toplamIzin=0, data=calismaVerileri[pid]||{};
+            for (var g=1;g<=30;g++) { var d=data[g]; if(d&&izinTurleri.indexOf(d)>=0) toplamIzin++; }
+            return Math.max(0,30-toplamIzin);
+        }
+
+        function loadData() {
+            document.getElementById('dateInfo').innerHTML = 'BİRİM ADI PUANTAJ CETVELİ';
+
+            fetch('/Puantaj/GetPersoneller?birim=' + encodeURIComponent(seciliBirim))
+                .then(function(r){return r.json();})
+                .then(function(data){
+                    if (data.hata) { document.getElementById('loadingArea').innerHTML='❌ Hata: '+data.hata; return; }
+                    personeller = data;
+                    return fetch('/Puantaj/GetIzinler?yil='+currentYear+'&ay='+currentMonth);
+                })
+                .then(function(r){return r.json();})
+                .then(function(data){
+                    if (data.hata) { document.getElementById('loadingArea').innerHTML='❌ Hata: '+data.hata; return; }
+                    calismaVerileri = {};
+                    for (var i=0; i<data.length; i++) {
+                        var iz = data[i];
+                        if (!calismaVerileri[iz.personelId]) calismaVerileri[iz.personelId] = {};
+                        calismaVerileri[iz.personelId][iz.gun] = iz.izinTipi;
+                    }
+                    renderTable();
+                    document.getElementById('loadingArea').style.display = 'none';
+                    document.getElementById('puantajTable').style.display = 'table';
+                    document.getElementById('signatureArea').style.display = 'flex';
+                    document.getElementById('legendArea').style.display = 'flex';
+                })
+                .catch(function(){ document.getElementById('loadingArea').innerHTML='❌ Veri alınamadı'; });
+        }
+
+        function renderTable() {
+            var gunSayisi = 30;
+            var hdr = '<tr><th style="width:180px">PERSONEL ADI SOYADI</th>';
+            for (var i=1;i<=gunSayisi;i++) {
+                var wk = isWeekend(currentYear,currentMonth,i);
+                hdr += '<th style="width:40px" class="'+(wk?'weekend':'')+'">'+i+'</th>';
+            }
+            hdr += '<th style="width:45px">X</th><th style="width:45px">İ</th><th style="width:45px">H</th><th style="width:60px">HAKEDİŞ<br>(30 Gün)</th></tr>';
+            document.getElementById('tableHeader').innerHTML = hdr;
+
+            var body = '';
+            var filtered = seciliBirim==='all' ? personeller : personeller.filter(function(p){return p.birim===seciliBirim;});
+
+            filtered.forEach(function(p) {
+                var tX=0, tI=0, tH=0;
+                body += '<tr>';
+                body += '<td class="personel-info">'+p.ad+' '+p.soyad+'</td>';
+                for (var gun=1;gun<=gunSayisi;gun++) {
+                    var durum = (calismaVerileri[p.id] && calismaVerileri[p.id][gun]) || 'X';
+                    var disp = getDurumDisplay(durum);
+                    var bg = getDurumBgColor(durum);
+                    if (durum==='X') tX++;
+                    else if (durum==='H') tH++;
+                    else if (izinTurleri.indexOf(durum)>=0) tI++;
+                    var wk = isWeekend(currentYear,currentMonth,gun);
+                    body += '<td class="'+(wk?'weekend':'')+'" style="background-color:'+bg+'">'+disp+'</td>';
+                }
+                var hak = calculateHakkedis(p.id);
+                body += '<td class="total-cell">'+tX+'</td>';
+                body += '<td class="total-cell">'+tI+'</td>';
+                body += '<td class="total-cell">'+tH+'</td>';
+                body += '<td class="hakkedis-cell">'+hak+'</td>';
+                body += '</tr>';
+            });
+            document.getElementById('tableBody').innerHTML = body;
+        }
+
+        function exportToExcel() {
+            var ba = seciliBirim==='all'?'TumBirimler':seciliBirim;
+            var fn = 'Puantaj_'+ba+'_'+getMonthName(currentMonth)+'_'+currentYear+'.xls';
+            var excelHtml = '<html><head><meta charset="UTF-8"><style>';
+            excelHtml += 'th, td { border: 1px solid #000; padding: 6px 4px; text-align: center; vertical-align: middle; }';
+            excelHtml += 'th { background-color: #f0f0f0; font-weight: bold; }';
+            excelHtml += '.personel-info { text-align: left; }';
+            excelHtml += '.total-cell { background-color: #f5f5f5; }';
+            excelHtml += '.hakkedis-cell { background-color: #e8f4f8; }';
+            excelHtml += '</style></head><body>';
+            excelHtml += '<div style="text-align:center;font-size:18pt;font-weight:bold;">GAMABEL YATIRIM LTD</div>';
+            excelHtml += '<div style="text-align:center;font-size:12pt;">PERSONEL PUANTAJ ÇİZELGESİ</div>';
+            excelHtml += '<div style="text-align:center;font-size:11pt;font-style:italic;margin:10px 0 20px 0;">BİRİM ADI PUANTAJ CETVELİ</div>';
+            excelHtml += document.getElementById('puantajTable').outerHTML;
+            excelHtml += '</body></html>';
+
+            var blob = new Blob([excelHtml], {type:'application/vnd.ms-excel'});
+            var a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = fn;
+            a.click();
+            URL.revokeObjectURL(a.href);
+        }
+
+        loadData();
+    </script>
+</body>
+</html>

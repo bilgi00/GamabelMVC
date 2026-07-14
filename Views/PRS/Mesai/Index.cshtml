@@ -1,0 +1,888 @@
+@{
+    ViewData["Title"] = "Ek Mesai Çizelgesi";
+    Layout = "_Layout";
+}
+
+<style>
+    /* Tam Genişlik Sayfa */
+    .mesai-container { width: 100%; padding: 0 20px; margin: 0 auto; box-sizing: border-box; }
+    
+    /* Header Gradient */
+    .mesai-header { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); }
+    
+    /* Tablo Stilleri */
+    .mesai-table { min-width: 1000px; font-size: 0.875rem; border-radius: 0; }
+    .mesai-table td { padding: 0.375rem 0.5rem; }
+    .readonly-cell { background-color: #f5f5f5; font-weight: 600; font-size: 0.6875rem; }
+    .mesai-table input[type="date"] { width: 95px; }
+    .mesai-table input[type="time"] { width: 85px; }
+    
+    /* İmza Alanı */
+    .signature-box { text-align: center; flex: 1 1 45%; min-width: 200px; }
+    .signature-line { border-top: 1px solid #000; margin: 2.5rem 0 0.25rem 0; height: 40px; }
+    .signature-title { font-size: 0.6875rem; font-weight: bold; margin-bottom: 0.25rem; }
+    
+    /* Animasyonlar */
+    .toast-msg { animation: slideIn 0.3s ease; }
+    @@keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    @@keyframes popupIn { from { transform: scale(0.7); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    
+    /* Print Ayarları */
+    @@print {
+        .no-print { display: none !important; }
+        .navbar, footer { display: none !important; }
+    }
+
+</style>
+
+<!-- Ay Kilitli Popup Modal -->
+<div class="modal" id="kilitPopupOverlay" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-danger">
+                <h5 class="modal-title text-danger">🔒 Ay Kilitli</h5>
+                <button type="button" class="btn-close" id="kilitPopupBtn"></button>
+            </div>
+            <div class="modal-body text-center">
+                <p id="kilitPopupMesaj" class="text-muted"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" id="kilitPopupBtn2" data-bs-dismiss="modal">Tamam</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mesai-container mt-3">
+    <!-- Başlık -->
+    <div class="mesai-header p-3 rounded-top">
+        <h4 class="mb-1 text-white">EK MESAİ ÇİZELGESİ</h4>
+        <p class="mb-0 text-white-50">Personel mesai takip formu - Çalışma saatleri otomatik hesaplanır</p>
+    </div>
+
+    <!-- Kontroller -->
+    <div class="mesai-controls bg-light border-start border-end p-3 no-print">
+        <div class="d-flex flex-wrap gap-2 align-items-center flex-grow-1">
+            <select id="birimSelect" class="form-select form-select-sm" style="width:auto; max-width:200px;" @(ViewBag.Rol != "admin" ? "disabled" : "")>
+                @if (ViewBag.Rol == "admin")
+                {
+                    <option value="">-- Birim --</option>
+                    <option value="all">Tüm Personeller</option>
+                }
+                @if (ViewBag.Birimler != null)
+                {
+                    @foreach (string birim in ViewBag.Birimler)
+                    {
+                        if (ViewBag.Rol != "admin")
+                        {
+                            @:<option value="@birim" selected>@birim</option>
+                        }
+                        else
+                        {
+                            @:<option value="@birim">@birim</option>
+                        }
+                    }
+                }
+            </select>
+            <select id="yearSelect" class="form-select form-select-sm" style="width:auto; max-width:100px;"></select>
+            <select id="monthSelect" class="form-select form-select-sm" style="width:auto; max-width:120px;">
+                <option value="1">Ocak</option><option value="2">Şubat</option><option value="3">Mart</option>
+                <option value="4">Nisan</option><option value="5">Mayıs</option><option value="6">Haziran</option>
+                <option value="7">Temmuz</option><option value="8">Ağustos</option><option value="9">Eylül</option>
+                <option value="10">Ekim</option><option value="11">Kasım</option><option value="12">Aralık</option>
+            </select>
+            <button class="btn btn-sm btn-primary" id="btnYukle">Yükle</button>
+        </div>
+        <div class="d-flex flex-wrap gap-2 justify-content-end">
+            <button class="btn btn-sm btn-warning text-dark" id="btnSatirEkle" disabled>+ Satır Ekle (Tüm)</button>
+            <button class="btn btn-sm btn-warning text-dark" id="btnSatirEkleBirim" disabled>+ Satır (Birim)</button>
+            <button class="btn btn-sm btn-success" id="btnKaydet" disabled>Kaydet</button>
+            <button type="button" class="btn btn-sm btn-danger" id="btnBirimPdf" disabled>PDF (Birim)</button>
+            <button type="button" class="btn btn-sm btn-danger" id="btnPersonelPdf" disabled>PDF (Personel)</button>
+        </div>
+    </div>
+
+    <!-- Tablo -->
+    <div class="table-responsive border-start border-end">
+        <table class="mesai-table table table-sm table-bordered mb-0" id="mesaiTable">
+            <thead class="table-light">
+                <tr>
+                    <th style="width:140px;">Adı Soyadı</th>
+                    <th style="width:100px;">Tarih</th>
+                    <th style="width:80px;">Gün</th>
+                    <th style="width:100px;">Başlangıç</th>
+                    <th style="width:100px;">Bitiş</th>
+                    <th style="width:80px;">Fiili (Saat)</th>
+                    <th style="width:75px;">Zam 0.1</th>
+                    <th style="width:75px;">Zam 0.5</th>
+                    <th style="width:85px;">TOPLAM</th>
+                    <th style="width:150px;">Açıklama</th>
+                    <th style="width:40px;" class="no-print">İşlem</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+            <tfoot>
+                <tr class="table-secondary fw-bold">
+                    <td colspan="6" class="text-end" style="width:600px">GENEL TOPLAM</td>
+                    <td id="tfFiili" style="width:80px">0</td>
+                    <td id="tfZam01" style="width:75px">0</td>
+                    <td id="tfZam05" style="width:75px">0</td>
+                    <td id="tfToplam" style="width:85px">0</td>
+                    <td style="width:150px;"></td>
+                    <td class="no-print" style="width:40px;"></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+    <!-- İmza Alanı -->
+    <div class="d-flex gap-3 p-4 border-start border-end border-bottom justify-content-between flex-wrap">
+        <div class="signature-box">
+            <div class="signature-title">BİRİM SORUMLUSU</div>
+            <div class="signature-line"></div>
+            <small>Adı Soyadı / İmza</small>
+        </div>
+        <div class="signature-box">
+            <div class="signature-title">BAŞKAN / ONAY</div>
+            <div class="signature-line"></div>
+            <small>Adı Soyadı / İmza</small>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="bg-light border p-3 rounded-bottom d-flex justify-content-between flex-wrap gap-3 small text-muted">
+        <span>AÇIKLAMA: Zam 0.1 = Fiili Saat x 0,1 (hafta içi) | Zam 0.5 = Fiili Saat x 0,5 (Hafta sonu + Resmi Tatil)</span>
+        <span>Toplam Mesai: <strong id="footerToplam">0</strong> saat</span>
+    </div>
+</div>
+
+<!-- Satır Ekleme Modalı -->
+<div class="modal fade" id="satirEkleModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold">Mesai Satırı Ekle</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Personel</label>
+                    <select id="modalPersonel" class="form-select"></select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Tarih</label>
+                    <input type="date" id="modalTarih" class="form-control" />
+                </div>
+                <div class="row mb-3">
+                    <div class="col">
+                        <label class="form-label fw-bold">Başlangıç</label>
+                        <input type="time" id="modalBaslangic" class="form-control" value="17:00" />
+                    </div>
+                    <div class="col">
+                        <label class="form-label fw-bold">Bitiş</label>
+                        <input type="time" id="modalBitis" class="form-control" value="22:00" />
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Açıklama</label>
+                    <input type="text" id="modalAciklama" class="form-control" placeholder="İsteğe bağlı açıklama" />
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                <button type="button" class="btn btn-success" id="btnModalEkle">Ekle</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+(function() {
+    var personelListesi = [];
+    var mesaiKayitlari = [];
+    var currentBirim = '';
+    var saatlikBrut = 0;
+    var resmiTatiller = {};
+
+    var gunAdlari = ['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'];
+    var ayAdlari = ['','Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+
+    // Yıl dropdown'ını doldur
+    var yearSel = document.getElementById('yearSelect');
+    var now = new Date();
+    for (var y = now.getFullYear() - 2; y <= now.getFullYear() + 1; y++) {
+        var opt = document.createElement('option');
+        opt.value = y; opt.textContent = y;
+        if (y === now.getFullYear()) opt.selected = true;
+        yearSel.appendChild(opt);
+    }
+    document.getElementById('monthSelect').value = now.getMonth() + 1;
+
+    // Saat farkı hesapla
+    function saatFarki(bas, bit) {
+        if (!bas || !bit) return 0;
+        var bp = bas.split(':').map(Number), bip = bit.split(':').map(Number);
+        var fark = (bip[0]*60 + bip[1]) - (bp[0]*60 + bp[1]);
+        if (fark < 0) fark += 1440;
+        return Math.round(fark / 60 * 100) / 100;
+    }
+
+    // Zam otomatik hesaplama
+    // Zam 0.1: Hafta içi fiili saat * 0.1
+    // Zam 0.5: Hafta sonu ve resmi tatil fiili saat * 0.5
+    function hesaplaZamlar(tarih, bas, bit) {
+        var result = { fiili: 0, zam01: 0, zam05: 0, toplam: 0 };
+        if (!tarih || !bas || !bit) return result;
+        var gun = new Date(tarih).getDay(); // 0=Pazar, 6=Cumartesi
+        var toplamSaat = saatFarki(bas, bit);
+        result.fiili = toplamSaat;
+
+        var tatilMi = resmiTatiller.hasOwnProperty(tarih);
+
+        if (gun === 0 || gun === 6 || tatilMi) {
+            // Hafta sonu veya resmi tatil: fiili saat * 0.5
+            result.zam05 = Math.round(toplamSaat * 0.5 * 100) / 100;
+            result.zam01 = 0;
+        } else {
+            // Hafta içi: fiili saat * 0.1
+            result.zam01 = Math.round(toplamSaat * 0.1 * 100) / 100;
+            result.zam05 = 0;
+        }
+        result.toplam = result.fiili + result.zam01 + result.zam05;
+        return result;
+    }
+
+    function getGunAdi(tarihStr) {
+        return gunAdlari[new Date(tarihStr).getDay()];
+    }
+
+    function escapeHtml(t) {
+        var d = document.createElement('div');
+        d.appendChild(document.createTextNode(t || ''));
+        return d.innerHTML;
+    }
+
+    function showToast(msg, type) {
+        var bg = 'bg-success';
+        if (type === 'error') bg = 'bg-danger';
+        else if (type === 'warning') bg = 'bg-warning text-dark';
+        
+        var toastHtml = '<div class="toast ' + bg + ' text-white" role="alert">' +
+            '<div class="toast-body">' + escapeHtml(msg) + '</div></div>';
+        var toastDiv = document.createElement('div');
+        toastDiv.innerHTML = toastHtml;
+        document.body.appendChild(toastDiv);
+        
+        var toastEl = toastDiv.querySelector('.toast');
+        var bsToast = new bootstrap.Toast(toastEl, { delay: 2500 });
+        bsToast.show();
+        
+        toastEl.addEventListener('hidden.bs.toast', function() {
+            toastDiv.remove();
+        });
+    }
+
+    function showKilitPopup(msg) {
+        document.getElementById('kilitPopupMesaj').textContent = msg;
+        var modal = new bootstrap.Modal(document.getElementById('kilitPopupOverlay'));
+        modal.show();
+    }
+    
+    var kilitModal = new bootstrap.Modal(document.getElementById('kilitPopupOverlay'), { backdrop: 'static', keyboard: false });
+    document.getElementById('kilitPopupBtn2').addEventListener('click', function() {
+        kilitModal.hide();
+    });
+
+    // Personelleri yükle
+    function loadPersoneller(birim, cb) {
+        fetch('/Mesai/GetPersoneller?birim=' + encodeURIComponent(birim))
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.hata) { showToast('Hata: ' + data.hata, 'error'); return; }
+                personelListesi = data;
+                if (cb) cb();
+            })
+            .catch(function() { showToast('Personel yüklenemedi', 'error'); });
+    }
+
+    // Mesai kayıtlarını yükle
+    function loadMesai() {
+        var birim = document.getElementById('birimSelect').value;
+        var yil = parseInt(document.getElementById('yearSelect').value);
+        var ay = parseInt(document.getElementById('monthSelect').value);
+        if (!birim) { showToast('Birim seçin', 'warning'); return; }
+        currentBirim = birim;
+
+        // Saatlik brüt ücreti çek
+        fetch('/Mesai/GetSaatlikBrut')
+            .then(function(r) { return r.json(); })
+            .then(function(d) { saatlikBrut = parseFloat(d.saatlikBrut) || 0; })
+            .catch(function() { saatlikBrut = 0; });
+
+        loadPersoneller(birim, function() {
+            // Önce resmi tatilleri çek
+            fetch('/Puantaj/GetResmiTatiller?yil=' + yil + '&ay=' + ay)
+                .then(function(r) { return r.json(); })
+                .then(function(tatilData) {
+                    resmiTatiller = {};
+                    if (Array.isArray(tatilData)) {
+                        for (var i = 0; i < tatilData.length; i++) {
+                            var g = tatilData[i].gun;
+                            var tarihStr = yil + '-' + String(ay).padStart(2,'0') + '-' + String(g).padStart(2,'0');
+                            resmiTatiller[tarihStr] = tatilData[i].tatilAdi;
+                        }
+                    }
+                    return fetch('/Mesai/GetMesaiKayitlari?yil=' + yil + '&ay=' + ay + '&birim=' + encodeURIComponent(birim));
+                })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.hata) { showToast('Hata: ' + data.hata, 'error'); return; }
+                    mesaiKayitlari = data;
+                    // Mevcut kayıtların zamlarını resmi tatillere göre yeniden hesapla
+                    for (var i = 0; i < mesaiKayitlari.length; i++) {
+                        var k = mesaiKayitlari[i];
+                        var z = hesaplaZamlar(k.tarih, k.baslangic, k.bitis);
+                        k.fiiliSaat = z.fiili;
+                        k.zam01Saat = z.zam01;
+                        k.zam05Saat = z.zam05;
+                        k.toplamSaat = z.toplam;
+                    }
+                    renderTable();
+                    document.getElementById('btnSatirEkle').disabled = false;
+                    document.getElementById('btnSatirEkleBirim').disabled = false;
+                    document.getElementById('btnKaydet').disabled = false;
+                    document.getElementById('btnBirimPdf').disabled = false;
+                    document.getElementById('btnPersonelPdf').disabled = false;
+                    var tatilSayisi = Object.keys(resmiTatiller).length;
+                    var msg = ayAdlari[ay] + ' ' + yil + ' yüklendi';
+                    if (tatilSayisi > 0) msg += ' (' + tatilSayisi + ' resmi tatil)';
+                    showToast(msg);
+                })
+                .catch(function() { showToast('Veri yüklenemedi', 'error'); });
+        });
+    }
+
+    // Tabloyu oluştur - THEAD: 11 sütun (Adı Soyadı|Tarih|Gün|Başlangıç|Bitiş|Fiili|Zam0.1|Zam0.5|TOPLAM|Açıklama|İşlem)
+    function renderTable() {
+        var tbody = document.getElementById('tableBody');
+        tbody.innerHTML = '';
+        var tfFiili = 0, tfZam01 = 0, tfZam05 = 0, tfToplam = 0;
+
+        for (var i = 0; i < mesaiKayitlari.length; i++) {
+            var k = mesaiKayitlari[i];
+            var tr = document.createElement('tr');
+            tr.setAttribute('data-idx', i);
+
+            tr.innerHTML =
+                '<td class="text-start" style="width:140px">' + escapeHtml(k.adSoyad) + '</td>' +
+                '<td style="width:100px"><input type="date" class="inp-tarih" value="' + k.tarih + '" data-idx="' + i + '"></td>' +
+                '<td style="width:80px">' + getGunAdi(k.tarih) + '</td>' +
+                '<td style="width:100px"><input type="time" class="inp-bas" value="' + k.baslangic + '" data-idx="' + i + '"></td>' +
+                '<td style="width:100px"><input type="time" class="inp-bit" value="' + k.bitis + '" data-idx="' + i + '"></td>' +
+                '<td style="width:80px" class="readonly-cell fiili-cell">' + parseFloat(k.fiiliSaat).toFixed(1) + '</td>' +
+                '<td style="width:75px" class="readonly-cell">' + parseFloat(k.zam01Saat).toFixed(1) + '</td>' +
+                '<td style="width:75px" class="readonly-cell">' + parseFloat(k.zam05Saat).toFixed(1) + '</td>' +
+                '<td style="width:85px" class="readonly-cell toplam-cell">' + parseFloat(k.toplamSaat).toFixed(1) + '</td>' +
+                '<td style="width:150px"><input type="text" class="inp-aciklama" value="' + escapeHtml(k.aciklama || '') + '" data-idx="' + i + '" style="width:110px"></td>' +
+                '<td style="width:40px" class="no-print"><button class="btn btn-sm btn-danger btn-mesai-sil" data-idx="' + i + '">X</button></td>';
+
+            tbody.appendChild(tr);
+            tfFiili += parseFloat(k.fiiliSaat);
+            tfZam01 += parseFloat(k.zam01Saat);
+            tfZam05 += parseFloat(k.zam05Saat);
+            tfToplam += parseFloat(k.toplamSaat);
+        }
+
+        document.getElementById('tfFiili').textContent = tfFiili.toFixed(1);
+        document.getElementById('tfZam01').textContent = tfZam01.toFixed(1);
+        document.getElementById('tfZam05').textContent = tfZam05.toFixed(1);
+        document.getElementById('tfToplam').textContent = tfToplam.toFixed(1);
+        document.getElementById('footerToplam').textContent = tfToplam.toFixed(1);
+
+        // Input olayları
+        tbody.querySelectorAll('.inp-bas, .inp-bit').forEach(function(el) {
+            el.addEventListener('change', function() {
+                var idx = parseInt(this.dataset.idx);
+                var row = this.closest('tr');
+                var bas = row.querySelector('.inp-bas').value;
+                var bit = row.querySelector('.inp-bit').value;
+                var tarih = mesaiKayitlari[idx].tarih;
+                mesaiKayitlari[idx].baslangic = bas;
+                mesaiKayitlari[idx].bitis = bit;
+                var z = hesaplaZamlar(tarih, bas, bit);
+                mesaiKayitlari[idx].fiiliSaat = z.fiili;
+                mesaiKayitlari[idx].zam01Saat = z.zam01;
+                mesaiKayitlari[idx].zam05Saat = z.zam05;
+                mesaiKayitlari[idx].toplamSaat = z.toplam;
+                renderTable();
+            });
+        });
+
+        tbody.querySelectorAll('.inp-tarih').forEach(function(el) {
+            el.addEventListener('change', function() {
+                var idx = parseInt(this.dataset.idx);
+                mesaiKayitlari[idx].tarih = this.value;
+                var bas = mesaiKayitlari[idx].baslangic;
+                var bit = mesaiKayitlari[idx].bitis;
+                var z = hesaplaZamlar(this.value, bas, bit);
+                mesaiKayitlari[idx].fiiliSaat = z.fiili;
+                mesaiKayitlari[idx].zam01Saat = z.zam01;
+                mesaiKayitlari[idx].zam05Saat = z.zam05;
+                mesaiKayitlari[idx].toplamSaat = z.toplam;
+                renderTable();
+            });
+        });
+
+        tbody.querySelectorAll('.inp-aciklama').forEach(function(el) {
+            el.addEventListener('change', function() {
+                var idx = parseInt(this.dataset.idx);
+                mesaiKayitlari[idx].aciklama = this.value;
+            });
+        });
+
+        tbody.querySelectorAll('.btn-mesai-sil').forEach(function(el) {
+            el.addEventListener('click', function() {
+                var idx = parseInt(this.dataset.idx);
+                if (!confirm('Bu satırı silmek istediğinize emin misiniz?')) return;
+                var kayit = mesaiKayitlari[idx];
+                if (kayit.id && kayit.id > 0) {
+                    fetch('/Mesai/SilMesai', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id: kayit.id })
+                    })
+                    .then(function(r) { return r.json(); })
+                    .then(function(d) {
+                        if (d.basarili) {
+                            mesaiKayitlari.splice(idx, 1);
+                            renderTable();
+                            showToast('Silindi');
+                        } else if (d.mesaj && d.mesaj.indexOf('kilitlenmiş') > -1) {
+                            showKilitPopup(d.mesaj);
+                        } else { showToast(d.mesaj, 'error'); }
+                    });
+                } else {
+                    mesaiKayitlari.splice(idx, 1);
+                    renderTable();
+                }
+            });
+        });
+    }
+
+    // Satır ekle modal aç - fetch personeller
+    function acPersonelModal(birim, showBirimAdi) {
+        fetch('/Mesai/GetPersoneller?birim=' + encodeURIComponent(birim))
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.hata) { showToast('Hata: ' + data.hata, 'error'); return; }
+                var sel = document.getElementById('modalPersonel');
+                sel.innerHTML = '';
+                for (var i = 0; i < data.length; i++) {
+                    var p = data[i];
+                    var o = document.createElement('option');
+                    o.value = p.id;
+                    var birimText = showBirimAdi ? ' (' + (p.birimAdi || p.birim || '') + ')' : '';
+                    o.textContent = p.ad + ' ' + p.soyad + birimText;
+                    o.dataset.gorev = p.gorev || '';
+                    sel.appendChild(o);
+                }
+                var yil = document.getElementById('yearSelect').value;
+                var ay = document.getElementById('monthSelect').value;
+                document.getElementById('modalTarih').value = yil + '-' + String(ay).padStart(2,'0') + '-01';
+                var m = new bootstrap.Modal(document.getElementById('satirEkleModal'));
+                m.show();
+            })
+            .catch(function() { showToast('Personel yüklenemedi', 'error'); });
+    }
+
+    // Yükle butonu
+    document.getElementById('btnYukle').addEventListener('click', loadMesai);
+
+    // Satır ekle (Tüm Personeller)
+    document.getElementById('btnSatirEkle').addEventListener('click', function() {
+        acPersonelModal('all', true);
+    });
+
+    // Satır ekle (Seçili Birim)
+    document.getElementById('btnSatirEkleBirim').addEventListener('click', function() {
+        var birim = document.getElementById('birimSelect').value;
+        if (!birim || birim === 'all') { showToast('Bir birim seçin', 'warning'); return; }
+        acPersonelModal(birim, false);
+    });
+
+    document.getElementById('btnModalEkle').addEventListener('click', function() {
+        var sel = document.getElementById('modalPersonel');
+        var pid = parseInt(sel.value);
+        var adSoyad = sel.options[sel.selectedIndex].textContent;
+        var gorev = sel.options[sel.selectedIndex].dataset.gorev;
+        var tarih = document.getElementById('modalTarih').value;
+        var bas = document.getElementById('modalBaslangic').value;
+        var bit = document.getElementById('modalBitis').value;
+        var aciklama = document.getElementById('modalAciklama').value;
+        if (!pid || !tarih || !bas || !bit) { showToast('Tüm alanları doldurun', 'warning'); return; }
+
+        var fiili = saatFarki(bas, bit);
+        var z = hesaplaZamlar(tarih, bas, bit);
+        mesaiKayitlari.push({
+            id: 0,
+            personelId: pid,
+            adSoyad: adSoyad,
+            tarih: tarih,
+            gorev: gorev,
+            baslangic: bas,
+            bitis: bit,
+            fiiliSaat: z.fiili,
+            zam01Saat: z.zam01,
+            zam05Saat: z.zam05,
+            toplamSaat: z.toplam,
+            aciklama: aciklama
+        });
+        renderTable();
+        document.getElementById('modalAciklama').value = '';
+        bootstrap.Modal.getInstance(document.getElementById('satirEkleModal')).hide();
+        showToast(adSoyad + ' eklendi');
+    });
+
+    // Kaydet
+    document.getElementById('btnKaydet').addEventListener('click', function() {
+        if (mesaiKayitlari.length === 0) { showToast('Kaydedilecek veri yok', 'warning'); return; }
+        var btn = this;
+        btn.disabled = true;
+        var saved = 0, total = mesaiKayitlari.length;
+
+        function saveNext(idx) {
+            if (idx >= total) {
+                btn.disabled = false;
+                showToast(saved + ' kayıt başarıyla kaydedildi');
+                loadMesai();
+                return;
+            }
+            var k = mesaiKayitlari[idx];
+            var payload = {
+                id: k.id || 0,
+                personelId: k.personelId,
+                tarih: k.tarih,
+                gorev: k.gorev || '',
+                baslangic: k.baslangic,
+                bitis: k.bitis,
+                fiiliSaat: parseFloat(k.fiiliSaat) || 0,
+                zam01Saat: parseFloat(k.zam01Saat) || 0,
+                zam05Saat: parseFloat(k.zam05Saat) || 0,
+                toplamSaat: parseFloat(k.toplamSaat) || 0,
+                aciklama: k.aciklama || ''
+            };
+            fetch('/Mesai/KaydetMesai', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                if (d.basarili) { saved++; mesaiKayitlari[idx].id = d.id; }
+                else if (d.mesaj && d.mesaj.indexOf('kilitlenmiş') > -1) { showKilitPopup(d.mesaj); btn.disabled = false; return; }
+                else { showToast(d.mesaj, 'error'); }
+                saveNext(idx + 1);
+            })
+            .catch(function() { showToast('Kayıt hatası', 'error'); saveNext(idx + 1); });
+        }
+        saveNext(0);
+    });
+
+
+
+    function renderMesaiPdfBirim() {
+        var ay = parseInt(document.getElementById('monthSelect').value);
+        var yil = document.getElementById('yearSelect').value;
+        var birim = document.getElementById('birimSelect').value || '-';
+        var birimYazi = birim === 'all' ? 'Tüm Personeller' : birim;
+
+        var pdfDiv = document.createElement('div');
+        pdfDiv.style.cssText = 'width:1000px;padding:25px;font-family:Arial,sans-serif;background:white;color:#222;margin:0 auto;';
+
+        var toplamFiili = 0;
+        var toplamZam01 = 0;
+        var toplamZam05 = 0;
+        var toplamSaat = 0;
+
+        var html = '';
+        html += '<div style="text-align:center;margin-bottom:14px;">';
+        html += '<div style="font-size:18px;font-weight:700;color:#1e3c72;">GAMABEL YATIRIM LTD</div>';
+        html += '<div style="font-size:16px;font-weight:700;margin-top:4px;color:#1e3c72;">EK MESAİ ÇİZELGESİ</div>';
+        html += '<div style="margin-top:8px;font-size:12px;">Birim: <b>' + escapeHtml(birimYazi) + '</b> | Ay: <b>' + escapeHtml(ayAdlari[ay]) + '</b> | Yıl: <b>' + escapeHtml(String(yil)) + '</b></div>';
+        html += '</div>';
+
+        html += '<table style="width:100%;border-collapse:collapse;font-size:10px;">';
+        html += '<thead>';
+        html += '<tr style="background:#e9eef8;">';
+        html += '<th style="border:1px solid #333;padding:4px;">Ad Soyad</th>';
+        html += '<th style="border:1px solid #333;padding:4px;">Tarih</th>';
+        html += '<th style="border:1px solid #333;padding:4px;">Gün</th>';
+        html += '<th style="border:1px solid #333;padding:4px;">Başlangıç</th>';
+        html += '<th style="border:1px solid #333;padding:4px;">Bitiş</th>';
+        html += '<th style="border:1px solid #333;padding:4px;">Fiili</th>';
+        html += '<th style="border:1px solid #333;padding:4px;">Zam 0.1</th>';
+        html += '<th style="border:1px solid #333;padding:4px;">Zam 0.5</th>';
+        html += '<th style="border:1px solid #333;padding:4px;">Toplam</th>';
+        html += '<th style="border:1px solid #333;padding:4px;">Açıklama</th>';
+        html += '<th style="border:1px solid #333;padding:4px;">İmza</th>';
+        html += '</tr>';
+        html += '</thead><tbody>';
+
+        for (var i = 0; i < mesaiKayitlari.length; i++) {
+            var k = mesaiKayitlari[i];
+            var gun = gunAdlari[new Date(k.tarih).getDay()];
+            var fiili = parseFloat(k.fiiliSaat) || 0;
+            var zam01 = parseFloat(k.zam01Saat) || 0;
+            var zam05 = parseFloat(k.zam05Saat) || 0;
+            var toplam = parseFloat(k.toplamSaat) || 0;
+
+            toplamFiili += fiili;
+            toplamZam01 += zam01;
+            toplamZam05 += zam05;
+            toplamSaat += toplam;
+
+            html += '<tr style="background:' + (i % 2 === 0 ? '#ffffff' : '#f5f5f5') + ';">';
+            html += '<td style="border:1px solid #333;padding:3px;">' + escapeHtml(k.adSoyad || '') + '</td>';
+            html += '<td style="border:1px solid #333;padding:3px;">' + escapeHtml(k.tarih || '') + '</td>';
+            html += '<td style="border:1px solid #333;padding:3px;">' + escapeHtml(gun || '') + '</td>';
+            html += '<td style="border:1px solid #333;padding:3px;">' + escapeHtml(k.baslangic || '') + '</td>';
+            html += '<td style="border:1px solid #333;padding:3px;">' + escapeHtml(k.bitis || '') + '</td>';
+            html += '<td style="border:1px solid #333;padding:3px;text-align:right;">' + fiili.toFixed(1) + '</td>';
+            html += '<td style="border:1px solid #333;padding:3px;text-align:right;">' + zam01.toFixed(1) + '</td>';
+            html += '<td style="border:1px solid #333;padding:3px;text-align:right;">' + zam05.toFixed(1) + '</td>';
+            html += '<td style="border:1px solid #333;padding:3px;text-align:right;">' + toplam.toFixed(1) + '</td>';
+            html += '<td style="border:1px solid #333;padding:3px;">' + escapeHtml(k.aciklama || '') + '</td>';
+            html += '</tr>';
+        }
+
+        html += '<tr style="background:#dde5f3;font-weight:700;">';
+        html += '<td colspan="5" style="border:1px solid #333;padding:4px;text-align:right;">GENEL TOPLAM</td>';
+        html += '<td style="border:1px solid #333;padding:4px;text-align:right;">' + toplamFiili.toFixed(1) + '</td>';
+        html += '<td style="border:1px solid #333;padding:4px;text-align:right;">' + toplamZam01.toFixed(1) + '</td>';
+        html += '<td style="border:1px solid #333;padding:4px;text-align:right;">' + toplamZam05.toFixed(1) + '</td>';
+        html += '<td style="border:1px solid #333;padding:4px;text-align:right;">' + toplamSaat.toFixed(1) + '</td>';
+        html += '<td style="border:1px solid #333;padding:4px;"></td>';
+        html += '</tr>';
+
+        html += '</tbody></table>';
+
+        html += '<div style="display:flex;justify-content:space-between;gap:40px;margin-top:36px;">';
+        html += '<div style="flex:1;text-align:center;">';
+        html += '<div style="font-size:11px;font-weight:700;">BİRİM SORUMLUSU</div>';
+        html += '<div style="border-top:1px solid #000;margin-top:40px;padding-top:4px;font-size:10px;">Adı Soyadı / İmza</div>';
+        html += '</div>';
+        html += '<div style="flex:1;text-align:center;">';
+        html += '<div style="font-size:11px;font-weight:700;">BELEDİYE BAŞKANI</div>';
+        html += '<div style="border-top:1px solid #000;margin-top:40px;padding-top:4px;font-size:10px;">Adı Soyadı / İmza</div>';
+        html += '</div>';
+        html += '</div>';
+
+        html += '<div style="margin-top:20px;font-size:10px;color:#666;text-align:right;">';
+        html += 'Oluşturulma: ' + new Date().toLocaleString('tr-TR');
+        html += '</div>';
+
+        pdfDiv.innerHTML = html;
+        return pdfDiv;
+    }
+
+    function renderMesaiPdfPersonel() {
+        var ay = parseInt(document.getElementById('monthSelect').value);
+        var yil = document.getElementById('yearSelect').value;
+
+        var personelGruplari = {};
+        for (var i = 0; i < mesaiKayitlari.length; i++) {
+            var kayit = mesaiKayitlari[i];
+            var ad = kayit.adSoyad || 'Adsız Personel';
+            if (!personelGruplari[ad]) {
+                personelGruplari[ad] = [];
+            }
+            personelGruplari[ad].push(kayit);
+        }
+
+        var pdfDiv = document.createElement('div');
+        pdfDiv.style.cssText = 'width:1000px;padding:25px;font-family:Arial,sans-serif;background:white;color:#222;margin:0 auto;';
+
+        var html = '';
+        html += '<div style="text-align:center;margin-bottom:14px;">';
+        html += '<div style="font-size:18px;font-weight:700;color:#1e3c72;">GAMABEL YATIRIM LTD</div>';
+        html += '<div style="font-size:16px;font-weight:700;margin-top:4px;color:#1e3c72;">EK MESAİ ÇİZELGESİ (PERSONEL BAZLI)</div>';
+        html += '<div style="margin-top:8px;font-size:12px;">Ay: <b>' + escapeHtml(ayAdlari[ay]) + '</b> | Yıl: <b>' + escapeHtml(String(yil)) + '</b></div>';
+        html += '</div>';
+
+        var adlar = Object.keys(personelGruplari).sort();
+        for (var p = 0; p < adlar.length; p++) {
+            var adSoyad = adlar[p];
+            var kayitlar = personelGruplari[adSoyad];
+            var altFiili = 0;
+            var altZam01 = 0;
+            var altZam05 = 0;
+            var altToplam = 0;
+
+            html += '<div style="margin-top:' + (p === 0 ? '0' : '18') + 'px;margin-bottom:6px;font-size:12px;font-weight:700;color:#1e3c72;">' + escapeHtml(adSoyad) + '</div>';
+            html += '<table style="width:100%;border-collapse:collapse;font-size:10px;">';
+            html += '<thead>';
+            html += '<tr style="background:#e9eef8;">';
+            html += '<th style="border:1px solid #333;padding:4px;">Tarih</th>';
+            html += '<th style="border:1px solid #333;padding:4px;">Gün</th>';
+            html += '<th style="border:1px solid #333;padding:4px;">Başlangıç</th>';
+            html += '<th style="border:1px solid #333;padding:4px;">Bitiş</th>';
+            html += '<th style="border:1px solid #333;padding:4px;">Fiili</th>';
+            html += '<th style="border:1px solid #333;padding:4px;">Zam 0.1</th>';
+            html += '<th style="border:1px solid #333;padding:4px;">Zam 0.5</th>';
+            html += '<th style="border:1px solid #333;padding:4px;">Toplam</th>';
+            html += '<th style="border:1px solid #333;padding:4px;">Açıklama</th>';
+            html += '</tr>';
+            html += '</thead><tbody>';
+
+            for (var j = 0; j < kayitlar.length; j++) {
+                var k = kayitlar[j];
+                var gun = gunAdlari[new Date(k.tarih).getDay()];
+                var fiili = parseFloat(k.fiiliSaat) || 0;
+                var zam01 = parseFloat(k.zam01Saat) || 0;
+                var zam05 = parseFloat(k.zam05Saat) || 0;
+                var toplam = parseFloat(k.toplamSaat) || 0;
+
+                altFiili += fiili;
+                altZam01 += zam01;
+                altZam05 += zam05;
+                altToplam += toplam;
+
+                html += '<tr style="background:' + (j % 2 === 0 ? '#ffffff' : '#f5f5f5') + ';">';
+                html += '<td style="border:1px solid #333;padding:3px;">' + escapeHtml(k.tarih || '') + '</td>';
+                html += '<td style="border:1px solid #333;padding:3px;">' + escapeHtml(gun || '') + '</td>';
+                html += '<td style="border:1px solid #333;padding:3px;">' + escapeHtml(k.baslangic || '') + '</td>';
+                html += '<td style="border:1px solid #333;padding:3px;">' + escapeHtml(k.bitis || '') + '</td>';
+                html += '<td style="border:1px solid #333;padding:3px;text-align:right;">' + fiili.toFixed(1) + '</td>';
+                html += '<td style="border:1px solid #333;padding:3px;text-align:right;">' + zam01.toFixed(1) + '</td>';
+                html += '<td style="border:1px solid #333;padding:3px;text-align:right;">' + zam05.toFixed(1) + '</td>';
+                html += '<td style="border:1px solid #333;padding:3px;text-align:right;">' + toplam.toFixed(1) + '</td>';
+                html += '<td style="border:1px solid #333;padding:3px;">' + escapeHtml(k.aciklama || '') + '</td>';
+                html += '</tr>';
+            }
+
+            html += '<tr style="background:#dde5f3;font-weight:700;">';
+            html += '<td colspan="4" style="border:1px solid #333;padding:4px;text-align:right;">' + escapeHtml(adSoyad) + ' ALT TOPLAM</td>';
+            html += '<td style="border:1px solid #333;padding:4px;text-align:right;">' + altFiili.toFixed(1) + '</td>';
+            html += '<td style="border:1px solid #333;padding:4px;text-align:right;">' + altZam01.toFixed(1) + '</td>';
+            html += '<td style="border:1px solid #333;padding:4px;text-align:right;">' + altZam05.toFixed(1) + '</td>';
+            html += '<td style="border:1px solid #333;padding:4px;text-align:right;">' + altToplam.toFixed(1) + '</td>';
+            html += '<td style="border:1px solid #333;padding:4px;"></td>';
+            html += '</tr>';
+            html += '</tbody></table>';
+        }
+
+        html += '<div style="display:flex;justify-content:space-between;gap:40px;margin-top:36px;">';
+        html += '<div style="flex:1;text-align:center;">';
+        html += '<div style="font-size:11px;font-weight:700;">BİRİM SORUMLUSU</div>';
+        html += '<div style="border-top:1px solid #000;margin-top:40px;padding-top:4px;font-size:10px;">Adı Soyadı / İmza</div>';
+        html += '</div>';
+        html += '<div style="flex:1;text-align:center;">';
+        html += '<div style="font-size:11px;font-weight:700;">BAŞKAN / ONAY</div>';
+        html += '<div style="border-top:1px solid #000;margin-top:40px;padding-top:4px;font-size:10px;">Adı Soyadı / İmza</div>';
+        html += '</div>';
+        html += '</div>';
+
+        html += '<div style="margin-top:20px;font-size:10px;color:#666;text-align:right;">';
+        html += 'Oluşturulma: ' + new Date().toLocaleString('tr-TR');
+        html += '</div>';
+
+        pdfDiv.innerHTML = html;
+        return pdfDiv;
+    }
+
+    function yazdirmaAlaniIleBas(pdfDiv) {
+        var container = document.createElement('div');
+        container.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:9999;background:white;overflow:auto;';
+        container.appendChild(pdfDiv);
+        document.body.appendChild(container);
+
+        var oncekiOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+
+        var temizle = function() {
+            if (container && container.parentNode) {
+                container.parentNode.removeChild(container);
+            }
+            document.body.style.overflow = oncekiOverflow;
+            window.onafterprint = null;
+        };
+
+        window.onafterprint = temizle;
+        setTimeout(function() {
+            window.print();
+            setTimeout(temizle, 1200);
+        }, 250);
+    }
+
+    function printBirimPdf() {
+        try {
+            if (!mesaiKayitlari || mesaiKayitlari.length === 0) {
+                showToast('Yazdırılacak veri yok', 'warning');
+                return;
+            }
+            var pdfDiv = renderMesaiPdfBirim();
+            yazdirmaAlaniIleBas(pdfDiv);
+        } catch (e) {
+            showToast('Birim PDF hazırlanamadı', 'error');
+        }
+    }
+
+    function printPersonelPdf() {
+        try {
+            if (!mesaiKayitlari || mesaiKayitlari.length === 0) {
+                showToast('Yazdırılacak veri yok', 'warning');
+                return;
+            }
+            var pdfDiv = renderMesaiPdfPersonel();
+            yazdirmaAlaniIleBas(pdfDiv);
+        } catch (e) {
+            showToast('Personel PDF hazırlanamadı', 'error');
+        }
+    }
+
+    window.renderMesaiPdfBirim = renderMesaiPdfBirim;
+    window.renderMesaiPdfPersonel = renderMesaiPdfPersonel;
+    window.printBirimPdf = printBirimPdf;
+    window.printPersonelPdf = printPersonelPdf;
+
+    window.guvenliYazdir = function(kaynak) {
+        if (kaynak === 'Personel') {
+            printPersonelPdf();
+            return;
+        }
+        printBirimPdf();
+    };
+
+    // PDF (Birim)
+    document.getElementById('btnBirimPdf').addEventListener('click', function(e) {
+        e.preventDefault();
+        if (mesaiKayitlari.length === 0) {
+            showToast('Yazdırılacak veri yok', 'warning');
+            return;
+        }
+        printBirimPdf();
+    });
+
+    // PDF (Personel Bazlı)
+    document.getElementById('btnPersonelPdf').addEventListener('click', function(e) {
+        e.preventDefault();
+        if (mesaiKayitlari.length === 0) {
+            showToast('Yazdırılacak veri yok', 'warning');
+            return;
+        }
+        printPersonelPdf();
+    });
+
+
+
+    // Admin değilse sayfa yüklendiğinde otomatik yükle
+    (function() {
+        var sel = document.getElementById('birimSelect');
+        if (sel.value && sel.disabled) {
+            loadMesai();
+        }
+    })();
+})();
+</script>
+}

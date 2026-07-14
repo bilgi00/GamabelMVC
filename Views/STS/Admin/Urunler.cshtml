@@ -1,0 +1,235 @@
+@{
+    ViewData["Title"] = "Ürün Yönetimi";
+}
+
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <h1>Ürün Yönetimi</h1>
+        </div>
+        <div class="col-md-6 text-end">
+            <a href="/Admin/UrunEkle" class="btn btn-success">+ Yeni Ürün Ekle</a>
+            <a href="/Admin/UrunTopluYukle" class="btn btn-info">Excel ile Toplu Giriş</a>
+        </div>
+    </div>
+
+    @if (TempData["Basari"] != null)
+    {
+        <div class="alert alert-success">@TempData["Basari"]</div>
+    }
+
+    @if (TempData["Hata"] != null)
+    {
+        <div class="alert alert-danger">@TempData["Hata"]</div>
+    }
+
+    @if (Model != null && Model.Count > 0)
+    {
+        <div class="mb-3">
+            <input type="text" id="urunArama" class="form-control" placeholder="Ürünlerde ara..." />
+        </div>
+        <div class="table-responsive">
+            <table class="table table-striped" id="urunlerTablo">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Kod</th>
+                        <th>Ürün Adı</th>
+                        <th>Firma</th>
+                        <th>Grup</th>
+                        <th>Barkod</th>
+                        <th>Birim</th>
+                        <th>Durum</th>
+                        <th>İşlem</th>
+                    </tr>
+                    <tr>
+                        <th><input type="text" class="form-control form-control-sm" placeholder="Filtrele" onkeyup="filtrele(0)" /></th>
+                        <th><input type="text" class="form-control form-control-sm" placeholder="Filtrele" onkeyup="filtrele(1)" /></th>
+                        <th><input type="text" class="form-control form-control-sm" placeholder="Filtrele" onkeyup="filtrele(2)" /></th>
+                        <th><input type="text" class="form-control form-control-sm" placeholder="Filtrele" onkeyup="filtrele(3)" /></th>
+                        <th><input type="text" class="form-control form-control-sm" placeholder="Filtrele" onkeyup="filtrele(4)" /></th>
+                        <th><input type="text" class="form-control form-control-sm" placeholder="Filtrele" onkeyup="filtrele(5)" /></th>
+                        <th></th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var urun in Model)
+                    {
+                        <tr>
+                            <td>@(string.IsNullOrWhiteSpace(urun.Kod) ? "-" : urun.Kod)</td>
+                            <td>@urun.Ad</td>
+                            <td>@(string.IsNullOrWhiteSpace(urun.Firma) ? "-" : urun.Firma)</td>
+                            <td>@(string.IsNullOrWhiteSpace(urun.Grup) ? "-" : urun.Grup)</td>
+                            <td>@(urun.Barkod ?? "-")</td>
+                            <td>@urun.Birim</td>
+                            <td>
+                                <span class="badge bg-@(urun.AktifMi ? "success" : "danger")">
+                                    @(urun.AktifMi ? "Aktif" : "Pasif")
+                                </span>
+                            </td>
+                            <td>
+                                <button type="button" class="btn btn-sm btn-warning" onclick="duzenleUrun(@urun.Id)">Düzenle</button>
+                                <button type="button" class="btn btn-sm btn-danger" onclick="silUrun(@urun.Id)">Sil</button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <script>
+            // Genel arama
+            document.getElementById('urunArama').addEventListener('keyup', function () {
+                var value = this.value.toLowerCase();
+                var rows = document.querySelectorAll('#urunlerTablo tbody tr');
+                rows.forEach(function (row) {
+                    var text = row.textContent.toLowerCase();
+                    row.style.display = text.indexOf(value) > -1 ? '' : 'none';
+                });
+            });
+
+            // Sütun filtreleme
+            window.filtrele = function (colIdx) {
+                var tablo = document.getElementById('urunlerTablo');
+                var filtre = tablo.tHead.rows[1].cells[colIdx].querySelector('input').value.toLowerCase();
+                var rows = tablo.tBodies[0].rows;
+                for (var i = 0; i < rows.length; i++) {
+                    var cell = rows[i].cells[colIdx];
+                    if (cell) {
+                        var cellText = cell.textContent.toLowerCase();
+                        rows[i].style.display = cellText.indexOf(filtre) > -1 ? '' : 'none';
+                    }
+                }
+            }
+
+            // Ürün düzenleme
+            window.duzenleUrun = function(id) {
+                fetch(`/Admin/UrunDuzenle/${id}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            alert('Hata: ' + data.error);
+                            return;
+                        }
+                        document.getElementById('editId').value = data.id;
+                        document.getElementById('editKod').value = data.kod || '';
+                        document.getElementById('editAd').value = data.ad || '';
+                        document.getElementById('editBarkod').value = data.barkod || '';
+                        document.getElementById('editBirim').value = data.birim || '';
+                        document.getElementById('editFirma').value = data.firma || '';
+                        document.getElementById('editGrup').value = data.grup || '';
+                        document.getElementById('editAktif').checked = data.aktifMi;
+                        new bootstrap.Modal(document.getElementById('duzenleModal')).show();
+                    })
+                    .catch(err => alert('Hata: ' + err.message));
+            }
+
+            // Ürün silme
+            window.silUrun = function(id) {
+                if (!confirm('Bu ürünü silmek istediğinizden emin misiniz?')) return;
+                fetch(`/Admin/SilUrun/${id}`, { method: 'POST' })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert(data.message);
+                            location.reload();
+                        } else {
+                            alert('Hata: ' + data.message);
+                        }
+                    })
+                    .catch(err => alert('Hata: ' + err.message));
+            }
+
+            // Ürün güncelleme
+            window.guncelleUrun = function() {
+                var id = document.getElementById('editId').value;
+                var kod = document.getElementById('editKod').value;
+                var ad = document.getElementById('editAd').value;
+                var barkod = document.getElementById('editBarkod').value;
+                var birim = document.getElementById('editBirim').value;
+                var firma = document.getElementById('editFirma').value;
+                var grup = document.getElementById('editGrup').value;
+                var aktif = document.getElementById('editAktif').checked;
+
+                var params = new URLSearchParams();
+                params.append('id', id);
+                params.append('kod', kod);
+                params.append('ad', ad);
+                params.append('barkod', barkod);
+                params.append('birim', birim);
+                params.append('firma', firma);
+                params.append('grup', grup);
+                params.append('aktifMi', aktif);
+
+                fetch('/Admin/UrunGuncelle', { method: 'POST', body: params })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert(data.message);
+                            bootstrap.Modal.getInstance(document.getElementById('duzenleModal')).hide();
+                            location.reload();
+                        } else {
+                            alert('Hata: ' + data.message);
+                        }
+                    })
+                    .catch(err => alert('Hata: ' + err.message));
+            }
+
+            const queryParams = new URLSearchParams(window.location.search);
+            const editId = queryParams.get('editId');
+            if (editId) {
+                window.duzenleUrun(editId);
+            }
+        </script>
+    }
+    else
+    {
+        <div class="alert alert-info">Ürün yoktur.</div>
+    }
+</div>
+
+<!-- Ürün Düzenleme Modal -->
+<div class="modal fade" id="duzenleModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Ürün Düzenleme</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editId" />
+                <div class="mb-3">
+                    <label class="form-label">Kod</label>
+                    <input type="text" class="form-control" id="editKod" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Ürün Adı *</label>
+                    <input type="text" class="form-control" id="editAd" required />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Barkod</label>
+                    <input type="text" class="form-control" id="editBarkod" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Birim *</label>
+                    <input type="text" class="form-control" id="editBirim" required />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Firma</label>
+                    <input type="text" class="form-control" id="editFirma" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Grup</label>
+                    <input type="text" class="form-control" id="editGrup" />
+                </div>
+                <div class="mb-3 form-check">
+                    <input type="checkbox" class="form-check-input" id="editAktif" />
+                    <label class="form-check-label">Aktif</label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                <button type="button" class="btn btn-primary" onclick="guncelleUrun()">Kaydet</button>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,46 @@
+@model gamabelmvc.Models.STS.StsSube
+@{
+    ViewData["Title"] = "Yeni Şube Ekle";
+}
+
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h1>Yeni Şube Ekle</h1>
+        </div>
+    </div>
+
+    <form method="post" action="/Admin/SubeEkle" class="row g-3">
+        <div class="col-md-6">
+            <label class="form-label">Şube Adı *</label>
+            <input type="text" name="Ad" class="form-control" required />
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label">Şube Kodu *</label>
+            <input type="text" name="Kod" class="form-control" required />
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label">Şube Tipi *</label>
+            <select name="Tip" class="form-select" required>
+                <option value="Magaza">Mağaza</option>
+                <option value="Depo">Depo</option>
+                <option value="Franchise">Franchise</option>
+            </select>
+        </div>
+
+        <div class="col-md-6 d-flex align-items-end">
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="AktifMi" value="true" checked>
+                <input type="hidden" name="AktifMi" value="false" />
+                <label class="form-check-label">Aktif şube</label>
+            </div>
+        </div>
+
+        <div class="col-md-12">
+            <button type="submit" class="btn btn-success">Kaydet</button>
+            <a href="/Admin/Subeler" class="btn btn-secondary">İptal</a>
+        </div>
+    </form>
+</div>

@@ -1,0 +1,178 @@
+@{
+    ViewData["Title"] = "Şube Onay";
+    var rol = ViewBag.Rol ?? "";
+    var isDepoSorumlusu = (bool?)ViewBag.IsDepoSorumlusu ?? false;
+    var depoSiparisleri = (ViewBag.DepoSiparisleri as IEnumerable<dynamic>)?.ToList() ?? new List<dynamic>();
+}
+
+<link rel="stylesheet" href="~/css/dashboard.css" asp-append-version="true" />
+
+<style>
+    .sts-table-sticky thead th {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+    }
+</style>
+
+<div class="container-fluid mt-4">
+    <div class="row mb-4 sts-mobile-title-row align-items-center">
+        <div class="col-md-12">
+            @if (isDepoSorumlusu)
+            {
+                <h1>📦 Gelen Ürünler & Depo Siparişleri - Onay</h1>
+                <p class="text-muted">Şubelerden gelen ürünleri ve depo siparişlerini onaylayın</p>
+            }
+            else
+            {
+                <h1>📦 Gelen Ürünler - Onay</h1>
+                <p class="text-muted">Ana depodan gelen ürünleri onaylayın</p>
+            }
+        </div>
+    </div>
+
+    @if (isDepoSorumlusu)
+    {
+        <div class="alert alert-info-custom mb-4">
+            <strong>ℹ️ Depo Sorumlusu Paneli:</strong> Aşağıda tüm şubelerden gelen ürünler ve depo siparişleri görüntülenmektedir.
+        </div>
+    }
+
+    @if (TempData["Basari"] != null)
+    {
+        <div class="alert alert-success">@TempData["Basari"]</div>
+    }
+
+    @if (TempData["Hata"] != null)
+    {
+        <div class="alert alert-danger">@TempData["Hata"]</div>
+    }
+
+    @if (Model != null && Model.Count > 0)
+    {
+        <div class="card mb-4">
+            <div class="card-header bg-dark text-white fw-bold">
+                @if (isDepoSorumlusu)
+                {
+                    <span>📋 Şubelerden Gelen Ürünler</span>
+                }
+                else
+                {
+                    <span>📋 Gelen Ürünler Listesi</span>
+                }
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover sts-table-sticky sts-mobile-table">
+                        <thead class="table-dark">
+                            <tr>
+                                @if (isDepoSorumlusu)
+                                {
+                                    <th>Şube</th>
+                                }
+                                <th>Ürün</th>
+                                <th>Miktar</th>
+                                <th>Durum</th>
+                                <th>Sevk Tarihi</th>
+                                <th>İşlem</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var sev in Model)
+                            {
+                                <tr>
+                                    @if (isDepoSorumlusu)
+                                    {
+                                        <td data-label="Şube">@sev.SubeAdi</td>
+                                    }
+                                    <td data-label="Ürün">@sev.UrunAdi</td>
+                                    <td data-label="Miktar">@sev.SevkMiktari</td>
+                                    <td data-label="Durum">
+                                        <span class="badge @(sev.Durum == "Yolda" ? "bg-primary" : "bg-warning text-dark")">@sev.Durum</span>
+                                    </td>
+                                    <td data-label="Sevk Tarihi">@sev.SevkTarihi.ToString("dd.MM.yyyy HH:mm")</td>
+                                    <td data-label="İşlem" class="sts-mobile-actions">
+                                        <form method="post" action="/Sevkiyat/OnayEt" style="display:inline;">
+                                            <input type="hidden" name="sevkiyatId" value="@sev.Id">
+                                            <input type="hidden" name="notu" value="Onaylandı">
+                                            <button type="submit" class="btn btn-sm btn-success">Onayla</button>
+                                        </form>
+                                        <form method="post" action="/Sevkiyat/Reddet" class="d-inline-flex ms-2 gap-1 align-items-center">
+                                            <input type="hidden" name="sevkiyatId" value="@sev.Id" />
+                                            <select name="neden" class="form-select form-select-sm" style="width: 180px;">
+                                                <option value="Yanlış Ürün">Yanlış Ürün</option>
+                                                <option value="Eksik Adet">Eksik Adet</option>
+                                                <option value="Hasarlı Ürün">Hasarlı Ürün</option>
+                                                <option value="Diğer">Diğer</option>
+                                            </select>
+                                            <button type="submit" class="btn btn-sm btn-danger">İade Et</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info text-center py-4">
+            <h5>ℹ️ Bilgi</h5>
+            Onay bekleyen ürün yok. Yeni sevkiyatlar geldiğinde burada listelenecektir.
+        </div>
+    }
+
+    @if (isDepoSorumlusu && depoSiparisleri.Any())
+    {
+        <div class="card mt-4">
+            <div class="card-header bg-warning text-dark fw-bold">
+                <span>🏭 Depo Siparişleri - Onay Bekleniyor</span>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover sts-table-sticky sts-mobile-table">
+                        <thead class="table-warning">
+                            <tr>
+                                <th>Şube</th>
+                                <th>Ürün</th>
+                                <th>Miktar</th>
+                                <th>Sipariş Tarihi</th>
+                                <th>İşlem</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var depoSiparis in depoSiparisleri)
+                            {
+                                <tr>
+                                    <td data-label="Şube">@depoSiparis.SubeAdi</td>
+                                    <td data-label="Ürün">@depoSiparis.UrunAdi</td>
+                                    <td data-label="Miktar">@depoSiparis.SevkMiktari</td>
+                                    <td data-label="Sipariş Tarihi">@depoSiparis.SevkTarihi.ToString("dd.MM.yyyy HH:mm")</td>
+                                    <td data-label="İşlem" class="sts-mobile-actions">
+                                        <form method="post" action="/Sevkiyat/OnayEt" style="display:inline;">
+                                            <input type="hidden" name="sevkiyatId" value="@depoSiparis.Id">
+                                            <input type="hidden" name="notu" value="Depo tarafından onaylandı">
+                                            <button type="submit" class="btn btn-sm btn-success">✓ Onayla</button>
+                                        </form>
+                                        <form method="post" action="/Sevkiyat/Reddet" class="d-inline-flex ms-2 gap-1 align-items-center">
+                                            <input type="hidden" name="sevkiyatId" value="@depoSiparis.Id" />
+                                            <select name="neden" class="form-select form-select-sm" style="width: 180px;">
+                                                <option value="Stok Bulunmadı">Stok Bulunmadı</option>
+                                                <option value="Kalite Sorunu">Kalite Sorunu</option>
+                                                <option value="Hatalı Sipariş">Hatalı Sipariş</option>
+                                                <option value="Diğer">Diğer</option>
+                                            </select>
+                                            <button type="submit" class="btn btn-sm btn-danger">✗ Reddet</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+</div>

@@ -1,0 +1,16 @@
+{
+  "name": "gamabelmvc",
+  "version": "1.0.0",
+  "description": "Gamabel MVC, iki ana alan içeren ASP.NET Core 9.0 uygulamasıdır: - **PRS** (Personel / Mesai / Puantaj Yönetimi) - **STS** (Sevkiyat Takip Sistemi)",
+  "main": "test-mesai.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "playwright": "^1.60.0"
+  }
+}

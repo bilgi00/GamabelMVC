@@ -1,0 +1,183 @@
+# ============================================
+# GAMABEL MVC PROJESİ - GITHUB YEDEKLEME SCRIPT'İ
+# ============================================
+
+# Renkli çıktı için fonksiyon
+function Write-ColorOutput {
+    param(
+        [string]$Message,
+        [string]$Color = "White"
+    )
+    Write-Host $Message -ForegroundColor $Color
+}
+
+Write-ColorOutput "========================================" "Cyan"
+Write-ColorOutput "  GAMABEL MVC - GitHub Yedekleme" "Yellow"
+Write-ColorOutput "========================================" "Cyan"
+
+# Proje dizinine git
+$projectPath = "E:\gamabelmvc"
+Set-Location -Path $projectPath
+Write-ColorOutput "✅ Proje dizinine gidildi: $projectPath" "Green"
+
+# ============================================
+# 1. GitHub'da repository oluşturma (İLK KEZ)
+# ============================================
+Write-ColorOutput "`n📌 1. ADIM: GitHub Repository Kontrolü" "Cyan"
+
+# Git init (ilk kez yapılıyor)
+if (-not (Test-Path ".git")) {
+    Write-ColorOutput "   📦 Git repository başlatılıyor..." "Yellow"
+    git init
+    Write-ColorOutput "   ✅ Git başlatıldı" "Green"
+} else {
+    Write-ColorOutput "   ℹ️  Git zaten başlatılmış" "Gray"
+}
+
+# ============================================
+# 2. .gitignore oluştur (İSTEĞE BAĞLI)
+# ============================================
+Write-ColorOutput "`n📌 2. ADIM: .gitignore Oluşturma" "Cyan"
+
+$gitignorePath = "$projectPath\.gitignore"
+if (-not (Test-Path $gitignorePath)) {
+    Write-ColorOutput "   📝 .gitignore dosyası oluşturuluyor..." "Yellow"
+    
+    $gitignoreContent = @"
+# Visual Studio / ASP.NET Core
+bin/
+obj/
+*.user
+*.suo
+*.pdb
+*.cache
+*.tmp
+*.log
+
+# Node modules (eğer varsa)
+node_modules/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# User-specific files
+*.rsuser
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+build/
+bld/
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# Backup files
+*.bak
+*.tmp
+*.temp
+"@
+    
+    $gitignoreContent | Out-File -FilePath $gitignorePath -Encoding UTF8
+    Write-ColorOutput "   ✅ .gitignore oluşturuldu" "Green"
+} else {
+    Write-ColorOutput "   ℹ️  .gitignore zaten var" "Gray"
+}
+
+# ============================================
+# 3. Dosyaları ekle ve commit yap
+# ============================================
+Write-ColorOutput "`n📌 3. ADIM: Dosyaları Ekleyip Commit'leme" "Cyan"
+
+Write-ColorOutput "   📂 Tüm dosyalar ekleniyor..." "Yellow"
+git add .
+
+Write-ColorOutput "   💾 Commit yapılıyor..." "Yellow"
+$commitMessage = "İlk yedekleme - gamabelmvc projesi"
+git commit -m $commitMessage
+
+if ($LASTEXITCODE -ne 0) {
+    Write-ColorOutput "   ⚠️  Commit başarısız! Değişiklik yok mu?" "Red"
+} else {
+    Write-ColorOutput "   ✅ Commit başarılı" "Green"
+}
+
+# ============================================
+# 4. GitHub'a bağlan (Remote)
+# ============================================
+Write-ColorOutput "`n📌 4. ADIM: GitHub Remote Ekleme" "Cyan"
+
+$githubUrl = "https://github.com/bilgi00/gamabel"
+
+# Remote kontrolü
+$remoteExists = git remote get-url origin 2>$null
+if (-not $remoteExists) {
+    Write-ColorOutput "   🔗 GitHub remote ekleniyor..." "Yellow"
+    git remote add origin $githubUrl
+    Write-ColorOutput "   ✅ Remote eklendi: $githubUrl" "Green"
+} else {
+    Write-ColorOutput "   ℹ️  Remote zaten mevcut" "Gray"
+}
+
+# ============================================
+# 5. GitHub'a Push (Yükleme)
+# ============================================
+Write-ColorOutput "`n📌 5. ADIM: GitHub'a Yükleme (Push)" "Cyan"
+
+Write-ColorOutput "   🚀 Dosyalar GitHub'a gönderiliyor..." "Yellow"
+
+# Ana branch adını kontrol et
+$branchName = git branch --show-current
+if (-not $branchName) {
+    $branchName = "main"
+    git checkout -b main
+}
+
+Write-ColorOutput "   📌 Branch: $branchName" "Gray"
+
+# Push işlemi
+git push -u origin $branchName
+
+if ($LASTEXITCODE -eq 0) {
+    Write-ColorOutput "`n========================================" "Cyan"
+    Write-ColorOutput "  ✅ YEDEKLEME BAŞARILI! 🎉" "Green"
+    Write-ColorOutput "========================================" "Cyan"
+    Write-ColorOutput "  📦 Proje: gamabelmvc" "Yellow"
+    Write-ColorOutput "  🔗 URL: https://github.com/bilgi00/gamabel" "Yellow"
+    Write-ColorOutput "  📅 Tarih: $(Get-Date)" "Yellow"
+    Write-ColorOutput "========================================" "Cyan"
+} else {
+    Write-ColorOutput "`n========================================" "Red"
+    Write-ColorOutput "  ❌ YEDEKLEME BAŞARISIZ!" "Red"
+    Write-ColorOutput "========================================" "Red"
+    Write-ColorOutput "  ⚠️  Hata oluştu. Lütfen kontrol edin:" "Yellow"
+    Write-ColorOutput "  1. GitHub'da repository oluşturdunuz mu?" "Yellow"
+    Write-ColorOutput "  2. İnternet bağlantınız var mı?" "Yellow"
+    Write-ColorOutput "  3. GitHub kimlik bilgileriniz doğru mu?" "Yellow"
+    Write-ColorOutput "========================================" "Red"
+}
+
+# ============================================
+# 6. Son Durum
+# ============================================
+Write-ColorOutput "`n📌 6. ADIM: Son Durum" "Cyan"
+Write-ColorOutput "   📊 Git durumu:" "Yellow"
+git status
+
+Write-ColorOutput "`n💡 İleride güncelleme yapmak için:" "Yellow"
+Write-ColorOutput "   git add ." "Cyan"
+Write-ColorOutput "   git commit -m 'Güncelleme mesajı'" "Cyan"
+Write-ColorOutput "   git push" "Cyan"
+
+Write-ColorOutput "`n🔄 Başka bir sistemden çekmek için:" "Yellow"
+Write-ColorOutput "   git clone https://github.com/bilgi00/gamabel" "Cyan"
+
+Read-Host "`nİşlem tamamlandı. Devam etmek için Enter'a basın..."

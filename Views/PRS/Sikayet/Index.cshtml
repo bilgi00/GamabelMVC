@@ -1,0 +1,80 @@
+@model List<gamabelmvc.Models.PRS.SikayetModel>
+@{
+    ViewBag.Title = "Şikayetler";
+}
+
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="dashboard-header mb-4">
+        <h1 class="mb-1">📋 Şikayetler Yönetimi</h1>
+        <p class="text-muted">Tüm şikayetleri görüntüleyin ve yönetin</p>
+    </div>
+
+    <!-- Action Button -->
+    <div class="mb-4">
+        <a class="btn btn-success" href="/Sikayet/Ekle">
+            <i class="bi bi-plus-circle"></i> Yeni Şikayet Oluştur
+        </a>
+    </div>
+
+    <!-- Complaints Table -->
+    <div class="card">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">📝 Şikayet Listesi</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+    <thead class="table-light">
+                    <tr>
+                        <th class="text-center" style="width: 120px;">📅 Tarih</th>
+                        <th>👤 Kullanıcı</th>
+                        <th style="width: 200px;">🏷️ Konu</th>
+                        <th>📄 Detay</th>
+                        <th class="text-center" style="width: 100px;">⚠️ Durum</th>
+                        <th>✓ Sonuç</th>
+                        <th class="text-center" style="width: 120px;">📆 Sonuç Tarihi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var s in Model)
+                    {
+                        <tr class="@(s.Durum == "Açık" ? "table-warning" : "table-success")">
+                            <td class="text-center"><small class="text-muted">@s.Tarih.ToString("yyyy-MM-dd HH:mm")</small></td>
+                            <td><strong>@s.KullaniciAdi</strong></td>
+                            <td><span class="badge bg-info">@s.Konu</span></td>
+                            <td>@s.Detay</td>
+                            <td class="text-center">
+                                @if (s.Durum == "Açık")
+                                {
+                                    <span class="badge bg-warning text-dark">🔴 Açık</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-success">✓ Kapalı</span>
+                                }
+                            </td>
+                            <td><em>@s.Sonuc</em></td>
+                            <td class="text-center"><small>@(s.SonucTarihi?.ToString("yyyy-MM-dd HH:mm") ?? "-")</small></td>
+                        </tr>
+                    }
+                </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Message -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show mt-4" role="alert">
+            <strong>✅ Başarılı:</strong> @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Navigation -->
+    <div class="mt-5 mb-4">
+        <a href="/Home/Index" class="btn btn-secondary">← Ana Sayfaya Dön</a>
+    </div>
+</div>

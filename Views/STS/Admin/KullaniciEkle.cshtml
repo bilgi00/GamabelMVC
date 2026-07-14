@@ -1,0 +1,62 @@
+@model gamabelmvc.Models.STS.StsKullanici
+@{
+    ViewData["Title"] = "Yeni Kullanıcı Ekle";
+}
+
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h1>Yeni Kullanıcı Ekle</h1>
+        </div>
+    </div>
+
+    @if (TempData["Hata"] != null)
+    {
+        <div class="alert alert-danger">@TempData["Hata"]</div>
+    }
+
+    <form method="post" action="/Admin/KullaniciEkle" class="row g-3">
+        <div class="col-md-6">
+            <label class="form-label">Ad Soyad *</label>
+            <input type="text" name="AdSoyad" class="form-control" required />
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label">Kullanıcı Adı *</label>
+            <input type="text" name="KullaniciAdi" class="form-control" required />
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label">Şube *</label>
+            <select name="SubeId" class="form-select" required>
+                <option value="">-- Şube Seçiniz --</option>
+                @if (ViewBag.Subeler != null)
+                {
+                    foreach (var sube in ViewBag.Subeler)
+                    {
+                        <option value="@sube.Id">@sube.Ad</option>
+                    }
+                }
+            </select>
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label">Rol *</label>
+            <select name="Rol" class="form-select" required>
+                <option value="SubePersoneli">Şube Personeli</option>
+                <option value="DepoSorumlusu">Depo Sorumlusu</option>
+                <option value="Admin">Admin</option>
+            </select>
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label">Şifre *</label>
+            <input type="password" name="sifre" class="form-control" required />
+        </div>
+
+        <div class="col-md-12">
+            <button type="submit" class="btn btn-success">Kaydet</button>
+            <a href="/Admin/Kullanicilar" class="btn btn-secondary">İptal</a>
+        </div>
+    </form>
+</div>

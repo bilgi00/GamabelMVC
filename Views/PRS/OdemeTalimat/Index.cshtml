@@ -1,0 +1,144 @@
+@{
+    ViewData["Title"] = "Ödeme Talimatları";
+    var sonYuklemeler = ViewBag.SonYuklemeler as List<gamabelmvc.Models.PRS.OtImportBatch> ?? new();
+    var sonTalimatlar = ViewBag.SonTalimatlar as List<gamabelmvc.Models.PRS.OtTalimat> ?? new();
+    bool isAdmin = ViewBag.IsAdmin ?? false;
+}
+
+<style>
+    .ot-header { background: linear-gradient(135deg, #1e3c72, #2a5298); color: white; padding: 20px 24px; border-radius: 12px 12px 0 0; }
+    .ot-header h1 { font-size: 22px; margin-bottom: 4px; }
+    .ot-card { background: white; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); margin-bottom: 24px; overflow: hidden; }
+    .ot-card-body { padding: 20px; }
+    .ot-btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px; font-size: 14px; font-weight: 600; border-radius: 8px; text-decoration: none; border: none; cursor: pointer; transition: all 0.2s; }
+    .ot-btn-primary { background: linear-gradient(135deg, #1e3c72, #2a5298); color: white; }
+    .ot-btn-primary:hover { opacity: 0.9; color: white; transform: translateY(-1px); }
+    .ot-btn-secondary { background: #6c757d; color: white; }
+    .ot-btn-secondary:hover { opacity: 0.9; color: white; }
+    .ot-btn-success { background: #198754; color: white; }
+    .ot-btn-success:hover { opacity: 0.9; color: white; }
+    .ot-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .ot-table th { background: #f8f9fa; padding: 8px 12px; text-align: left; border-bottom: 2px solid #dee2e6; font-weight: 600; }
+    .ot-table td { padding: 8px 12px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+    .ot-table tbody tr:hover { background: #f8f9fa; }
+    .badge-blue { background: #dbeafe; color: #1e3c72; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+    .alert-hata { background: #fee2e2; border: 1px solid #fca5a5; color: #991b1b; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; }
+    .alert-bilgi { background: #dbeafe; border: 1px solid #93c5fd; color: #1e40af; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; }
+</style>
+
+<div class="ot-card">
+    <div class="ot-header">
+        <h1>💳 Ödeme Talimat Sistemi</h1>
+        <p style="opacity:0.85; margin:0; font-size:13px;">Excel'den açık faturalar yükleyip firma bazında ödeme talimatı oluşturun</p>
+    </div>
+    <div class="ot-card-body">
+
+        @if (TempData["Hata"] != null)
+        {
+            <div class="alert-hata">❌ @TempData["Hata"]</div>
+        }
+        @if (TempData["Bilgi"] != null)
+        {
+            <div class="alert-bilgi">ℹ️ @TempData["Bilgi"]</div>
+        }
+        @if (ViewBag.Hata != null)
+        {
+            <div class="alert-hata">❌ @ViewBag.Hata</div>
+        }
+
+        <!-- Yükleme formu -->
+        <form method="post" asp-controller="OdemeTalimat" asp-action="Yukle"
+              enctype="multipart/form-data" id="yuklemeForm" style="margin-bottom:24px;">
+            <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+                <button type="button" class="ot-btn ot-btn-primary"
+                        onclick="document.getElementById('excelInput').click()">
+                    📂 Yeni Ödeme Oluştur (Excel Yükle)
+                </button>
+                <input type="file" id="excelInput" name="excelDosyasi" accept=".xlsx"
+                       style="display:none" onchange="document.getElementById('yuklemeForm').submit()" />
+                <span style="color:#6c757d; font-size:13px;">açık_fatura_listesi.xlsx seçin</span>
+                @if (isAdmin)
+                {
+                    <a href="/OdemeTalimat/Firmalar" class="ot-btn ot-btn-secondary">🏢 Firmalar</a>
+                    <a href="/OdemeTalimat/Bankalar" class="ot-btn ot-btn-secondary">🏦 Bankalar</a>
+                }
+            </div>
+        </form>
+
+        <!-- Son Yüklemeler -->
+        <h5 style="color:#1e3c72; margin-bottom:10px;">📋 Son Yüklemeler</h5>
+        @if (!sonYuklemeler.Any())
+        {
+            <p style="color:#6c757d; font-size:13px;">Henüz yükleme yapılmadı.</p>
+        }
+        else
+        {
+            <table class="ot-table" style="margin-bottom:24px;">
+                <thead>
+                    <tr>
+                        <th>Dosya Adı</th>
+                        <th>Yükleme Tarihi</th>
+                        <th>Satır Sayısı</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var b in sonYuklemeler)
+                    {
+                        <tr>
+                            <td>@b.DosyaAdi</td>
+                            <td>@b.YuklemeTarihi.ToString("dd.MM.yyyy HH:mm")</td>
+                            <td><span class="badge-blue">@b.SatirSayisi satır</span></td>
+                            <td>
+                                <a href="/OdemeTalimat/FaturaSecim?batchId=@b.Id" class="ot-btn ot-btn-success" style="padding:6px 14px; font-size:12px;">
+                                    ✅ Faturaları Seç
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+
+        <!-- Son Talimatlar -->
+        <h5 style="color:#1e3c72; margin-bottom:10px;">📄 Son Talimatlar</h5>
+        @if (!sonTalimatlar.Any())
+        {
+            <p style="color:#6c757d; font-size:13px;">Henüz talimat oluşturulmadı.</p>
+        }
+        else
+        {
+            <table class="ot-table">
+                <thead>
+                    <tr>
+                        <th>Talimat No</th>
+                        <th>Tarih</th>
+                        <th>Banka</th>
+                        <th>Adet</th>
+                        <th>Toplam Tutar</th>
+                        <th>Hazırlayan</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var t in sonTalimatlar)
+                    {
+                        <tr>
+                            <td><strong>@t.TalimatNo</strong></td>
+                            <td>@t.Tarih.ToString("dd.MM.yyyy")</td>
+                            <td>@t.BankaSubeAdi</td>
+                            <td><span class="badge-blue">@t.ToplamAdet</span></td>
+                            <td style="font-weight:600; color:#1e3c72;">@t.ToplamTutar.ToString("N2") TL</td>
+                            <td>@t.HazirlayanKullanici</td>
+                            <td>
+                                <a href="/OdemeTalimat/Detay/@t.Id" class="ot-btn ot-btn-primary" style="padding:6px 14px; font-size:12px;">
+                                    🔍 Detay
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>

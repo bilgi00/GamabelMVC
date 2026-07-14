@@ -1,0 +1,395 @@
+/* ============================================
+   GAMABEL MVC - FORM STYLES
+   ============================================ */
+
+@import "variables.css";
+
+/* -------- FORM GROUPS -------- */
+
+.form-group {
+    margin-bottom: var(--gbl-spacing-lg);
+}
+
+.form-group:last-child {
+    margin-bottom: 0;
+}
+
+/* -------- LABELS -------- */
+
+label,
+.form-label {
+    font-weight: var(--gbl-font-weight-medium);
+    font-size: var(--gbl-font-size-sm);
+    color: var(--gbl-dark);
+    margin-bottom: var(--gbl-spacing-sm);
+    display: block;
+}
+
+.form-label.required::after {
+    content: "*";
+    color: var(--gbl-danger-light);
+    margin-left: var(--gbl-spacing-xs);
+}
+
+/* -------- INPUTS -------- */
+
+.form-control,
+.form-select,
+textarea {
+    border: 1px solid var(--gbl-border);
+    border-radius: var(--gbl-radius-md);
+    padding: var(--gbl-spacing-sm) var(--gbl-spacing-md);
+    font-size: var(--gbl-font-size-sm);
+    font-family: var(--gbl-font-family);
+    transition: all var(--gbl-transition-fast);
+    background: var(--gbl-white);
+}
+
+.form-control:focus,
+.form-select:focus,
+textarea:focus {
+    border-color: var(--gbl-primary);
+    box-shadow: 0 0 0 0.2rem rgba(21, 101, 192, 0.15);
+    outline: none;
+}
+
+.form-control:disabled,
+.form-control[readonly],
+.form-select:disabled,
+textarea:disabled,
+textarea[readonly] {
+    background: var(--gbl-light-gray);
+    color: var(--gbl-gray);
+    cursor: not-allowed;
+}
+
+.form-control.is-invalid,
+.form-select.is-invalid,
+textarea.is-invalid {
+    border-color: var(--gbl-danger-light);
+}
+
+.form-control.is-invalid:focus,
+.form-select.is-invalid:focus,
+textarea.is-invalid:focus {
+    border-color: var(--gbl-danger-light);
+    box-shadow: 0 0 0 0.2rem rgba(211, 47, 47, 0.15);
+}
+
+.form-control.is-valid,
+.form-select.is-valid,
+textarea.is-valid {
+    border-color: var(--gbl-success-light);
+}
+
+.form-control.is-valid:focus,
+.form-select.is-valid:focus,
+textarea.is-valid:focus {
+    border-color: var(--gbl-success-light);
+    box-shadow: 0 0 0 0.2rem rgba(76, 175, 80, 0.15);
+}
+
+/* Textarea */
+textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+textarea.form-control {
+    padding: var(--gbl-spacing-md);
+}
+
+/* -------- PLACEHOLDER -------- */
+
+::placeholder {
+    color: var(--gbl-gray);
+    opacity: 0.7;
+}
+
+/* -------- FORM CHECK (CHECKBOXES & RADIOS) -------- */
+
+.form-check {
+    padding-left: 0;
+    margin-bottom: var(--gbl-spacing-md);
+}
+
+.form-check-input {
+    width: 18px;
+    height: 18px;
+    margin-top: 2px;
+    margin-right: var(--gbl-spacing-sm);
+    border: 2px solid var(--gbl-border);
+    border-radius: var(--gbl-radius-sm);
+    cursor: pointer;
+    transition: all var(--gbl-transition-fast);
+}
+
+.form-check-input:checked {
+    background: var(--gbl-primary);
+    border-color: var(--gbl-primary);
+}
+
+.form-check-input:focus {
+    border-color: var(--gbl-primary);
+    box-shadow: 0 0 0 0.2rem rgba(21, 101, 192, 0.15);
+}
+
+.form-check-input:disabled {
+    background: var(--gbl-light-gray);
+    cursor: not-allowed;
+}
+
+.form-check-label {
+    margin-bottom: 0;
+    cursor: pointer;
+    user-select: none;
+    font-size: var(--gbl-font-size-sm);
+}
+
+/* -------- SWITCH -------- */
+
+.form-switch .form-check-input {
+    width: 38px;
+    border-radius: var(--gbl-radius-full);
+    background: var(--gbl-border);
+    border: none;
+}
+
+.form-switch .form-check-input:checked {
+    background: var(--gbl-success-light);
+}
+
+/* -------- FLOATING LABELS -------- */
+
+.form-floating > .form-control,
+.form-floating > .form-select {
+    height: calc(3.5rem + 2px);
+}
+
+.form-floating > label {
+    padding: 1rem 0.75rem;
+    color: var(--gbl-gray);
+}
+
+.form-floating > .form-control:focus ~ label,
+.form-floating > .form-control:not(:placeholder-shown) ~ label,
+.form-floating > .form-select ~ label {
+    color: var(--gbl-primary);
+}
+
+/* -------- INPUT GROUPS -------- */
+
+.input-group {
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    width: 100%;
+}
+
+.input-group > .form-control,
+.input-group > .form-select {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.input-group-text {
+    display: flex;
+    align-items: center;
+    padding: var(--gbl-spacing-sm) var(--gbl-spacing-md);
+    background: var(--gbl-light-gray);
+    border: 1px solid var(--gbl-border);
+    border-radius: var(--gbl-radius-md);
+    font-weight: var(--gbl-font-weight-medium);
+    color: var(--gbl-dark);
+}
+
+.input-group .input-group-text {
+    border-right: none;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.input-group .form-control {
+    border-left: none;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+.input-group .form-control:focus {
+    box-shadow: none;
+}
+
+/* -------- FORM FEEDBACK -------- */
+
+.valid-feedback,
+.invalid-feedback {
+    display: block;
+    margin-top: var(--gbl-spacing-xs);
+    font-size: var(--gbl-font-size-xs);
+}
+
+.valid-feedback {
+    color: var(--gbl-success-light);
+}
+
+.invalid-feedback {
+    color: var(--gbl-danger-light);
+}
+
+.form-text {
+    display: block;
+    margin-top: var(--gbl-spacing-xs);
+    font-size: var(--gbl-font-size-xs);
+    color: var(--gbl-gray);
+}
+
+/* -------- FORM LAYOUTS -------- */
+
+.form-horizontal {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--gbl-spacing-lg);
+}
+
+@media (max-width: 767.98px) {
+    .form-horizontal {
+        grid-template-columns: 1fr;
+    }
+}
+
+.form-horizontal-3col {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--gbl-spacing-lg);
+}
+
+@media (max-width: 1199.98px) {
+    .form-horizontal-3col {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 767.98px) {
+    .form-horizontal-3col {
+        grid-template-columns: 1fr;
+    }
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--gbl-spacing-md);
+    margin-bottom: var(--gbl-spacing-md);
+}
+
+/* -------- FORM ACTIONS -------- */
+
+.form-actions {
+    display: flex;
+    gap: var(--gbl-spacing-md);
+    margin-top: var(--gbl-spacing-xl);
+    padding-top: var(--gbl-spacing-lg);
+    border-top: 1px solid var(--gbl-border-light);
+}
+
+.form-actions .btn {
+    flex: 1;
+    max-width: 200px;
+}
+
+@media (max-width: 767.98px) {
+    .form-actions {
+        flex-direction: column;
+    }
+
+    .form-actions .btn {
+        width: 100%;
+        max-width: 100%;
+    }
+}
+
+/* -------- DATEPICKER -------- */
+
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"],
+input[type="month"],
+input[type="week"],
+input[type="email"],
+input[type="number"],
+input[type="password"],
+input[type="search"],
+input[type="tel"],
+input[type="url"],
+input[type="color"] {
+    border: 1px solid var(--gbl-border);
+    border-radius: var(--gbl-radius-md);
+    padding: var(--gbl-spacing-sm) var(--gbl-spacing-md);
+    font-size: var(--gbl-font-size-sm);
+    font-family: var(--gbl-font-family);
+    transition: all var(--gbl-transition-fast);
+}
+
+input[type="date"]:focus,
+input[type="time"]:focus,
+input[type="datetime-local"]:focus,
+input[type="month"]:focus,
+input[type="week"]:focus,
+input[type="email"]:focus,
+input[type="number"]:focus,
+input[type="password"]:focus,
+input[type="search"]:focus,
+input[type="tel"]:focus,
+input[type="url"]:focus,
+input[type="color"]:focus {
+    border-color: var(--gbl-primary);
+    box-shadow: 0 0 0 0.2rem rgba(21, 101, 192, 0.15);
+    outline: none;
+}
+
+/* Color input */
+input[type="color"] {
+    padding: var(--gbl-spacing-xs);
+    height: auto;
+    min-height: 44px;
+}
+
+/* -------- FORM DISABLED STATE -------- */
+
+form.disabled,
+.form-disabled {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.form-disabled .form-control,
+.form-disabled .form-select,
+.form-disabled textarea {
+    background: var(--gbl-light-gray);
+}
+
+/* -------- RESPONSIVE FORMS -------- */
+
+@media (max-width: 767.98px) {
+    .form-group {
+        margin-bottom: var(--gbl-spacing-md);
+    }
+
+    .form-control,
+    .form-select,
+    textarea {
+        min-height: 44px;
+        font-size: 16px;
+    }
+
+    .form-check-input {
+        width: 20px;
+        height: 20px;
+        margin-top: 4px;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+}

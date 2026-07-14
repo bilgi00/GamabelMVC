@@ -1,0 +1,479 @@
+@{
+    ViewData["Title"] = "Mesai Onay Paneli";
+    var bekleyenKayitlar = (ViewBag.BekleyenKayitlar as IEnumerable<dynamic>)?.ToList() ?? new List<dynamic>();
+    var subeler = (ViewBag.Subeler as IEnumerable<dynamic>)?.ToList() ?? new List<dynamic>();
+    var seciiliSube = ViewBag.SeciiliSube ?? "";
+    var seciliDurum = ViewBag.SeciliDurum ?? "Bekliyor";
+}
+
+<style>
+    :root {
+        --primary-color: #0066cc;
+        --success-color: #28a745;
+        --warning-color: #ffc107;
+        --danger-color: #dc3545;
+        --light-bg: #f8f9fa;
+        --border-color: #dee2e6;
+    }
+
+    .filter-container {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .filter-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 15px;
+        align-items: end;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .form-group label {
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 8px;
+    }
+
+    .form-group select,
+    .form-group input {
+        padding: 10px;
+        border: 1px solid var(--border-color);
+        border-radius: 5px;
+        font-size: 14px;
+        font-family: inherit;
+    }
+
+    .form-group select:focus,
+    .form-group input:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(0,102,204,0.1);
+    }
+
+    .btn-group {
+        display: flex;
+        gap: 10px;
+    }
+
+    button {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: bold;
+        transition: background 0.3s;
+    }
+
+    .btn-primary {
+        background: var(--primary-color);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: #0056a3;
+    }
+
+    .btn-secondary {
+        background: #6c757d;
+        color: white;
+    }
+
+    .btn-secondary:hover {
+        background: #5a6268;
+    }
+
+    .table-container {
+        background: white;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .table-responsive {
+        overflow-x: auto;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    thead {
+        background: var(--light-bg);
+        border-bottom: 2px solid var(--border-color);
+    }
+
+    th {
+        padding: 15px;
+        text-align: left;
+        font-weight: bold;
+        color: #333;
+    }
+
+    tbody tr {
+        border-bottom: 1px solid var(--border-color);
+        transition: background 0.2s;
+    }
+
+    tbody tr:hover {
+        background: var(--light-bg);
+    }
+
+    td {
+        padding: 15px;
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: bold;
+        color: white;
+        text-align: center;
+    }
+
+    .status-badge.bekliyor {
+        background: var(--warning-color);
+        color: #333;
+    }
+
+    .status-badge.onaylandi {
+        background: var(--success-color);
+    }
+
+    .status-badge.reddedildi {
+        background: var(--danger-color);
+    }
+
+    .actions {
+        display: flex;
+        gap: 8px;
+    }
+
+    .btn-small {
+        padding: 6px 12px;
+        font-size: 12px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background 0.3s;
+    }
+
+    .btn-approve {
+        background: var(--success-color);
+        color: white;
+    }
+
+    .btn-approve:hover {
+        background: #228ae6;
+    }
+
+    .btn-reject {
+        background: var(--danger-color);
+        color: white;
+    }
+
+    .btn-reject:hover {
+        background: #c82333;
+    }
+
+    .no-data {
+        text-align: center;
+        padding: 40px;
+        color: #666;
+    }
+
+    .no-data-icon {
+        font-size: 48px;
+        margin-bottom: 15px;
+        opacity: 0.5;
+    }
+
+    .summary-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+
+    .summary-card {
+        background: white;
+        border-left: 5px solid var(--primary-color);
+        padding: 15px;
+        border-radius: 5px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .summary-card.warning {
+        border-left-color: var(--warning-color);
+    }
+
+    .summary-card.success {
+        border-left-color: var(--success-color);
+    }
+
+    .summary-label {
+        font-size: 12px;
+        color: #666;
+        margin-bottom: 5px;
+    }
+
+    .summary-value {
+        font-size: 24px;
+        font-weight: bold;
+        color: #333;
+    }
+
+    .details-row {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+        background: var(--light-bg);
+        padding: 10px;
+        border-radius: 4px;
+        margin: 5px 0;
+        font-size: 12px;
+    }
+
+    .detail-item {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .detail-label {
+        color: #666;
+        font-weight: bold;
+        margin-bottom: 2px;
+    }
+
+    .detail-value {
+        color: #333;
+    }
+
+    @@media (max-width: 768px) {
+        .filter-row {
+            grid-template-columns: 1fr;
+        }
+
+        .btn-group {
+            flex-direction: column;
+        }
+
+        table {
+            font-size: 12px;
+        }
+
+        th, td {
+            padding: 10px;
+        }
+
+        .actions {
+            flex-direction: column;
+        }
+
+        .details-row {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div class="container-fluid mt-4">
+    <!-- Başlık -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h1>Mesai Onay Paneli</h1>
+            <p class="text-muted">Çalışanların ek mesai taleplerini onaylayın veya reddedin</p>
+        </div>
+    </div>
+
+    <!-- Özet Kartları -->
+    <div class="summary-cards">
+        <div class="summary-card warning">
+            <div class="summary-label">Onay Bekleyen</div>
+            <div class="summary-value">@bekleyenKayitlar.Count(k => k.Durum == "Bekliyor")</div>
+        </div>
+        <div class="summary-card success">
+            <div class="summary-label">Onaylanmış</div>
+            <div class="summary-value">@bekleyenKayitlar.Count(k => k.Durum == "Onaylandi")</div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-label">Reddedilmiş</div>
+            <div class="summary-value">@bekleyenKayitlar.Count(k => k.Durum == "Reddedildi")</div>
+        </div>
+    </div>
+
+    <!-- Filtreler -->
+    <div class="filter-container">
+        <form method="get" action="/HizliMesaiGirisi/Admin" class="filter-row">
+            <div class="form-group">
+                <label for="subeAdi">Bölüm</label>
+                <select name="subeAdi" id="subeAdi">
+                    <option value="">Tüm Bölümler</option>
+                    @foreach (var sube in subeler)
+                    {
+                        if (seciiliSube == sube.Ad)
+                        {
+                            <option value="@sube.Ad" selected>@sube.Ad</option>
+                        }
+                        else
+                        {
+                            <option value="@sube.Ad">@sube.Ad</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="durum">Durum</label>
+                <select name="durum" id="durum">
+                    @if (seciliDurum == "Bekliyor")
+                    { <option value="Bekliyor" selected>Bekliyor</option> }
+                    else
+                    { <option value="Bekliyor">Bekliyor</option> }
+                    
+                    @if (seciliDurum == "Onaylandi")
+                    { <option value="Onaylandi" selected>Onaylandı</option> }
+                    else
+                    { <option value="Onaylandi">Onaylandı</option> }
+                    
+                    @if (seciliDurum == "Reddedildi")
+                    { <option value="Reddedildi" selected>Reddedildi</option> }
+                    else
+                    { <option value="Reddedildi">Reddedildi</option> }
+                </select>
+            </div>
+            <div class="btn-group">
+                <button type="submit" class="btn-primary">Filtrele</button>
+                <a href="/HizliMesaiGirisi/Admin" class="btn-secondary" style="text-decoration: none; display: flex; align-items: center; justify-content: center;">Sıfırla</a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Tablo -->
+    <div class="table-container">
+        @if (bekleyenKayitlar.Any())
+        {
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Ad Soyad</th>
+                            <th>Bölüm</th>
+                            <th>Tarih</th>
+                            <th>Saat Aralığı</th>
+                            <th>Toplam Saat</th>
+                            <th>Durum</th>
+                            <th>İşlem</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var kayit in bekleyenKayitlar)
+                        {
+                            <tr>
+                                <td>@kayit.AdSoyad</td>
+                                <td>@kayit.SubeAdi</td>
+                                <td>@kayit.Tarih.ToString("dd.MM.yyyy")</td>
+                                <td>@kayit.BaslangicSaati - @kayit.BitisSaati</td>
+                                <td>
+                                    <strong>@kayit.ToplamSaat.ToString("F1") saat</strong>
+                                </td>
+                                <td>
+                                    <span class="status-badge @kayit.Durum.ToLower()">
+                                        @(kayit.Durum == "Onaylandi" ? "✓ Onaylı" : 
+                                          kayit.Durum == "Reddedildi" ? "✗ Red" : "⏳ Bekliyor")
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="actions">
+                                        @if (kayit.Durum == "Bekliyor")
+                                        {
+                                            <button class="btn-small btn-approve" onclick="onaylaKayit(@kayit.Id)">
+                                                ✓ Onayla
+                                            </button>
+                                            <button class="btn-small btn-reject" onclick="reddetKayit(@kayit.Id)">
+                                                ✗ Reddet
+                                            </button>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                            @if (!string.IsNullOrWhiteSpace(kayit.Notlar))
+                            {
+                                <tr>
+                                    <td colspan="7">
+                                        <div class="details-row">
+                                            <div class="detail-item">
+                                                <span class="detail-label">📝 Notlar:</span>
+                                                <span class="detail-value">@kayit.Notlar</span>
+                                            </div>
+                                            <div class="detail-item">
+                                                <span class="detail-label">📅 Gönderim Tarihi:</span>
+                                                <span class="detail-value">@kayit.OlusturmaTarihi.ToString("dd.MM.yyyy HH:mm")</span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="no-data">
+                <div class="no-data-icon">📋</div>
+                <h4>Gösterilecek kayıt yok</h4>
+                <p>Filtreleri değiştirelim mi?</p>
+            </div>
+        }
+    </div>
+</div>
+
+<script>
+    async function onaylaKayit(id) {
+        if (confirm('Bu mesai kaydını onaylamak istediğinizden emin misiniz?')) {
+            try {
+                const response = await fetch('/HizliMesaiGirisi/Onayla', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ Id: id, Durum: 'Onaylandi' })
+                });
+
+                if (response.ok) {
+                    alert('Mesai kaydı onaylandı!');
+                    location.reload();
+                }
+            } catch (error) {
+                alert('Hata: ' + error.message);
+            }
+        }
+    }
+
+    async function reddetKayit(id) {
+        if (confirm('Bu mesai kaydını reddetmek istediğinizden emin misiniz?')) {
+            try {
+                const response = await fetch('/HizliMesaiGirisi/Onayla', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ Id: id, Durum: 'Reddedildi' })
+                });
+
+                if (response.ok) {
+                    alert('Mesai kaydı reddedildi!');
+                    location.reload();
+                }
+            } catch (error) {
+                alert('Hata: ' + error.message);
+            }
+        }
+    }
+</script>

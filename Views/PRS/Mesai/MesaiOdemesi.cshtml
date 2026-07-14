@@ -1,0 +1,382 @@
+@{
+    ViewData["Title"] = "Mesai Ödeme";
+    Layout = "_Layout";
+}
+
+<style>
+    .odemeler-container { max-width: 1200px; margin: 0 auto; }
+    .odemeler-header { background: linear-gradient(135deg, #1e3c72, #2a5298); color: white; padding: 15px 20px; border-radius: 8px 8px 0 0; }
+    .odemeler-header h4 { margin: 0 0 3px 0; }
+    .odemeler-header p { margin: 0; font-size: 13px; opacity: 0.9; }
+    .odemeler-controls { padding: 12px 20px; background: #f8f9fa; border: 1px solid #dee2e6; border-top: none; display: flex !important; flex-wrap: wrap; gap: 10px; justify-content: flex-start; align-items: center; }
+    .odemeler-controls .btn { white-space: nowrap; }
+    .odemeler-table-wrap { overflow-x: auto; border: 1px solid #dee2e6; border-top: none; }
+    .odemeler-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .odemeler-table th, .odemeler-table td { border: 1px solid #dee2e6; padding: 8px 10px; text-align: center; vertical-align: middle; }
+    .odemeler-table th { background: #e8e8e8; color: #000 !important; font-weight: 600; }
+    .odemeler-table .text-start { text-align: left !important; }
+    .odemeler-table .text-end { text-align: right !important; }
+    .odemeler-table tr:hover { background: #f5f5f5; }
+    
+    .total-row { background: #e9ecef !important; font-weight: bold; }
+    .total-row td { font-weight: bold; font-size: 13px; }
+    
+    .odemeler-footer { padding: 10px 15px; background: #f8f9fa; border: 1px solid #dee2e6; border-top: none; border-radius: 0 0 8px 8px; font-size: 12px; color: #6c757d; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; line-height: 1.4; }
+    
+    .form-label { color: #333 !important; font-weight: 600; }
+    .form-control, .form-select { color: #000 !important; background-color: #fff !important; }
+    .form-control::placeholder { color: #999 !important; opacity: 1; }
+    
+    .toast-msg { position: fixed; bottom: 20px; right: 20px; background: #28a745; color: white; padding: 10px 20px; border-radius: 8px; z-index: 2000; animation: slideIn 0.3s ease; }
+    @@keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    
+    .empty-message { text-align: center; color: #999; padding: 30px; font-size: 14px; }
+    
+    @@media (max-width: 768px) {
+        .odemeler-container { margin: 0; }
+        .odemeler-header { padding: 10px 15px; }
+        .odemeler-controls { padding: 8px 10px; gap: 5px; }
+        .odemeler-controls .btn { padding: 0.25rem 0.5rem; font-size: 11px; }
+        .odemeler-table { font-size: 11px; }
+        .odemeler-table th, .odemeler-table td { padding: 5px 6px; }
+    }
+    
+    @@print {
+        .no-print { display: none !important; }
+        .navbar, footer { display: none !important; }
+    }
+</style>
+
+<div class="odemeler-container mt-3">
+    <div class="odemeler-header">
+        <h4>MESAİ ÖDEME LİSTESİ</h4>
+        <p>Personellerin ek mesai ödemelerini yıl ve ay seçerek görüntüleyin</p>
+    </div>
+
+    <div class="odemeler-controls no-print">
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+            <select id="birimSelect" class="form-select form-select-sm" style="width:auto;" @(ViewBag.Rol != "admin" ? "disabled" : "")>
+                @if (ViewBag.Rol == "admin")
+                {
+                    <option value="">-- Birim --</option>
+                    <option value="all">Tüm Personeller</option>
+                }
+                @if (ViewBag.Birimler != null)
+                {
+                    @foreach (string birim in ViewBag.Birimler)
+                    {
+                        if (ViewBag.Rol != "admin")
+                        {
+                            @:<option value="@birim" selected>@birim</option>
+                        }
+                        else
+                        {
+                            @:<option value="@birim">@birim</option>
+                        }
+                    }
+                }
+            </select>
+            <select id="yearSelect" class="form-select form-select-sm" style="width:auto;"></select>
+            <select id="monthSelect" class="form-select form-select-sm" style="width:auto;">
+                <option value="1">Ocak</option><option value="2">Şubat</option><option value="3">Mart</option>
+                <option value="4">Nisan</option><option value="5">Mayıs</option><option value="6">Haziran</option>
+                <option value="7">Temmuz</option><option value="8">Ağustos</option><option value="9">Eylül</option>
+                <option value="10">Ekim</option><option value="11">Kasım</option><option value="12">Aralık</option>
+            </select>
+            <button class="btn btn-sm btn-primary" id="btnYukle">Yükle</button>
+            <button class="btn btn-sm btn-success" id="btnHesapla" disabled>Hesapla</button>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <button class="btn btn-sm btn-info text-white" id="btnExcel" disabled>Excel</button>
+            <button class="btn btn-sm btn-danger" id="btnPdf" disabled>PDF</button>
+            <button class="btn btn-sm btn-secondary" id="btnYazdir" disabled>Yazdır</button>
+        </div>
+    </div>
+
+    <div class="odemeler-table-wrap">
+        <table class="odemeler-table" id="odemelerTable">
+            <thead>
+                <tr>
+                    <th style="width:40px;">#</th>
+                    <th style="width:200px;">Adı Soyadı</th>
+                    <th style="width:150px;">Bölüm</th>
+                    <th style="width:120px;">Toplam Mesai (Saat)</th>
+                    <th style="width:120px;">Saatlik Brüt (₺)</th>
+                    <th style="width:140px;">Ödeme Tutarı (₺)</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+            <tfoot>
+                <tr class="total-row">
+                    <td colspan="2" class="text-end">GENEL TOPLAM</td>
+                    <td id="tfPersonel" style="width:150px">0</td>
+                    <td id="tfMesai" style="width:120px">0</td>
+                    <td id="tfBrut" style="width:120px">0</td>
+                    <td id="tfOdeme" style="width:140px">0</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+    <div id="bosTable" class="empty-message" style="display:none;">
+        Seçilen dönem için ek mesai kaydı bulunmamaktadır.
+    </div>
+
+    <div class="odemeler-footer">
+        <span>Seçili Dönem: <strong id="footerDonem">-</strong></span>
+        <span>Toplam Personel: <strong id="footerPersonel">0</strong></span>
+    </div>
+</div>
+
+@section Scripts {
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script>
+(function() {
+    var odemeler = [];
+    var ozet = {};
+    var currentBirim = '';
+    var currentYil = 0;
+    var currentAy = 0;
+
+    var ayAdlari = ['','Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+
+    // Yıl dropdown'ını doldur
+    var yearSel = document.getElementById('yearSelect');
+    var now = new Date();
+    for (var y = now.getFullYear() - 2; y <= now.getFullYear() + 1; y++) {
+        var opt = document.createElement('option');
+        opt.value = y; opt.textContent = y;
+        if (y === now.getFullYear()) opt.selected = true;
+        yearSel.appendChild(opt);
+    }
+    document.getElementById('monthSelect').value = now.getMonth() + 1;
+
+    function escapeHtml(t) {
+        var d = document.createElement('div');
+        d.appendChild(document.createTextNode(t || ''));
+        return d.innerHTML;
+    }
+
+    function formatTurkishCurrency(value) {
+        var parts = parseFloat(value).toFixed(2).split('.');
+        var integerPart = parts[0];
+        var decimalPart = parts[1];
+        integerPart = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        return integerPart + ',' + decimalPart;
+    }
+
+    function showToast(msg, type) {
+        var t = document.createElement('div');
+        t.className = 'toast-msg';
+        if (type === 'error') t.style.background = '#dc3545';
+        else if (type === 'warning') t.style.background = '#fd7e14';
+        t.textContent = msg;
+        document.body.appendChild(t);
+        setTimeout(function() { t.remove(); }, 2500);
+    }
+
+    function renderTable() {
+        var tbody = document.getElementById('tableBody');
+        tbody.innerHTML = '';
+
+        if (odemeler.length === 0) {
+            document.getElementById('bosTable').style.display = 'block';
+            document.getElementById('odemelerTable').style.display = 'none';
+            document.getElementById('btnExcel').disabled = true;
+            document.getElementById('btnPdf').disabled = true;
+            document.getElementById('btnYazdir').disabled = true;
+            return;
+        }
+
+        document.getElementById('bosTable').style.display = 'none';
+        document.getElementById('odemelerTable').style.display = 'table';
+        document.getElementById('btnExcel').disabled = false;
+        document.getElementById('btnPdf').disabled = false;
+        document.getElementById('btnYazdir').disabled = false;
+
+        for (var i = 0; i < odemeler.length; i++) {
+            var o = odemeler[i];
+            var tr = document.createElement('tr');
+            tr.innerHTML =
+                '<td class="text-end">' + o.sira + '</td>' +
+                '<td class="text-start">' + escapeHtml(o.adSoyad) + '</td>' +
+                '<td class="text-start">' + escapeHtml(o.birimAdi) + '</td>' +
+                '<td class="text-end">' + o.toplamSaat.toFixed(1) + '</td>' +
+                '<td class="text-end">' + formatTurkishCurrency(o.saatlikBrut) + '</td>' +
+                '<td class="text-end" style="font-weight:600;">' + formatTurkishCurrency(o.odemeTutari) + '</td>';
+            tbody.appendChild(tr);
+        }
+
+        // Toplam satırını güncelle
+        document.getElementById('tfPersonel').textContent = ozet.toplamPersonel || 0;
+        document.getElementById('tfMesai').textContent = (ozet.toplamMesai || 0).toFixed(1);
+        document.getElementById('tfBrut').textContent = formatTurkishCurrency(ozet.saatlikBrut || 0);
+        document.getElementById('tfOdeme').textContent = formatTurkishCurrency(ozet.genelToplamOdeme || 0);
+
+        var donem = ayAdlari[currentAy] + ' ' + currentYil;
+        document.getElementById('footerDonem').textContent = donem;
+        document.getElementById('footerPersonel').textContent = ozet.toplamPersonel || 0;
+    }
+
+    function loadOdemeler() {
+        var birim = document.getElementById('birimSelect').value;
+        var yil = parseInt(document.getElementById('yearSelect').value);
+        var ay = parseInt(document.getElementById('monthSelect').value);
+
+        if (!birim) { showToast('Birim seçin', 'warning'); return; }
+
+        currentBirim = birim;
+        currentYil = yil;
+        currentAy = ay;
+
+        document.getElementById('btnYukle').disabled = true;
+
+        // hesapla=false ile çağır - sadece personel listesi, ödeme=0
+        fetch('/Mesai/GetMesaiOdemeleri?yil=' + yil + '&ay=' + ay + '&birim=' + encodeURIComponent(birim) + '&hesapla=false')
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (!data.basarili) { showToast('Hata: ' + (data.hata || 'Bilinmeyen hata'), 'error'); return; }
+                odemeler = data.odemeler || [];
+                ozet = data.ozet || {};
+                renderTable();
+                document.getElementById('btnHesapla').disabled = false;
+                showToast(ayAdlari[ay] + ' ' + yil + ' - Personel listesi yüklendi. Hesaplamak için "Hesapla" tuşuna basınız.');
+            })
+            .catch(function() { showToast('Veri yüklenemedi', 'error'); })
+            .finally(function() { document.getElementById('btnYukle').disabled = false; });
+    }
+
+    function calculateOdemeler() {
+        var birim = document.getElementById('birimSelect').value;
+        var yil = parseInt(document.getElementById('yearSelect').value);
+        var ay = parseInt(document.getElementById('monthSelect').value);
+
+        if (!birim) { showToast('Birim seçin', 'warning'); return; }
+
+        currentBirim = birim;
+        currentYil = yil;
+        currentAy = ay;
+
+        document.getElementById('btnHesapla').disabled = true;
+
+        // hesapla=true ile çağır - ödeme hesapla
+        fetch('/Mesai/GetMesaiOdemeleri?yil=' + yil + '&ay=' + ay + '&birim=' + encodeURIComponent(birim) + '&hesapla=true')
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (!data.basarili) { showToast('Hata: ' + (data.hata || 'Bilinmeyen hata'), 'error'); return; }
+                odemeler = data.odemeler || [];
+                ozet = data.ozet || {};
+                renderTable();
+                showToast(ayAdlari[ay] + ' ' + yil + ' - Ödeme hesaplamaları tamamlandı.');
+            })
+            .catch(function() { showToast('Hesaplama yapılamadı', 'error'); })
+            .finally(function() { document.getElementById('btnHesapla').disabled = false; });
+    }
+
+    // Yükle butonu
+    document.getElementById('btnYukle').addEventListener('click', loadOdemeler);
+
+    // Hesapla butonu
+    document.getElementById('btnHesapla').addEventListener('click', calculateOdemeler);
+
+    // Excel indir
+    document.getElementById('btnExcel').addEventListener('click', function() {
+        if (odemeler.length === 0) return;
+
+        var html = '<html><head><meta charset="UTF-8"><style>th,td{border:1px solid #000;padding:5px;text-align:center;}th{background:#f0f0f0;font-weight:bold;}</style></head><body>';
+        html += '<h2 style="text-align:center">MESAİ ÖDEME LİSTESİ</h2>';
+        html += '<h3 style="text-align:center">' + ayAdlari[currentAy].toUpperCase() + ' ' + currentYil + '</h3>';
+        
+        html += '<table style="width:100%;"><thead><tr><th>#</th><th>Adı Soyadı</th><th>Bölüm</th><th>Toplam Mesai (Saat)</th><th>Saatlik Brüt (₺)</th><th>Ödeme Tutarı (₺)</th></tr></thead><tbody>';
+        
+        for (var i = 0; i < odemeler.length; i++) {
+            var o = odemeler[i];
+            html += '<tr><td>' + o.sira + '</td><td>' + escapeHtml(o.adSoyad) + '</td><td>' + escapeHtml(o.birimAdi) + '</td><td>' + o.toplamSaat.toFixed(1) + '</td><td>' + formatTurkishCurrency(o.saatlikBrut) + '</td><td>' + formatTurkishCurrency(o.odemeTutari) + '</td></tr>';
+        }
+        
+        html += '<tr style="font-weight:bold;background:#e9ecef;"><td colspan="2" style="text-align:right;">GENEL TOPLAM</td><td>' + (ozet.toplamPersonel || 0) + ' Kişi</td><td>' + (ozet.toplamMesai || 0).toFixed(1) + '</td><td>' + formatTurkishCurrency(ozet.saatlikBrut || 0) + '</td><td>' + formatTurkishCurrency(ozet.genelToplamOdeme || 0) + '</td></tr>';
+        html += '</tbody></table></body></html>';
+
+        var blob = new Blob([html], { type: 'application/vnd.ms-excel' });
+        var link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'Mesai_Odemesi_' + ayAdlari[currentAy] + '_' + currentYil + '.xls';
+        link.click();
+        URL.revokeObjectURL(link.href);
+        showToast('Excel indiriliyor');
+    });
+
+    // PDF oluştur
+    document.getElementById('btnPdf').addEventListener('click', function() {
+        if (odemeler.length === 0) return;
+
+        var pdfDiv = document.createElement('div');
+        pdfDiv.style.cssText = 'width:1050px;padding:25px;font-family:Arial,sans-serif;background:white;';
+
+        // Başlık
+        pdfDiv.innerHTML = '<div style="text-align:center;margin-bottom:15px;">' +
+            '<h2 style="margin:0;font-size:20px;color:#1e3c72;">GAMABEL YATIRIM LTD</h2>' +
+            '<h3 style="margin:5px 0;font-size:17px;">MESAİ ÖDEME LİSTESİ</h3>' +
+            '<p style="margin:3px 0;font-size:13px;color:#555;">' + ayAdlari[currentAy].toUpperCase() + ' ' + currentYil + '</p>' +
+            '</div>';
+
+        // Tablo
+        pdfDiv.innerHTML += '<table style="width:100%;border-collapse:collapse;font-size:11px;margin-bottom:15px;">' +
+            '<thead><tr><th style="background:#1e3c72;color:white;border:1px solid #333;padding:5px;">#</th>' +
+            '<th style="background:#1e3c72;color:white;border:1px solid #333;padding:5px;text-align:left;">Adı Soyadı</th>' +
+            '<th style="background:#1e3c72;color:white;border:1px solid #333;padding:5px;text-align:left;">Bölüm</th>' +
+            '<th style="background:#1e3c72;color:white;border:1px solid #333;padding:5px;">Toplam Mesai (Saat)</th>' +
+            '<th style="background:#1e3c72;color:white;border:1px solid #333;padding:5px;">Saatlik Brüt (₺)</th>' +
+            '<th style="background:#1e3c72;color:white;border:1px solid #333;padding:5px;">Ödeme Tutarı (₺)</th></tr></thead><tbody>';
+
+        for (var i = 0; i < odemeler.length; i++) {
+            var o = odemeler[i];
+            pdfDiv.innerHTML += '<tr><td style="border:1px solid #ddd;padding:4px;text-align:center;">' + o.sira + '</td>' +
+                '<td style="border:1px solid #ddd;padding:4px;">' + escapeHtml(o.adSoyad) + '</td>' +
+                '<td style="border:1px solid #ddd;padding:4px;">' + escapeHtml(o.birimAdi) + '</td>' +
+                '<td style="border:1px solid #ddd;padding:4px;text-align:right;">' + o.toplamSaat.toFixed(1) + '</td>' +
+                '<td style="border:1px solid #ddd;padding:4px;text-align:right;">' + formatTurkishCurrency(o.saatlikBrut) + '</td>' +
+                '<td style="border:1px solid #ddd;padding:4px;text-align:right;font-weight:bold;">' + formatTurkishCurrency(o.odemeTutari) + '</td></tr>';
+        }
+
+        pdfDiv.innerHTML += '<tr style="background:#e9ecef;font-weight:bold;"><td colspan="2" style="border:1px solid #333;padding:5px;text-align:right;">GENEL TOPLAM</td>' +
+            '<td style="border:1px solid #333;padding:5px;text-align:center;">' + (ozet.toplamPersonel || 0) + ' Kişi</td>' +
+            '<td style="border:1px solid #333;padding:5px;text-align:right;">' + (ozet.toplamMesai || 0).toFixed(1) + '</td>' +
+            '<td style="border:1px solid #333;padding:5px;text-align:right;">' + formatTurkishCurrency(ozet.saatlikBrut || 0) + '</td>' +
+            '<td style="border:1px solid #333;padding:5px;text-align:right;">' + formatTurkishCurrency(ozet.genelToplamOdeme || 0) + '</td></tr>' +
+            '</tbody></table>';
+
+        // Footer
+        pdfDiv.innerHTML += '<div style="text-align:center;margin-top:15px;font-size:9px;color:#999;">Oluşturulma: ' + new Date().toLocaleDateString('tr-TR') + ' - GAMABEL YATIRIM LTD</div>';
+
+        document.body.appendChild(pdfDiv);
+
+        var dosyaAdi = 'Mesai_Odemesi_' + ayAdlari[currentAy] + '_' + currentYil + '.pdf';
+        html2pdf().set({
+            margin: [8, 8, 8, 8],
+            filename: dosyaAdi,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+        }).from(pdfDiv).save().then(function() {
+            pdfDiv.remove();
+            showToast('PDF indiriliyor');
+        });
+    });
+
+    // Yazdır
+    document.getElementById('btnYazdir').addEventListener('click', function() {
+        if (odemeler.length === 0) return;
+        window.print();
+    });
+
+    // Admin değilse sayfa yüklendiğinde otomatik yükle
+    (function() {
+        var sel = document.getElementById('birimSelect');
+        if (sel && sel.options.length > 0 && sel.value) {
+            loadOdemeler();
+        }
+    })();
+})();
+</script>
+}

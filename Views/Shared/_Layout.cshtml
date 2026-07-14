@@ -1,0 +1,210 @@
+﻿<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - gamabelmvc</title>
+    <script type="importmap"></script>
+    <!-- Bootstrap CSS from CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/gamabelmvc.styles.css" asp-append-version="true" />
+</head>
+<body style="display: flex; flex-direction: column; min-height: 100vh;">
+    <header>
+        <nav class="navbar navbar-expand-sm gbl-navbar mb-3">
+            <div class="container-fluid">
+                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">GAMABEL YATIRIM</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse"
+                        aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+                    @{
+                        var activeModule = Context.Session.GetString("ActiveModule") ?? string.Empty;
+                        var isLoggedIn = !string.IsNullOrEmpty(Context.Session.GetString("KullaniciAdi"));
+                    }
+                    <ul class="navbar-nav flex-grow-1 align-items-center">
+                        <li class="nav-item">
+                            <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Index">🏠 Ana Sayfa</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/Sikayet">📝 Şikayetler</a>
+                        </li>
+                        @if (isLoggedIn && activeModule == "STS")
+                        {
+                            var rol = Context.Session.GetString("Rol") ?? string.Empty;
+                            <div class="nav-separator"></div>
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="stsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    📦 STS Modülü
+                                </a>
+                                <ul class="dropdown-menu" aria-labelledby="stsDropdown">
+                                    @if (rol == "SubePersoneli")
+                                    {
+                                        <li><a class="dropdown-item" href="/Eksik/SubeListe">📋 Sipariş Listesi</a></li>
+                                        <li><a class="dropdown-item" href="/Eksik/Gecmis">🕘 Geçmiş Eksikler</a></li>
+                                        <li><a class="dropdown-item" href="/Eksik/Ekle">➕ Eksik Ekle</a></li>
+                                        <li><a class="dropdown-item" href="/Eksik/TopluYukle">📁 Excel Yükle</a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item" href="/Sevkiyat/SubeOnay">✓ Şube Onay</a></li>
+                                    }
+                                    else
+                                    {
+                                        <li><a class="dropdown-item" href="/Eksik/TumEksikler">📦 Tüm Eksikler</a></li>
+                                        <li><a class="dropdown-item" href="/Sevkiyat/Index">🚚 Sevkiyat Yönetimi</a></li>
+                                        <li><a class="dropdown-item" href="/Siparis/FabrikaListe">🏭 Fabrika Siparişleri</a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item" href="/Sevkiyat/SubeOnay">✓ Şube Onay</a></li>
+                                    }
+                                    @if (rol == "Admin")
+                                    {
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item" href="/Admin/Subeler">🏢 Şube Yönetimi</a></li>
+                                        <li><a class="dropdown-item" href="/Admin/Urunler">📦 Ürün Yönetimi</a></li>
+                                        <li><a class="dropdown-item" href="/Admin/Kullanicilar">👥 Kullanıcı Yönetimi</a></li>
+                                        <li><a class="dropdown-item" href="/Admin/VeritabaniYedekleme">🗄️ Veritabanı Yedekleme</a></li>
+                                    }
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="/RaporSts/Index">📈 Haftalık Raporlar</a></li>
+                                    <li><a class="dropdown-item" href="/RaporSts/DetailedRapor">🔍 Ayrıntılı Rapor</a></li>
+                                    <li><a class="dropdown-item" href="/RaporSts/GeçmisHareketler">📋 Geçmiş Hareketler</a></li>
+                                </ul>
+                            </li>
+                        }
+                        else if (isLoggedIn)
+                        {
+                            @if (Context.Session.GetString("Rol") == "admin")
+                            {
+                                <div class="nav-separator"></div>
+                                <li class="nav-item">
+                                    <a class="nav-link" asp-area="" asp-controller="Kullanici" asp-action="Index">👤 Kullanıcılar</a>
+                                </li>
+                            }
+                            <div class="nav-separator"></div>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-area="" asp-controller="Kullanici" asp-action="Liste2">📋 Personel</a>
+                            </li>
+                            <div class="nav-separator"></div>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-area="" asp-controller="Puantaj" asp-action="Index">📊 Puantaj</a>
+                            </li>
+                            <div class="nav-separator"></div>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-area="" asp-controller="Rapor" asp-action="Index">📈 Rapor</a>
+                            </li>
+                            <div class="nav-separator"></div>
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="mesaiDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    ⏰ Ek Mesai
+                                </a>
+                                <ul class="dropdown-menu" aria-labelledby="mesaiDropdown">
+                                    <li><a class="dropdown-item" href="/Mesai/Index">📊 Ek Mesai Çizelgesi</a></li>
+                                    <li><a class="dropdown-item" href="/Mesai/MesaiOdemesi">💰 Mesai Ödeme</a></li>
+                                    <li><a class="dropdown-item" href="/HizliMesaiGirisi/Index">⚡ Hızlı Mesai Girişi</a></li>
+                                </ul>
+                            </li>
+                            <div class="nav-separator"></div>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-area="" asp-controller="ResmiTatil" asp-action="Index">🎌 Tatiller</a>
+                            </li>
+                            <div class="nav-separator"></div>
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="odemeTalimatDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    💳 Ödeme Talimatı
+                                </a>
+                                <ul class="dropdown-menu" aria-labelledby="odemeTalimatDropdown">
+                                    <li><a class="dropdown-item" href="/OdemeTalimat">📄 Talimat Ana Sayfa</a></li>
+                                    <li><a class="dropdown-item" href="/OdemeTalimat" onclick="document.getElementById('excelInputNav')?.click(); return false;">📂 Yeni Ödeme Oluştur</a></li>
+                                    @if (Context.Session.GetString("Rol") == "admin")
+                                    {
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item" href="/OdemeTalimat/Firmalar">🏢 Firma Yönetimi</a></li>
+                                        <li><a class="dropdown-item" href="/OdemeTalimat/Bankalar">🏦 Banka Yönetimi</a></li>
+                                    }
+                                </ul>
+                            </li>
+                        }
+                    </ul>
+                    <ul class="navbar-nav align-items-center">
+                        @if (!isLoggedIn)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link gbl-btn-login" asp-area="" asp-controller="Account" asp-action="Login">Giriş</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link gbl-btn-register" asp-area="" asp-controller="Account" asp-action="Register">Kayıt Ol</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link gbl-btn-login" asp-area="" asp-controller="Account" asp-action="StsLogin">STS Giriş</a>
+                            </li>
+                        }
+                        else
+                        {
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle user-badge" href="#" id="profilDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <span class="user-icon">👤</span>
+                                    @Context.Session.GetString("KullaniciAdi")
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profilDropdown">
+                                    @if (activeModule != "STS")
+                                    {
+                                        <li>
+                                            <a class="dropdown-item" asp-area="" asp-controller="Kullanici" asp-action="Profil">
+                                                👤 Profil
+                                            </a>
+                                        </li>
+                                        <li><a class="dropdown-item" href="/HizliMesaiGirisi/Index">⚡ Hızlı Mesai Girişi</a></li>
+                                        @if (Context.Session.GetString("Rol") == "admin")
+                                        {
+                                            <li>
+                                                <a class="dropdown-item" asp-area="" asp-controller="Kullanici" asp-action="Yetkilendirme">
+                                                    🔒 Yetkilendirme Yönetimi
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item" asp-area="" asp-controller="Dokumantasyon" asp-action="Index">
+                                                    📄 Dokümantasyon
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item" href="/Sikayet/Admin">🛠️ Şikayet Yönetimi (Admin)</a>
+                                            </li>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <li><a class="dropdown-item" href="/Home/Index">📦 STS Dashboard</a></li>
+                                    }
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <a class="dropdown-item text-danger" asp-area="" asp-controller="Account" asp-action="Logout">
+                                            🚪 Çıkış Yap
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+    <div class="container-fluid px-3" style="flex: 1; display: flex; flex-direction: column;">
+        <main role="main" class="pb-3" style="flex: 1;">
+            @RenderBody()
+        </main>
+    </div>
+
+    <footer class="border-top footer text-muted">
+        <div class="container">
+            &copy; 2026 - gamabelmvc - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+        </div>
+    </footer>
+    <!-- jQuery and Bootstrap JS from CDN -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

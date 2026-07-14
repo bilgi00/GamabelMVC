@@ -1,0 +1,24 @@
+@{
+    ViewBag.Title = "Şikayet Oluştur";
+}
+<h2>Yeni Şikayet Oluştur</h2>
+<form method="post">
+    <div class="mb-3">
+        <label for="konu" class="form-label">Konu</label>
+        <input type="text" class="form-control" id="konu" name="konu" required maxlength="255">
+    </div>
+    <div class="mb-3">
+        <label for="detay" class="form-label">Detay</label>
+        <textarea class="form-control" id="detay" name="detay" rows="4" maxlength="2000"></textarea>
+    </div>
+    <button type="submit" class="btn btn-success">Kaydet</button>
+    <a href="/Sikayet" class="btn btn-secondary">İptal</a>
+</form>
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success mt-3">@TempData["Success"]</div>
+}
+@if (TempData["NotifyAdmin"] != null)
+{
+    <div class="alert alert-info mt-2">Yöneticiye yeni şikayet bildirimi gönderildi.</div>
+}

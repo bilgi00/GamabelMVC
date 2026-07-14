@@ -1,0 +1,91 @@
+@model List<gamabelmvc.Models.PRS.OtBanka>
+@{
+    ViewData["Title"] = "Banka Yönetimi";
+}
+
+<style>
+    .ot-header { background: linear-gradient(135deg, #1e3c72, #2a5298); color: white; padding: 18px 22px; border-radius: 12px 12px 0 0; }
+    .ot-card { background: white; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); overflow: hidden; margin-bottom: 24px; }
+    .ot-card-body { padding: 20px; }
+    .ot-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none; border: none; cursor: pointer; transition: all 0.2s; }
+    .ot-btn-primary { background: linear-gradient(135deg, #1e3c72, #2a5298); color: white; }
+    .ot-btn-danger { background: #dc3545; color: white; }
+    .ot-btn-secondary { background: #6c757d; color: white; }
+    .ot-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .ot-table th { background: #f1f5f9; padding: 8px 12px; text-align: left; font-weight: 600; border-bottom: 2px solid #dee2e6; }
+    .ot-table td { padding: 8px 12px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+    .ot-table tbody tr:hover { background: #f8f9fa; }
+    .form-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; padding: 16px; background: #f8faff; border-radius: 8px; margin-bottom: 20px; border: 1px solid #dbeafe; }
+    .form-row input { padding: 7px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; }
+    .form-row label { font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 4px; }
+    .alert-hata { background: #fee2e2; border: 1px solid #fca5a5; color: #991b1b; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; }
+</style>
+
+<div style="margin-bottom:12px;">
+    <a href="/OdemeTalimat" class="ot-btn ot-btn-secondary">← Ödeme Talimatlarına Dön</a>
+</div>
+
+<div class="ot-card">
+    <div class="ot-header">
+        <h1 style="font-size:18px; margin:0;">🏦 Banka / Ödeme Hesabı Yönetimi</h1>
+    </div>
+    <div class="ot-card-body">
+
+        @if (TempData["Hata"] != null)
+        {
+            <div class="alert-hata">❌ @TempData["Hata"]</div>
+        }
+
+        <!-- Yeni Banka Ekleme -->
+        <form method="post" asp-controller="OdemeTalimat" asp-action="BankaKaydet">
+            <input type="hidden" name="Id" value="0" />
+            <div class="form-row">
+                <div>
+                    <label>Şube / Hesap Adı *</label>
+                    <input type="text" name="SubeAdi" required placeholder="örn: GARANTİ MERKEZ" style="width:240px;" />
+                </div>
+                <div>
+                    <label>IBAN *</label>
+                    <input type="text" name="IBAN" required placeholder="TR..." maxlength="26" style="width:250px; font-family:monospace;" />
+                </div>
+                <div>
+                    <button type="submit" class="ot-btn ot-btn-primary">➕ Ekle</button>
+                </div>
+            </div>
+        </form>
+
+        <!-- Banka Listesi -->
+        @if (!Model.Any())
+        {
+            <p style="color:#6c757d; font-size:13px;">Henüz banka/hesap tanımlı değil.</p>
+        }
+        else
+        {
+            <table class="ot-table">
+                <thead>
+                    <tr>
+                        <th>Şube / Hesap Adı</th>
+                        <th>IBAN</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var b in Model)
+                    {
+                        <tr>
+                            <td>@b.SubeAdi</td>
+                            <td style="font-family:monospace; font-size:12px;">@b.IBAN</td>
+                            <td>
+                                <form method="post" asp-controller="OdemeTalimat" asp-action="BankaSil"
+                                      onsubmit="return confirm('@b.SubeAdi silinsin mi?')">
+                                    <input type="hidden" name="id" value="@b.Id" />
+                                    <button type="submit" class="ot-btn ot-btn-danger" style="padding:5px 12px; font-size:12px;">🗑 Sil</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>

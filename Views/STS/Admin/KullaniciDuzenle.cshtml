@@ -1,0 +1,104 @@
+@model gamabelmvc.Models.STS.StsKullanici
+@{
+    ViewData["Title"] = "Kullanıcı Düzenle";
+}
+
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h1>Kullanıcı Düzenle</h1>
+        </div>
+    </div>
+
+    <form method="post" action="/Admin/KullaniciDuzenle" class="row g-3">
+        <input type="hidden" name="Id" value="@Model.Id" />
+        <input type="hidden" name="KullaniciAdi" value="@Model.KullaniciAdi" />
+
+        <div class="col-md-6">
+            <label class="form-label">Ad Soyad *</label>
+            <input type="text" name="AdSoyad" class="form-control" value="@Model.AdSoyad" required />
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label">Kullanıcı Adı</label>
+            <input type="text" class="form-control" value="@Model.KullaniciAdi" disabled />
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label">Şube *</label>
+            <select name="SubeId" class="form-select" required>
+                @if (ViewBag.Subeler != null)
+                {
+                    foreach (var sube in ViewBag.Subeler)
+                    {
+                        if (Model.SubeId == sube.Id)
+                        {
+                            <option value="@sube.Id" selected>@sube.Ad</option>
+                        }
+                        else
+                        {
+                            <option value="@sube.Id">@sube.Ad</option>
+                        }
+                    }
+                }
+            </select>
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label">Rol *</label>
+            <select name="Rol" class="form-select" required>
+                @if (Model.Rol == "SubePersoneli")
+                {
+                    <option value="SubePersoneli" selected>Şube Personeli</option>
+                }
+                else
+                {
+                    <option value="SubePersoneli">Şube Personeli</option>
+                }
+
+                @if (Model.Rol == "DepoSorumlusu")
+                {
+                    <option value="DepoSorumlusu" selected>Depo Sorumlusu</option>
+                }
+                else
+                {
+                    <option value="DepoSorumlusu">Depo Sorumlusu</option>
+                }
+
+                @if (Model.Rol == "Admin")
+                {
+                    <option value="Admin" selected>Admin</option>
+                }
+                else
+                {
+                    <option value="Admin">Admin</option>
+                }
+            </select>
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label">Yeni Şifre (opsiyonel)</label>
+            <input type="password" name="yeniSifre" class="form-control" />
+        </div>
+
+        <div class="col-md-6 d-flex align-items-end">
+            <div class="form-check">
+                @if (Model.AktifMi)
+                {
+                    <input class="form-check-input" type="checkbox" name="AktifMi" value="true" checked>
+                }
+                else
+                {
+                    <input class="form-check-input" type="checkbox" name="AktifMi" value="true">
+                }
+                <input type="hidden" name="AktifMi" value="false" />
+                <label class="form-check-label">Aktif kullanıcı</label>
+            </div>
+        </div>
+
+        <div class="col-md-12">
+            <button type="submit" class="btn btn-warning">Güncelle</button>
+            <a href="/Admin/Kullanicilar" class="btn btn-secondary">İptal</a>
+        </div>
+    </form>
+</div>

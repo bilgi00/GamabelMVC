@@ -1,0 +1,88 @@
+@{
+    ViewData["Title"] = "Şube Yönetimi";
+}
+
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <h1>Şube Yönetimi</h1>
+        </div>
+        <div class="col-md-6 text-end">
+            <a href="/Admin/SubeEkle" class="btn btn-success">+ Yeni Şube Ekle</a>
+        </div>
+    </div>
+
+    @if (TempData["Basari"] != null)
+    {
+        <div class="alert alert-success">@TempData["Basari"]</div>
+    }
+
+    @if (TempData["Hata"] != null)
+    {
+        <div class="alert alert-danger">@TempData["Hata"]</div>
+    }
+
+    @if ((Model?.Count ?? 0) > 0)
+    {
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Ad</th>
+                        <th>Kod</th>
+                        <th>Tip</th>
+                        <th>Sorumlu</th>
+                        <th>Durum</th>
+                        <th>İşlem</th>
+                    </tr>
+                </thead>
+                <tbody>
+                        @foreach (var sube in Model ?? Enumerable.Empty<gamabelmvc.Models.STS.StsSube>())
+                    {
+                        <tr>
+                            <td>@sube.Ad</td>
+                            <td><code>@sube.Kod</code></td>
+                            <td>@sube.Tip</td>
+                            <td>
+                                <form method="post" action="/Admin/SubeSorumluAta" class="d-flex gap-2 align-items-center">
+                                    <input type="hidden" name="subeId" value="@sube.Id" />
+                                    <select name="sorumluKullaniciId" class="form-select form-select-sm">
+                                        <option value="">Seçiniz</option>
+                                        @if (ViewBag.Kullanicilar != null)
+                                        {
+                                            foreach (var kullanici in ViewBag.Kullanicilar)
+                                            {
+                                                if (sube.SorumluKullaniciId == kullanici.Id)
+                                                {
+                                                    <option value="@kullanici.Id" selected>@kullanici.AdSoyad</option>
+                                                }
+                                                else
+                                                {
+                                                    <option value="@kullanici.Id">@kullanici.AdSoyad</option>
+                                                }
+                                            }
+                                        }
+                                    </select>
+                                    <button type="submit" class="btn btn-sm btn-primary">Ata</button>
+                                </form>
+                            </td>
+                            <td>
+                                <span class="badge bg-@(sube.AktifMi ? "success" : "danger")">
+                                    @(sube.AktifMi ? "Aktif" : "Pasif")
+                                </span>
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-warning">Düzenle</button>
+                                <button class="btn btn-sm btn-danger">Sil</button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info">Şube yoktur.</div>
+    }
+</div>

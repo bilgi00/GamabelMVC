@@ -1,0 +1,24 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "gamabelmvc", "gamabelmvc.csproj", "{C0EC055E-A30B-AC5B-4D85-18DEAA42BA31}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C0EC055E-A30B-AC5B-4D85-18DEAA42BA31}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C0EC055E-A30B-AC5B-4D85-18DEAA42BA31}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C0EC055E-A30B-AC5B-4D85-18DEAA42BA31}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C0EC055E-A30B-AC5B-4D85-18DEAA42BA31}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {8FD65A21-613D-4A12-9D17-C4827ED37FC2}
+	EndGlobalSection
+EndGlobal

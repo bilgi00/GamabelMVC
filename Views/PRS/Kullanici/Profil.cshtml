@@ -1,0 +1,200 @@
+@model gamabelmvc.Models.PRS.KullaniciModel
+@{
+    ViewData["Title"] = "Profil";
+    Layout = "_Layout";
+}
+
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="dashboard-header mb-4">
+        <h1 class="mb-1">👤 Kullanıcı Profili</h1>
+        <p class="text-muted">Kişisel bilgilerinizi görmek ve yönetmek için</p>
+    </div>
+
+    <!-- User Info & Logout -->
+    <div class="mb-4 d-flex justify-content-end gap-2">
+        <span class="badge bg-info text-dark" style="height: fit-content;">Hoş geldin, <strong>@ViewBag.KullaniciAdi</strong></span>
+        <a asp-controller="Account" asp-action="Logout" class="btn btn-outline-danger btn-sm">🚪 Çıkış Yap</a>
+    </div>
+
+
+    <!-- Alerts -->
+    @if (ViewBag.Hata != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+            <strong>❌ Hata:</strong> @ViewBag.Hata
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (ViewBag.Basari != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show mb-4" role="alert">
+            <strong>✅ Başarılı:</strong> @ViewBag.Basari
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Content Row -->
+    <div class="row g-4">
+        <!-- Profile Information Card -->
+        <div class="col-lg-6">
+            <div class="card shadow-sm border-0">
+                <div class="card-header text-white" style="background: linear-gradient(135deg, #1565c0 0%, #0d47a1 100%);">
+                    <h5 class="mb-0">📋 Profil Bilgileri</h5>
+                </div>
+                <div class="card-body">
+                @if (Model != null)
+                {
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Kullanıcı Adı:</label>
+                        <p class="form-control-plaintext">@Model.KullaniciAdi</p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Ad Soyad:</label>
+                        <p class="form-control-plaintext">
+                            @if (!string.IsNullOrEmpty(Model.Ad) || !string.IsNullOrEmpty(Model.Soyad))
+                            {
+                                @($"{Model.Ad} {Model.Soyad}".Trim())
+                            }
+                            else
+                            {
+                                <span class="text-muted">Belirtilmemiş</span>
+                            }
+                        </p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Telefon:</label>
+                        <p class="form-control-plaintext">
+                            @if (!string.IsNullOrEmpty(Model.Telefon))
+                            {
+                                @Model.Telefon
+                            }
+                            else
+                            {
+                                <span class="text-muted">Belirtilmemiş</span>
+                            }
+                        </p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Birim:</label>
+                        <p class="form-control-plaintext">
+                            @if (!string.IsNullOrEmpty(Model.Birim))
+                            {
+                                @Model.Birim
+                            }
+                            else
+                            {
+                                <span class="text-muted">Belirtilmemiş</span>
+                            }
+                        </p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Yetki:</label>
+                        <p class="form-control-plaintext">
+                            @if (Model.Rol == "admin")
+                            {
+                                <span class="badge bg-danger">Admin</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-info">Birim Amiri</span>
+                            }
+                        </p>
+                    </div>
+                    @if (Model.Rol == "admin")
+                    {
+                        <hr class="my-4" />
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">📧 Email Adresi:</label>
+                            <p class="form-control-plaintext">
+                                @if (!string.IsNullOrEmpty(Model.Email))
+                                {
+                                    @Model.Email
+                                }
+                                else
+                                {
+                                    <span class="text-muted">Belirtilmemiş</span>
+                                }
+                            </p>
+                        </div>
+                        <small class="text-muted d-block mb-3">
+                            💡 Bu email adresi raporları göndermek için kullanılacaktır.
+                        </small>
+                    }
+                }
+                else
+                {
+                    <div class="alert alert-warning">Profil bilgileri yüklenemedi.</div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Password Change Card -->
+    <div class="col-lg-6">
+        <div class="card shadow-sm border-0">
+            <div class="card-header text-white" style="background: linear-gradient(135deg, #28a745 0%, #1b5e20 100%);">
+                <h5 class="mb-0">🔐 Şifre Değiştir</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" asp-action="SifreDegistir">
+                    <div class="mb-3">
+                        <label for="eskiSifre" class="form-label fw-semibold">🔒 Eski Şifre <span class="text-danger">*</span></label>
+                        <input type="password" class="form-control form-control-lg" id="eskiSifre" name="eskiSifre" required placeholder="Eski şifrenizi girin">
+                    </div>
+                    <div class="mb-3">
+                        <label for="yeniSifre" class="form-label fw-semibold">🔑 Yeni Şifre <span class="text-danger">*</span></label>
+                        <input type="password" class="form-control form-control-lg" id="yeniSifre" name="yeniSifre" required placeholder="Yeni şifrenizi girin">
+                        <small class="form-text text-muted">En az 3 karakter olmalıdır.</small>
+                    </div>
+                    <div class="mb-4">
+                        <label for="yeniSifreOnayla" class="form-label fw-semibold">✓ Yeni Şifre Onayla <span class="text-danger">*</span></label>
+                        <input type="password" class="form-control form-control-lg" id="yeniSifreOnayla" name="yeniSifreOnayla" required placeholder="Yeni şifrenizi tekrar girin">
+                    </div>
+                    <button type="submit" class="btn btn-success btn-lg w-100 fw-bold">Şifre Değiştir</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    @if (Model?.Rol == "admin")
+    {
+        <!-- Email Configuration Card for Admin -->
+        <div class="col-lg-6">
+            <div class="card shadow-sm border-0">
+                <div class="card-header text-white" style="background: linear-gradient(135deg, #ff9800 0%, #e65100 100%);">
+                    <h5 class="mb-0">📧 Email Ayarları</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" asp-action="EmailGuncelle">
+                        <div class="mb-3">
+                            <label for="email" class="form-label fw-semibold">Email Adresi <span class="text-danger">*</span></label>
+                            <input type="email" class="form-control form-control-lg" id="email" name="email" 
+                                   value="@Model?.Email" required placeholder="Örnek: admin@example.com">
+                            <small class="form-text text-muted">Bu email adresi raporları göndermek için kullanılacaktır.</small>
+                        </div>
+                        <div class="mb-3">
+                            <div class="alert alert-info">
+                                <small>
+                                    <strong>ℹ️ Not:</strong> Bu email adresi kayıtlı olup doğrulanmış olmalıdır. 
+                                    Raporlar bu adrese gönderilecektir.
+                                </small>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-warning btn-lg w-100 fw-bold">Email Adresini Güncelle</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+    </div>
+</div>
+
+<!-- Navigation -->
+<div class="mt-5 mb-4">
+    <a asp-controller="Kullanici" asp-action="Index" class="btn btn-secondary">← Geri Dön</a>
+</div>
+</div>

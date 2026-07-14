@@ -1,0 +1,60 @@
+@model gamabelmvc.Models.PRS.LoginViewModel
+@{
+    ViewData["Title"] = "Giriş Yap";
+    Layout = "_Layout";
+}
+
+<div class="d-flex justify-content-center align-items-center" style="min-height: calc(100vh - 200px);">
+    <div style="width: 100%; max-width: 420px;">
+        <div class="card shadow-lg border-0" style="background: linear-gradient(135deg, rgba(26, 35, 126, 0.03) 0%, rgba(21, 101, 192, 0.03) 100%);">
+            <!-- Header -->
+            <div class="card-header text-white text-center border-0" style="background: linear-gradient(135deg, #1a237e 0%, #283593 50%, #1565c0 100%); padding: 32px 30px;">
+                <div class="text-center mb-3" style="font-size: 40px;">🏗️</div>
+                <h2 class="fw-bold mb-1" style="font-size: 20px;">GAMABEL YATIRIM</h2>
+                <p class="mb-0 small" style="opacity: 0.9;">Personel Yönetim Portalı</p>
+            </div>
+
+            <!-- Body -->
+            <div class="card-body p-4">
+                <!-- Error Alert -->
+                @if (ViewBag.Hata != null)
+                {
+                    <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center" role="alert">
+                        <span class="me-2">⚠️</span>
+                        <span>@ViewBag.Hata</span>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                }
+
+                <!-- Login Form -->
+                <form asp-action="Login" method="post">
+                    <div class="mb-3">
+                        <label for="KullaniciAdi" class="form-label fw-semibold">👤 Kullanıcı Adı</label>
+                        <input asp-for="KullaniciAdi" class="form-control form-control-lg" placeholder="Kullanıcı adınızı girin" required autocomplete="username" style="border-color: #1a237e;" />
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="Sifre" class="form-label fw-semibold">🔐 Şifre</label>
+                        <input asp-for="Sifre" type="password" class="form-control form-control-lg" placeholder="Şifrenizi girin" required autocomplete="current-password" style="border-color: #1a237e;" />
+                    </div>
+
+                    <button type="submit" class="btn btn-lg w-100 fw-bold text-white" style="background: linear-gradient(135deg, #1a237e, #1565c0); border: none; box-shadow: 0 4px 12px rgba(26, 35, 126, 0.25);">
+                        ✓ Giriş Yap
+                    </button>
+                </form>
+
+                <!-- Footer Links -->
+                <hr class="my-4" />
+                <div class="text-center">
+                    <p class="text-muted mb-2">
+                        Hesabınız yok mu?
+                        <a href="/Account/Register" class="text-decoration-none fw-semibold">Kayıt Olun →</a>
+                    </p>
+                    <p class="text-muted mb-0">
+                        <a href="/Account/StsLogin" class="text-decoration-none fw-semibold">STS Sistemine Giriş →</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

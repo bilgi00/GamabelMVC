@@ -1,0 +1,97 @@
+@model List<gamabelmvc.Models.PRS.KullaniciModel>
+@{
+    ViewData["Title"] = "Kullanıcı Listesi";
+    Layout = "_Layout";
+}
+
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="dashboard-header mb-4">
+        <h1 class="mb-1">👥 Kullanıcı Yönetimi</h1>
+        <p class="text-muted">Sistem kullanıcılarını görüntüleyin ve yönetin</p>
+    </div>
+
+    <!-- User Info & Logout -->
+    <div class="mb-4 d-flex justify-content-end gap-2">
+        <span class="badge bg-info text-dark" style="height: fit-content;">👤 Hoş geldin, <strong>@ViewBag.KullaniciAdi</strong></span>
+        <a asp-controller="Account" asp-action="Logout" class="btn btn-outline-danger btn-sm">🚪 Çıkış Yap</a>
+    </div>
+
+
+    <!-- Error Alert -->
+    @if (ViewBag.Hata != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+            <strong>❌ Hata:</strong> @ViewBag.Hata
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Users Table -->
+    @if (Model != null && Model.Count > 0)
+    {
+        <div class="card">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">📋 Kullanıcı Listesi</h5>
+                <span class="badge bg-info">@Model.Count kullanıcı</span>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+            <thead class="table-light">
+                        <tr>
+                            <th class="text-center" style="width: 60px;">#</th>
+                            <th>👤 Kullanıcı Adı</th>
+                            <th>✍️ Ad</th>
+                            <th>✍️ Soyad</th>
+                            <th>🏢 Birim</th>
+                            <th class="text-center" style="width: 100px;">⚙️ Rol</th>
+                        </tr>
+                    </thead>
+            <tbody>
+                        @foreach (var k in Model)
+                        {
+                            <tr>
+                                <td class="text-center"><span class="badge bg-light text-dark">@k.Id</span></td>
+                                <td><strong>@k.KullaniciAdi</strong></td>
+                                <td>@k.Ad</td>
+                                <td>@k.Soyad</td>
+                                <td><span class="badge bg-secondary">@k.Birim</span></td>
+                                <td class="text-center">
+                                    @{
+                                        var rolBadgeClass = k.Rol?.ToLower() switch
+                                        {
+                                            "admin" => "bg-danger",
+                                            "yönetici" => "bg-warning text-dark",
+                                            "personel" => "bg-success",
+                                            _ => "bg-secondary"
+                                        };
+                                    }
+                                    <span class="badge @rolBadgeClass">@k.Rol</span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Empty State -->
+    @if (Model == null || Model.Count == 0)
+    {
+        if (ViewBag.Hata == null)
+        {
+            <div class="alert alert-info alert-dismissible fade show" role="alert">
+                <strong>ℹ️ Bilgi:</strong> Henüz kayıtlı kullanıcı bulunmuyor.
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+    }
+
+    <!-- Navigation -->
+    <div class="mt-5 mb-4">
+        <a href="/Home/Index" class="btn btn-secondary">← Ana Sayfaya Dön</a>
+    </div>
+</div>

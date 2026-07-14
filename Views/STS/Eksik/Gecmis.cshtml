@@ -1,0 +1,80 @@
+@{
+    ViewData["Title"] = "Şube Geçmiş Sipariş Listesi";
+}
+
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <h1>Şube Bazlı Geçmiş Sipariş Listesi</h1>
+            <p class="text-muted">Bu ekranda şubenin tüm eksik kayıt geçmişi görüntülenir.</p>
+        </div>
+        <div class="col-md-6 text-end">
+            <a href="/Eksik/SubeListe" class="btn btn-secondary">Güncel Listeye Dön</a>
+        </div>
+    </div>
+
+    @if (Model != null && Model.Count > 0)
+    {
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Sipariş No</th>
+                        <th>Ürün</th>
+                        <th>Miktar</th>
+                        <th>Not</th>
+                        <th>Durum</th>
+                        <th>Hafta</th>
+                        <th>Giriş Tarihi</th>
+                        <th>Uyarı</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var eksik in Model)
+                    {
+                        <tr>
+                            <td>
+                                @if (string.IsNullOrWhiteSpace(eksik.SiparisNo))
+                                {
+                                    @:"-"
+                                }
+                                else if (eksik.SiparisNo.Length > 8)
+                                {
+                                    @(eksik.SiparisNo.Substring(0, 3) + "..." + eksik.SiparisNo.Substring(eksik.SiparisNo.Length - 3))
+                                }
+                                else
+                                {
+                                    @eksik.SiparisNo
+                                }
+                            </td>
+                            <td>@eksik.Urun?.Ad</td>
+                            <td>@eksik.Miktar</td>
+                            <td>@(string.IsNullOrWhiteSpace(eksik.Not) ? "-" : eksik.Not)</td>
+                            <td>
+                                <span class="badge bg-@(eksik.Durum == "Bekliyor" ? "warning" : eksik.Durum == "SevkEdildi" ? "info" : "success")">
+                                    @eksik.Durum
+                                </span>
+                            </td>
+                            <td>@eksik.HaftaNo</td>
+                            <td>@eksik.GirisTarihi.ToString("dd.MM.yyyy HH:mm")</td>
+                            <td>
+                                @if (eksik.GeciktiMi)
+                                {
+                                    <span class="badge bg-danger">Gecikti</span>
+                                }
+                                @if (eksik.TekrarliMi)
+                                {
+                                    <span class="badge bg-warning text-dark">Stok Problemi (@eksik.TekrarHaftaSayisi hafta)</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info">Geçmiş eksik kaydı bulunamadı.</div>
+    }
+</div>

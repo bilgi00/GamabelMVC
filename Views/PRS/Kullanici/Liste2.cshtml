@@ -1,0 +1,280 @@
+@{
+    ViewData["Title"] = "Personel Listesi";
+    Layout = "_Layout";
+}
+
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="dashboard-header mb-4">
+        <h1 class="mb-1">👥 Personel Listesi</h1>
+        <p class="text-muted">Birim bazında personelleri görüntüleyin ve yönetin</p>
+    </div>
+
+    <!-- User Info & Logout -->
+    <div class="mb-4 d-flex justify-content-end gap-2">
+        <span class="badge bg-info text-dark" style="height: fit-content;">Hoş geldin, <strong>@ViewBag.KullaniciAdi</strong></span>
+        <a asp-controller="Account" asp-action="Logout" class="btn btn-outline-danger btn-sm">🚪 Çıkış Yap</a>
+    </div>
+
+    <!-- Error Alert -->
+    @if (ViewBag.Hata != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+            <strong>❌ Hata:</strong> @ViewBag.Hata
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Filter Card -->
+    <div class="card mb-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">🔍 Filtrele</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <label for="birimSelect" class="form-label fw-semibold">🏢 Birim Seçin</label>
+                    <select id="birimSelect" class="form-select form-select-lg" @(ViewBag.Rol != "admin" ? "disabled" : "")>
+                        @if (ViewBag.Rol == "admin")
+                        {
+                            <option value="">-- Birim seçiniz --</option>
+                        }
+                        @if (ViewBag.Birimler != null)
+                        {
+                            @foreach (string birim in ViewBag.Birimler)
+                            {
+                                if (ViewBag.Rol != "admin")
+                                {
+                                    @:<option value="@birim" selected>@birim</option>
+                                }
+                                else
+                                {
+                                    @:<option value="@birim">@birim</option>
+                                }
+                            }
+                        }
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Card -->
+    <div id="personelContainer" class="card mb-4" style="display:none;">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">📋 Personel Listesi</h5>
+            <span id="toplamKayit" class="badge bg-info"></span>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="text-center" style="width: 50px;">#</th>
+                            <th>✍️ Ad</th>
+                            <th>✍️ Soyad</th>
+                            <th class="text-center" style="width: 120px;">⚠️ Statü</th>
+                        </tr>
+                    </thead>
+                    <tbody id="personelBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Empty State -->
+    <div id="bosUyari" class="alert alert-info alert-dismissible fade show" role="alert" style="display:none;">
+        <strong>ℹ️ Bilgi:</strong> Seçili birimde kayıtlı personel bulunmuyor.
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div id="yukleniyor" class="text-center" style="display:none;">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Yükleniyor...</span>
+        </div>
+        <p class="text-muted mt-2">Veriler yükleniyor, lütfen bekleyin...</p>
+    </div>
+
+    <!-- Excel Import Section (Admin Only) -->
+    @if (ViewBag.Rol == "admin")
+    {
+        <hr class="my-4" />
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">📊 Excel'den Personel Aktar</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-3">
+                    <strong>Excel sütun başlıkları (şu sırada):</strong>
+                    <br />
+                    <span class="badge bg-light text-dark">KODU</span>
+                    <span class="badge bg-light text-dark">ADI</span>
+                    <span class="badge bg-light text-dark">SOYADI</span>
+                    <span class="badge bg-light text-dark">BİRİM ADI</span>
+                    <span class="badge bg-light text-dark">MESLEĞİ GÖREVİ</span>
+                </p>
+                <div class="row align-items-end">
+                    <div class="col-md-6">
+                        <label for="excelDosya" class="form-label fw-semibold">📁 Excel Dosyası Seçin (.xlsx)</label>
+                        <input type="file" id="excelDosya" class="form-control form-control-lg" accept=".xlsx,.xls" />
+                    </div>
+                    <div class="col-md-3">
+                        <button id="btnAktar" class="btn btn-success btn-lg w-100 fw-bold" onclick="excelAktar()">
+                            ↑ Aktar
+                        </button>
+                    </div>
+                </div>
+                <div id="aktarSonuc" class="mt-3" style="display:none;"></div>
+                <div id="aktarYukleniyor" class="text-center mt-3" style="display:none;">
+                    <div class="spinner-border text-success" role="status">
+                        <span class="visually-hidden">Aktarılıyor...</span>
+                    </div>
+                    <p class="text-muted mt-2">Veriler aktarılıyor, lütfen bekleyin...</p>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Navigation -->
+    <div class="mt-5 mb-4">
+        <a href="/Home/Index" class="btn btn-secondary">← Ana Sayfaya Dön</a>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    document.getElementById('birimSelect').addEventListener('change', function () {
+        var birim = this.value;
+        var container = document.getElementById('personelContainer');
+        var bosUyari = document.getElementById('bosUyari');
+        var yukleniyor = document.getElementById('yukleniyor');
+        var tbody = document.getElementById('personelBody');
+
+        container.style.display = 'none';
+        bosUyari.style.display = 'none';
+
+        if (!birim) return;
+
+        yukleniyor.style.display = 'block';
+
+        fetch('/Kullanici/PersonelByBirim?birim=' + encodeURIComponent(birim))
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                yukleniyor.style.display = 'none';
+
+                if (data.hata) {
+                    bosUyari.textContent = 'Hata: ' + data.hata;
+                    bosUyari.style.display = 'block';
+                    return;
+                }
+
+                tbody.innerHTML = '';
+
+                if (data.length === 0) {
+                    bosUyari.textContent = 'Seçili birimde kayıtlı personel bulunmuyor.';
+                    bosUyari.style.display = 'block';
+                    return;
+                }
+
+                for (var i = 0; i < data.length; i++) {
+                    var tr = document.createElement('tr');
+                    tr.innerHTML = '<td>' + (i + 1) + '</td><td>' +
+                        (data[i].ad || '') + '</td><td>' +
+                        (data[i].soyad || '') + '</td><td>' +
+                        (data[i].perStatu || '') + '</td>';
+                    tbody.appendChild(tr);
+                }
+
+                document.getElementById('toplamKayit').textContent = 'Toplam: ' + data.length + ' kayıt';
+                container.style.display = 'block';
+            })
+            .catch(function () {
+                yukleniyor.style.display = 'none';
+                bosUyari.textContent = 'Veri alınırken bir hata oluştu.';
+                bosUyari.style.display = 'block';
+            });
+    });
+
+    // Admin değilse sayfa yüklendiğinde otomatik kendi birimini yükle
+    (function() {
+        var sel = document.getElementById('birimSelect');
+        if (sel.value && sel.disabled) {
+            sel.dispatchEvent(new Event('change'));
+        }
+    })();
+
+    function excelAktar() {
+        var fileInput = document.getElementById('excelDosya');
+        var sonucDiv = document.getElementById('aktarSonuc');
+        var yukleniyorDiv = document.getElementById('aktarYukleniyor');
+        var btn = document.getElementById('btnAktar');
+
+        sonucDiv.style.display = 'none';
+
+        if (!fileInput.files || fileInput.files.length === 0) {
+            sonucDiv.innerHTML = '<div class="alert alert-warning">Lütfen bir Excel dosyası seçin.</div>';
+            sonucDiv.style.display = 'block';
+            return;
+        }
+
+        var formData = new FormData();
+        formData.append('excelFile', fileInput.files[0]);
+
+        btn.disabled = true;
+        yukleniyorDiv.style.display = 'block';
+
+        fetch('/Kullanici/ExcelAktar', {
+            method: 'POST',
+            body: formData
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            yukleniyorDiv.style.display = 'none';
+            btn.disabled = false;
+
+            if (data.basarili) {
+                var html = '<div class="alert alert-success">' + data.mesaj + '</div>';
+
+                // Mevcut kayıtlar (atlanalar)
+                if (data.mevcutKayitlar && data.mevcutKayitlar.length > 0) {
+                    html += '<div class="card mt-2 border-warning"><div class="card-header bg-warning text-dark"><strong>Mevcut Kayıtlar (Atlandı) - ' + data.mevcutKayitlar.length + ' adet</strong></div>';
+                    html += '<div class="card-body p-0"><table class="table table-sm table-bordered mb-0"><thead class="table-warning"><tr><th>#</th><th>Kodu</th><th>Ad</th><th>Soyad</th><th>Birim</th><th>Statü</th></tr></thead><tbody>';
+                    for (var i = 0; i < data.mevcutKayitlar.length; i++) {
+                        var m = data.mevcutKayitlar[i];
+                        html += '<tr><td>' + (i+1) + '</td><td>' + (m.perNo||'') + '</td><td>' + (m.ad||'') + '</td><td>' + (m.soyad||'') + '</td><td>' + (m.birim||'') + '</td><td>' + (m.statu||'') + '</td></tr>';
+                    }
+                    html += '</tbody></table></div></div>';
+                }
+
+                // Yeni eklenenler
+                if (data.yeniEklenenler && data.yeniEklenenler.length > 0) {
+                    html += '<div class="card mt-2 border-success"><div class="card-header bg-success text-white"><strong>Yeni Eklendi - ' + data.yeniEklenenler.length + ' adet</strong></div>';
+                    html += '<div class="card-body p-0"><table class="table table-sm table-bordered mb-0"><thead class="table-success"><tr><th>#</th><th>Kodu</th><th>Ad</th><th>Soyad</th><th>Birim</th><th>Statü</th></tr></thead><tbody>';
+                    for (var j = 0; j < data.yeniEklenenler.length; j++) {
+                        var y = data.yeniEklenenler[j];
+                        html += '<tr><td>' + (j+1) + '</td><td>' + (y.perNo||'') + '</td><td>' + (y.ad||'') + '</td><td>' + (y.soyad||'') + '</td><td>' + (y.birim||'') + '</td><td>' + (y.statu||'') + '</td></tr>';
+                    }
+                    html += '</tbody></table></div></div>';
+                }
+
+                sonucDiv.innerHTML = html;
+                // Listeyi yenile
+                var sel = document.getElementById('birimSelect');
+                if (sel.value) sel.dispatchEvent(new Event('change'));
+            } else {
+                sonucDiv.innerHTML = '<div class="alert alert-danger">' + data.mesaj + '</div>';
+            }
+            sonucDiv.style.display = 'block';
+            fileInput.value = '';
+        })
+        .catch(function() {
+            yukleniyorDiv.style.display = 'none';
+            btn.disabled = false;
+            sonucDiv.innerHTML = '<div class="alert alert-danger">Dosya yüklenirken bir hata oluştu.</div>';
+            sonucDiv.style.display = 'block';
+        });
+    }
+</script>
+}

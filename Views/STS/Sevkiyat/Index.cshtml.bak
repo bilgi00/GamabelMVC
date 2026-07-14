@@ -1,0 +1,414 @@
+@{
+    ViewData["Title"] = "Sevkiyat Yönetimi";
+    var bekleyenEksikler = (ViewBag.BekleyenEksikler as IEnumerable<dynamic>)?.ToList() ?? new List<dynamic>();
+    var subeler = (ViewBag.Subeler as IEnumerable<dynamic>)?.ToList() ?? new List<dynamic>();
+    var firmalar = (ViewBag.Firmalar as IEnumerable<dynamic>)?.ToList() ?? new List<dynamic>();
+    var gruplar = (ViewBag.Gruplar as IEnumerable<dynamic>)?.ToList() ?? new List<dynamic>();
+    var seciiliSube = ViewBag.SeciiliSube ?? "";
+    var seciliFirma = ViewBag.SeciliFirma ?? "";
+    var seciliGrup = ViewBag.SeciliGrup ?? "";
+    var rol = HttpContext.Session.GetString("Rol") ?? "";
+    var isAdmin = rol == "Admin";
+}
+
+<link rel="stylesheet" href="~/css/dashboard.css" asp-append-version="true" />
+
+<div class="container-fluid mt-4">
+    <div class="row mb-4 sts-mobile-title-row align-items-center">
+        <div class="col-md-12">
+            <h1>📦 Sevkiyat Yönetimi</h1>
+            <p class="text-muted">Eksik Kayıtları Yönet ve Sevkiyat İşlemlerini Gerçekleştir</p>
+        </div>
+    </div>
+
+    @if (TempData["Basari"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <strong>✓ Başarılı!</strong> @TempData["Basari"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (TempData["Hata"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <strong>✗ Hata!</strong> @TempData["Hata"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="alert alert-info-custom mb-4">
+        <strong>ℹ️ Gecikti Uyarısı:</strong> Eksik kaydının haftanın teslim günü olan Pazartesi 17:00 sonrasında girildiğini gösterir.
+        Bugün yeni girilmiş olsa bile Pazartesi 17:00 sonrası ise gecikmiş kabul edilir.
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white fw-bold">🔍 Sevk Bekleyen Eksikler - Filtreleme</div>
+        <div class="card-body">
+            <form method="get" action="/Sevkiyat" id="filterForm" class="row g-3">
+                <div class="col-md-3">
+                    <label for="subeAdi" class="form-label">Bölüm Seçin</label>
+                    <select name="subeAdi" id="subeAdi" class="form-select">
+                        @if (string.IsNullOrWhiteSpace(seciiliSube))
+                        {
+                            <option value="" selected>Tüm Bölümler</option>
+                        }
+                        else
+                        {
+                            <option value="">Tüm Bölümler</option>
+                        }
+                        @foreach (var sube in subeler)
+                        {
+                            @if (seciiliSube == sube.Ad)
+                            {
+                                <option value="@sube.Ad" selected>@sube.Ad</option>
+                            }
+                            else
+                            {
+                                <option value="@sube.Ad">@sube.Ad</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="firma" class="form-label">Firma Seçin</label>
+                    <select name="firma" id="firma" class="form-select">
+                        @if (string.IsNullOrWhiteSpace(seciliFirma))
+                        {
+                            <option value="" selected>Tüm Firmalar</option>
+                        }
+                        else
+                        {
+                            <option value="">Tüm Firmalar</option>
+                        }
+                        @foreach (var f in firmalar)
+                        {
+                            @if (seciliFirma == f.Firma)
+                            {
+                                <option value="@f.Firma" selected>@f.Firma</option>
+                            }
+                            else
+                            {
+                                <option value="@f.Firma">@f.Firma</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="grup" class="form-label">Grup Seçin</label>
+                    <select name="grup" id="grup" class="form-select">
+                        @if (string.IsNullOrWhiteSpace(seciliGrup))
+                        {
+                            <option value="" selected>Tüm Gruplar</option>
+                        }
+                        else
+                        {
+                            <option value="">Tüm Gruplar</option>
+                        }
+                        @foreach (var g in gruplar)
+                        {
+                            @if (seciliGrup == g.Grup)
+                            {
+                                <option value="@g.Grup" selected>@g.Grup</option>
+                            }
+                            else
+                            {
+                                <option value="@g.Grup">@g.Grup</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end gap-2">
+                    <input type="hidden" name="forceRefresh" value="true" />
+                    <button type="submit" class="btn btn-primary w-100">
+                        📋 Listele
+                    </button>
+                </div>
+            </form>
+
+            <div class="mt-3 d-flex justify-content-end">
+                <a asp-controller="Sevkiyat"
+                   asp-action="ExportBekleyenEksikler"
+                   asp-route-subeAdi="@seciiliSube"
+                   asp-route-firma="@seciliFirma"
+                   asp-route-grup="@seciliGrup"
+                   class="btn btn-success">
+                    Excel'e Aktar
+                </a>
+            </div>
+
+            <!-- Seçili Filtreler Badges -->
+            <div class="mt-3">
+                @if (!string.IsNullOrWhiteSpace(seciiliSube))
+                {
+                    <span class="badge bg-info">📍 Bölüm: <strong>@seciiliSube</strong></span>
+                }
+                @if (!string.IsNullOrWhiteSpace(seciliFirma))
+                {
+                    <span class="badge bg-info ms-2">🏢 Firma: <strong>@seciliFirma</strong></span>
+                }
+                @if (!string.IsNullOrWhiteSpace(seciliGrup))
+                {
+                    <span class="badge bg-info ms-2">📦 Grup: <strong>@seciliGrup</strong></span>
+                }
+            </div>
+        </div>
+    </div>
+            @if (bekleyenEksikler.Any())
+            {
+                    <table class="table table-striped table-hover mb-0 sts-table-sticky sts-mobile-table">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Sipariş No</th>
+                                <th>Ürün</th>
+                                <th>Firma</th>
+                                <th>Grup</th>
+                                <th>Şube</th>
+                                <th>Miktar</th>
+                                <th>Uyarı</th>
+                                <th>Giriş Tarihi</th>
+                                <th>İşlem</th>
+                                <th>Fabrika Sipariş</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var eksik in bekleyenEksikler)
+                            {
+                                <tr>
+                                    <td data-label="Sipariş No">@(string.IsNullOrWhiteSpace((string)eksik.SiparisNo) ? "-" : eksik.SiparisNo)</td>
+                                    <td data-label="Ürün">
+                                        @eksik.UrunAdi
+                                        @if (eksik.AcilMi)
+                                        {
+                                            <span class="badge bg-danger ms-1">Acil</span>
+                                        }
+                                    </td>
+                                    <td data-label="Firma">@eksik.Firma</td>
+                                    <td data-label="Grup">@eksik.Grup</td>
+                                    <td data-label="Şube">@eksik.SubeAdi</td>
+                                    <td data-label="Miktar">@eksik.Miktar</td>
+                                    <td data-label="Uyarı">
+                                        @if (eksik.GeciktiMi)
+                                        {
+                                            <span class="badge bg-danger">Gecikti</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-success">Zamanında</span>
+                                        }
+                                    </td>
+                                    <td data-label="Giriş Tarihi">@eksik.GirisTarihi.ToString("dd.MM.yyyy HH:mm")</td>
+                                    <td data-label="İşlem" class="sts-mobile-actions">
+                                        <form method="post" action="/Sevkiyat/SevkEt" class="d-inline">
+                                            <input type="hidden" name="eksikKaydiId" value="@eksik.Id" />
+                                            <button type="submit" class="btn btn-sm btn-primary">Sevk Et</button>
+                                        </form>
+                                        @if (isAdmin)
+                                        {
+                                            <button type="button" class="btn btn-sm btn-danger ms-1" data-bs-toggle="modal" 
+                                                    data-bs-target="#silModal" onclick="setSilEksikId(@eksik.Id, '@eksik.UrunAdi')">
+                                                🗑️ Sil
+                                            </button>
+                                        }
+                                    </td>
+                                    <td data-label="Fabrika Sipariş" class="sts-mobile-actions">
+                                        <form method="post" action="/Siparis/EksikKaydidenSiparisTur" class="d-inline">
+                                            <input type="hidden" name="eksikKaydiId" value="@eksik.Id" />
+                                            <button type="submit" class="btn btn-sm btn-warning">Sipariş Ver</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+            }
+            else
+            {
+                <div class="p-3 text-muted">Sevk bekleyen eksik kaydı yok.</div>
+            }
+        </div>
+    </div>
+
+    @if (Model != null && Model.Count > 0)
+    {
+        <h5>Sevkiyat Geçmişi ve Onay Süreci</h5>
+        <div class="table-responsive">
+            <table class="table table-striped table-hover sts-table-sticky sts-mobile-table">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Ürün</th>
+                        <th>Şube</th>
+                        <th>Miktar</th>
+                        <th>Durum</th>
+                        <th>Sevk Tarihi</th>
+                        <th>Onay Tarihi</th>
+                        <th>Teslim Süresi</th>
+                        <th>İşlem</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var sev in Model)
+                    {
+                        var durumClass = sev.Durum == "Bekliyor" ? "bg-warning text-dark"
+                            : sev.Durum == "Yolda" ? "bg-primary"
+                            : sev.Durum == "Onaylandi" ? "bg-success"
+                            : sev.Durum == "IadeEdildi" ? "bg-danger"
+                            : sev.Durum == "Silindi" ? "bg-dark"
+                            : "bg-secondary";
+                        <tr>
+                            <td data-label="Ürün">@sev.UrunAdi</td>
+                            <td data-label="Şube">@sev.SubeAdi</td>
+                            <td data-label="Miktar">@sev.SevkMiktari</td>
+                            <td data-label="Durum">
+                                <span class="badge @durumClass">
+                                    @sev.Durum
+                                </span>
+                            </td>
+                            <td data-label="Sevk Tarihi">@sev.SevkTarihi.ToString("dd.MM.yyyy")</td>
+                            <td data-label="Onay Tarihi">@(sev.SubeOnayTarihi?.ToString("dd.MM.yyyy") ?? "-")</td>
+                            <td data-label="Teslim Süresi">
+                                @(sev.TeslimSuresiGun == null ? "-" : $"{sev.TeslimSuresiGun} gün")
+                                @if (sev.GecikmeUyarisi)
+                                {
+                                    <div><span class="badge bg-danger">SLA Aşıldı</span></div>
+                                }
+                            </td>
+                            <td data-label="İşlem" class="sts-mobile-actions">
+                                @if (sev.Durum == "Yolda")
+                                {
+                                    <span class="badge bg-primary">Onay Bekleniyor</span>
+                                }
+                                else if (sev.Durum == "Onaylandi" && !sev.FabrikayaAktarildi)
+                                {
+                                    <form method="post" action="/Siparis/SevkiyattanOlustur" class="d-inline">
+                                        <input type="hidden" name="sevkiyatId" value="@sev.Id" />
+                                        <button type="submit" class="btn btn-sm btn-warning">Sipariş Ver</button>
+                                    </form>
+                                }
+                                else if (sev.Durum == "Onaylandi" && sev.FabrikayaAktarildi)
+                                {
+                                    <span class="badge bg-success">Siparişe Aktarıldı</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info">
+            Sevkiyat kaydı bulunmuyor.
+            <a href="/Eksik/TumEksikler" class="btn btn-sm btn-primary ms-2">Bekleyen Eksikleri Gör</a>
+        </div>
+    }
+</div>
+
+@if (!string.IsNullOrWhiteSpace(seciliFirma))
+{
+    <div class="container-fluid mt-4">
+        <div class="card">
+            <div class="card-header bg-info text-white fw-bold">Firma Özel Siparişi - @seciliFirma</div>
+            <div class="card-body">
+                @if (bekleyenEksikler.Any(e => e.Firma == seciliFirma))
+                {
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover mb-0 sts-table-sticky sts-mobile-table">
+                            <thead class="table-info">
+                                <tr>
+                                    <th>Sipariş No</th>
+                                    <th>Ürün</th>
+                                    <th>Şube</th>
+                                    <th>Miktar</th>
+                                    <th>Uyarı</th>
+                                    <th>Giriş Tarihi</th>
+                                    <th>İşlem</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var eksik in bekleyenEksikler.Where(e => e.Firma == seciliFirma))
+                                {
+                                    <tr>
+                                        <td data-label="Sipariş No">@(string.IsNullOrWhiteSpace((string)eksik.SiparisNo) ? "-" : eksik.SiparisNo)</td>
+                                        <td data-label="Ürün">
+                                            @eksik.UrunAdi
+                                            @if (eksik.AcilMi)
+                                            {
+                                                <span class="badge bg-danger ms-1">Acil</span>
+                                            }
+                                        </td>
+                                        <td data-label="Şube">@eksik.SubeAdi</td>
+                                        <td data-label="Miktar">@eksik.Miktar</td>
+                                        <td data-label="Uyarı">
+                                            @if (eksik.GeciktiMi)
+                                            {
+                                                <span class="badge bg-danger">Gecikti</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-success">Zamanında</span>
+                                            }
+                                        </td>
+                                        <td data-label="Giriş Tarihi">@eksik.GirisTarihi.ToString("dd.MM.yyyy HH:mm")</td>
+                                        <td data-label="İşlem" class="sts-mobile-actions">
+                                            <form method="post" action="/Sevkiyat/SevkEt" class="d-inline">
+                                                <input type="hidden" name="eksikKaydiId" value="@eksik.Id" />
+                                                <button type="submit" class="btn btn-sm btn-primary">Sevk Et</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-warning">Bu firmaya ait bekleyen siparişi bulunmamaktadır.</div>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Silme Modal Dialog -->
+<div class="modal fade" id="silModal" tabindex="-1" aria-labelledby="silModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="silModalLabel">⚠️ Eksik Kaydı Sil</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="/Sevkiyat/SilEksik">
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <strong>Ürün:</strong> <span id="modalUrunAdi"></span><br/>
+                        <strong>Bu işlem geri alınamaz!</strong> Silinen ürün Sevkiyat Geçmişi'nde "Silindi" olarak kaydedilecektir.
+                    </div>
+                    <div class="mb-3">
+                        <label for="silmeSebebi" class="form-label"><strong>Silme Sebebi <span class="text-danger">*</span></strong></label>
+                        <textarea class="form-control" id="silmeSebebi" name="silmeSebebi" rows="3" 
+                                  placeholder="Lütfen bu eksik kaydı neden sildiğinizi açıklayınız..." required></textarea>
+                        <div class="form-text">Örnek: Stok bulunmadı, Hatalı giriş, Şubeden talep geldi vb.</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <input type="hidden" id="eksikKaydiId" name="eksikKaydiId" />
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash"></i> Evet, Sil
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function setSilEksikId(id, urunAdi) {
+    document.getElementById('eksikKaydiId').value = id;
+    document.getElementById('modalUrunAdi').textContent = urunAdi;
+    document.getElementById('silmeSebebi').value = '';
+}
+</script>

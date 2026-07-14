@@ -1,0 +1,232 @@
+@{
+    ViewData["Title"] = "Tüm Eksikler - Ana Depo";
+
+    var eksikler = (Model as IEnumerable<dynamic>) ?? Enumerable.Empty<dynamic>();
+    var groupedBySube = eksikler
+        .GroupBy(x => (string)x.SubeAdi)
+        .OrderBy(g => g.Key)
+        .ToList();
+}
+
+<style>
+    .print-page {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 16px;
+        background: #fff;
+    }
+
+    .report-header {
+        border-bottom: 2px solid #1f2937;
+        margin-bottom: 16px;
+        padding-bottom: 10px;
+    }
+
+    .report-title {
+        margin: 0;
+        font-size: 26px;
+        font-weight: 700;
+        color: #111827;
+    }
+
+    .report-meta {
+        margin-top: 6px;
+        font-size: 13px;
+        color: #4b5563;
+    }
+
+    .print-actions {
+        margin: 14px 0 20px;
+    }
+
+    .sube-section {
+        margin-bottom: 24px;
+        page-break-inside: avoid;
+    }
+
+    .sube-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin-bottom: 8px;
+    }
+
+    .sube-title {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 700;
+        color: #0f172a;
+    }
+
+    .sube-summary {
+        font-size: 12px;
+        color: #334155;
+    }
+
+    .table-print {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+    }
+
+    .table-print th,
+    .table-print td {
+        border: 1px solid #9ca3af;
+        padding: 6px 8px;
+        vertical-align: top;
+    }
+
+    .table-print thead th {
+        background: #e5e7eb;
+        color: #111827;
+        font-weight: 700;
+    }
+
+    .acil-row {
+        background: #fef2f2;
+    }
+
+    .oneriler {
+        margin-top: 10px;
+        border: 1px solid #9ca3af;
+        padding: 8px;
+    }
+
+    .oneriler h6 {
+        margin: 0 0 8px;
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .oneriler p {
+        margin: 0 0 6px;
+        font-size: 12px;
+    }
+
+    .line-space {
+        height: 20px;
+        border-bottom: 1px dashed #9ca3af;
+        margin-bottom: 6px;
+    }
+
+    @@media print {
+        @@page {
+            size: A4 portrait;
+            margin: 12mm;
+        }
+
+        body {
+            background: #fff;
+        }
+
+        .print-actions,
+        .navbar,
+        .footer {
+            display: none !important;
+        }
+
+        .print-page {
+            max-width: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sube-section {
+            break-inside: avoid;
+        }
+
+        .sube-section + .sube-section {
+            page-break-before: always;
+        }
+    }
+</style>
+
+<div class="print-page">
+    <div class="report-header">
+        <h1 class="report-title">Tüm Şubelerin Eksikleri</h1>
+        <div class="report-meta">
+            <strong>Durum:</strong> Bekleyen Siparişler
+            <span class="ms-2"><strong>Rapor Tarihi:</strong> @DateTime.Now.ToString("dd.MM.yyyy HH:mm")</span>
+        </div>
+    </div>
+
+    <div class="print-actions">
+        <button class="btn btn-primary" onclick="window.print()">Yazdır</button>
+        <a href="/Home/Index" class="btn btn-outline-secondary">Panele Dön</a>
+    </div>
+
+    @if (groupedBySube.Any())
+    {
+        foreach (var subeGrubu in groupedBySube)
+        {
+            var satirlar = subeGrubu
+                .OrderBy(x => (string)x.UrunAdi)
+                .ThenByDescending(x => (bool)x.AcilMi)
+                .ToList();
+            var acilAdet = satirlar.Count(x => (bool)x.AcilMi);
+
+            <section class="sube-section">
+                <div class="sube-header">
+                    <h2 class="sube-title">@subeGrubu.Key</h2>
+                    <span class="sube-summary">Toplam Kalem: @satirlar.Count | Acil: @acilAdet</span>
+                </div>
+
+                <table class="table-print">
+                    <thead>
+                        <tr>
+                            <th style="width:16%;">Sipariş No</th>
+                            <th style="width:38%;">Ürün (Alfabetik)</th>
+                            <th style="width:10%;">Miktar</th>
+                            <th style="width:8%;">Acil</th>
+                            <th style="width:16%;">Uyarı</th>
+                            <th style="width:18%;">Açıklama</th>
+                            <th style="width:14%;">Giriş Tarihi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var eksik in satirlar)
+                        {
+                            <tr class="@((bool)eksik.AcilMi ? "acil-row" : "")">
+                                <td>@(string.IsNullOrWhiteSpace((string)eksik.SiparisNo) ? "-" : eksik.SiparisNo)</td>
+                                <td>@eksik.UrunAdi</td>
+                                <td>@eksik.Miktar</td>
+                                <td>@((bool)eksik.AcilMi ? "Acil" : "-" )</td>
+                                <td>
+                                    @if ((bool)eksik.GeciktiMi)
+                                    {
+                                        <div>Gecikti</div>
+                                    }
+                                    @if ((bool)eksik.TekrarliMi)
+                                    {
+                                        <div>Stok Problemi</div>
+                                    }
+                                </td>
+                                <td>@(string.IsNullOrWhiteSpace((string)eksik.Not) ? "-" : eksik.Not)</td>
+                                <td>@eksik.GirisTarihi.ToString("dd.MM.yyyy HH:mm")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+
+                <div class="oneriler">
+                    <h6>Öneri ve Gerekenler</h6>
+                    <p><strong>Öneri:</strong> Acil kalemler önceliklendirilerek ilk sevkiyat planına alınmalıdır.</p>
+                    <div class="line-space"></div>
+                    <p><strong>Gerekenler:</strong> Onay, araç planı ve depo çıkış hazırlığı notlarını ekleyiniz.</p>
+                    <div class="line-space"></div>
+                </div>
+            </section>
+        }
+    }
+    else
+    {
+        <div class="alert alert-success">Bekleyen sipariş yoktur.</div>
+    }
+
+    <div class="alert alert-info mt-4">
+        <strong>Not:</strong> <strong>Gecikti</strong> uyarısı haftalık eksik giriş zamanına göre hesaplanır.
+        Haftalık sipariş dönemi <strong>Pazartesi 00:00</strong> itibarıyla başlar; zamanında giriş için son kabul saati <strong>Pazartesi 17:00</strong>'dir.
+        <strong>Pazartesi 17:00 sonrası</strong> veya haftanın sonraki günlerinde girilen eksikler <strong>Gecikti</strong> olarak işaretlenir.
+        Bu nedenle bugün yeni girilmiş bir kayıt da, eğer Pazartesi 17:00 sonrasında eklenmişse gecikmiş kabul edilir.
+    </div>
+</div>

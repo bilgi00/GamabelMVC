@@ -1,0 +1,81 @@
+@model gamabelmvc.Models.PRS.LoginViewModel
+@{
+    ViewData["Title"] = "Kayıt Ol";
+    Layout = "_Layout";
+}
+
+<div class="d-flex justify-content-center align-items-center" style="min-height: calc(100vh - 200px);">
+    <div class="col-lg-5 col-md-6 col-sm-10">
+        <div class="card shadow-lg border-0">
+            <!-- Header -->
+            <div class="card-header" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; text-align: center; padding: 24px;">
+                <h2 class="mb-1">✍️ Yeni Hesap Oluştur</h2>
+                <p class="small mb-0">Sisteme katılmak için kayıt olun</p>
+            </div>
+
+            <!-- Body -->
+            <div class="card-body p-4">
+                <!-- Error Alert -->
+                @if (ViewBag.Hata != null)
+                {
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <strong>❌ Hata:</strong> @ViewBag.Hata
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                }
+
+                <!-- Success Alert -->
+                @if (ViewBag.Basari != null)
+                {
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <strong>✅ Başarılı:</strong> @ViewBag.Basari
+                        <a asp-action="Login" class="alert-link ms-2">Şimdi Giriş Yapın →</a>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                }
+
+                <!-- Registration Form -->
+                <form asp-action="Register" method="post">
+                    <div class="mb-3">
+                        <label asp-for="KullaniciAdi" class="form-label">👤 Kullanıcı Adı</label>
+                        <input asp-for="KullaniciAdi" class="form-control form-control-lg" placeholder="Kullanıcı adı belirleyin" required />
+                        <small class="form-text text-muted">En az 3 karakter olmalıdır</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Sifre" class="form-label">🔐 Şifre</label>
+                        <input asp-for="Sifre" type="password" class="form-control form-control-lg" placeholder="Güçlü bir şifre belirleyin" required />
+                        <small class="form-text text-muted">En az 6 karakter olmalıdır</small>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="Birim" class="form-label">🏢 Birim</label>
+                        <select asp-for="Birim" class="form-select form-select-lg" required>
+                            <option value="">-- Birim seçiniz --</option>
+                            @if (ViewBag.Birimler != null)
+                            {
+                                @foreach (string b in ViewBag.Birimler)
+                                {
+                                    @:<option value="@b">@b</option>
+                                }
+                            }
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-success btn-lg w-100 fw-bold">
+                        ✓ Kayıt Ol
+                    </button>
+                </form>
+
+                <!-- Divider -->
+                <hr class="my-4" />
+
+                <!-- Login Link -->
+                <p class="text-center text-muted mb-0">
+                    Zaten hesabınız var mı?
+                    <a asp-action="Login" class="fw-bold text-decoration-none">Giriş Yapın →</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>

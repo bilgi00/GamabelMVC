@@ -1,0 +1,194 @@
+@{
+    ViewData["Title"] = "STS - Dashboard";
+    Layout = "_Layout";
+}
+
+<link rel="stylesheet" href="~/css/dashboard.css" asp-append-version="true" />
+
+<div class="dashboard-container">
+    <!-- Dashboard Header -->
+    <div class="dashboard-header">
+        <h1>Stok Takip Sistemi</h1>
+        <p>Hafta No: @ViewBag.HaftaNo</p>
+    </div>
+
+    <!-- Quick Access Section -->
+    <div class="quick-access-section">
+        <h3>Hızlı Erişim</h3>
+        <p class="text-muted small mb-3">
+            <span class="badge bg-warning">ℹ️ Hatırlatma</span> Büfe Sevkiyat Günleri Pazartesi ve Perşembe Günleridir
+        </p>
+        <div class="quick-access-buttons">
+            <a href="/Eksik/SubeListe" class="btn btn-primary">📋 Sipariş Listesi</a>
+            <a href="/Eksik/Ekle" class="btn btn-success">➕ Yeni Sipariş</a>
+            <a href="/Sevkiyat/Index" class="btn btn-info">📦 Sevkiyat</a>
+            <a href="/RaporSts/Index" class="btn btn-warning">📊 Raporlar</a>
+        </div>
+    </div>
+
+    @if (ViewBag.DashboardData != null)
+    {
+        var data = ViewBag.DashboardData as Dictionary<string, object>;
+        var onayBekleyen = Convert.ToInt32(data?["OnayBekleyenSevkiyat"] ?? 0);
+        
+        <!-- Critical Info Cards -->
+        <div class="critical-info-container mb-5">
+            <div class="critical-info-card danger">
+                <div class="critical-info-card-title">🚨 Kritik Geciken</div>
+                <div class="critical-info-card-value">@(data?["KritikGeciken"] ?? 0)</div>
+            </div>
+            <div class="critical-info-card primary">
+                <div class="critical-info-card-title">✓ Onay Bekleyen</div>
+                <div class="critical-info-card-value">@(data?["OnayBekleyenSevkiyat"] ?? 0)</div>
+            </div>
+            <div class="critical-info-card warning">
+                <div class="critical-info-card-title">⚠️ Tekrar Eden</div>
+                <div class="critical-info-card-value">@(data?["TekrarliUrun"] ?? 0)</div>
+            </div>
+        </div>
+
+        <!-- Dashboard Statistics -->
+        <div class="dashboard-cards">
+            <div class="dashboard-card card-info">
+                <div class="dashboard-card-title">Toplam Eksik</div>
+                <div class="dashboard-card-value">@(data?["ToplamEksik"] ?? 0)</div>
+            </div>
+            <div class="dashboard-card card-warning">
+                <div class="dashboard-card-title">Bekleyen Siparişler</div>
+                <div class="dashboard-card-value">@(data?["BekliyenEksik"] ?? 0)</div>
+            </div>
+            <div class="dashboard-card card-success">
+                <div class="dashboard-card-title">Sevk Edilen</div>
+                <div class="dashboard-card-value">@(data?["SevkEdilen"] ?? 0)</div>
+            </div>
+            <div class="dashboard-card card-danger">
+                <div class="dashboard-card-title">Acil Sipariş</div>
+                <div class="dashboard-card-value">@(data?["AcilEksik"] ?? 0)</div>
+            </div>
+        </div>
+
+        <!-- Notifications Section -->
+        <div class="mt-5">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    📬 Son Bildirimler
+                </div>
+                <div class="card-body">
+                    @if (data?["Bildirimler"] is List<dynamic> bildirimler && bildirimler.Count > 0)
+                        {
+                            <ul class="list-group" id="stsBildirimListesi">
+                            @foreach (var bildirim in bildirimler)
+                            {
+                                var metin = ($"{bildirim.Baslik} {bildirim.Mesaj}" ?? string.Empty).ToLowerInvariant();
+                                var kritik = metin.Contains("gecik") || metin.Contains("acil") || metin.Contains("hata");
+                                var uyari = !kritik && (metin.Contains("onay") || metin.Contains("bek") || metin.Contains("stok"));
+                                var seviyeClass = kritik ? "bg-danger" : (uyari ? "bg-warning text-dark" : "bg-info");
+                                var seviyeText = kritik ? "Kritik" : (uyari ? "Uyarı" : "Bilgi");
+                                <li class="list-group-item d-flex justify-content-between align-items-start sts-bildirim-item"
+                                    data-id="@bildirim.Id"
+                                    data-baslik="@bildirim.Baslik"
+                                    data-mesaj="@bildirim.Mesaj"
+                                    data-link="@bildirim.Link"
+                                    data-okundu="@bildirim.OkunduMu.ToString().ToLowerInvariant()">
+                                    <div>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="fw-bold">@bildirim.Baslik</div>
+                                            <span class="badge @seviyeClass">@seviyeText</span>
+                                        </div>
+                                        <div>@bildirim.Mesaj</div>
+                                        <small class="text-muted">@bildirim.OlusturmaTarihi.ToString("dd.MM.yyyy HH:mm")</small>
+                                    </div>
+                                    @if (!string.IsNullOrWhiteSpace((string)bildirim.Link))
+                                    {
+                                        <a href="@bildirim.Link" class="btn btn-sm btn-outline-primary">Aç</a>
+                                    }
+                                </li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <div class="text-muted">Yeni bildirim yok.</div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        @if (onayBekleyen > 0)
+        {
+            <div class="modal fade" id="onayBekleyenModal" tabindex="-1" aria-labelledby="onayBekleyenModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content border-0 shadow">
+                        <div class="modal-header bg-warning">
+                            <h5 class="modal-title" id="onayBekleyenModalLabel">Onay bekleyen sevkiyatınız var!</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+                        </div>
+                        <div class="modal-body">
+                            Şubenize gelen <strong>@onayBekleyen</strong> sevkiyat teslim onayı bekliyor.
+                            Lütfen Şube Onay ekranından işlemleri tamamlayın.
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Daha Sonra</button>
+                            <a href="/Sevkiyat/SubeOnay" class="btn btn-warning">Şube Onay Ekranına Git</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+
+</div>
+
+<script>
+    (function () {
+        const modalEl = document.getElementById('onayBekleyenModal');
+        if (!modalEl || typeof bootstrap === 'undefined') return;
+
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
+    })();
+
+    (function () {
+        const items = Array.from(document.querySelectorAll('.sts-bildirim-item'));
+        const unread = items.filter(item => item.dataset.okundu === 'false');
+        if (unread.length === 0 || !('Notification' in window)) return;
+
+        function markRead(ids) {
+            if (!ids.length) return;
+            const body = new URLSearchParams();
+            body.append('ids', ids.join(','));
+            fetch('/Home/BildirimleriOkunduYap', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: body.toString()
+            });
+        }
+
+        function showNotifications() {
+            const ids = [];
+            unread.forEach(item => {
+                ids.push(item.dataset.id);
+                const notification = new Notification(item.dataset.baslik, {
+                    body: item.dataset.mesaj,
+                    tag: 'sts-' + item.dataset.id
+                });
+                notification.onclick = () => {
+                    if (item.dataset.link) {
+                        window.location.href = item.dataset.link;
+                    }
+                };
+            });
+            markRead(ids);
+        }
+
+        if (Notification.permission === 'granted') {
+            showNotifications();
+        } else if (Notification.permission !== 'denied') {
+            Notification.requestPermission().then(permission => {
+                if (permission === 'granted') {
+                    showNotifications();
+                }
+            });
+        }
+    })();
+</script>

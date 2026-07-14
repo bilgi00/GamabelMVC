@@ -1,0 +1,280 @@
+@{
+    ViewData["Title"] = "Yeni Sipariş Ekle";
+}
+<div class="container mt-4">
+    <div class="card shadow-sm p-4">
+        <h2 class="mb-2">Yeni Sipariş Ekle</h2>
+        <p class="text-muted mb-4">Ürün adı ile arayarak veya barkod numarası girerek hızlıca ekleyin.</p>
+        <div class="row g-2 align-items-end mb-3">
+            <div class="col-md-5">
+                <input id="productNameInput" type="text" class="form-control" placeholder="Ürün adı ile ara" autocomplete="off">
+                <div id="autocompleteList" class="list-group position-absolute w-100" style="z-index:10;"></div>
+            </div>
+            <div class="col-md-2">
+                <div class="input-group">
+                    <button class="btn btn-outline-secondary" type="button" onclick="changeQty(-1)">-</button>
+                    <input id="qty" type="number" class="form-control text-center" value="1" min="1">
+                    <button class="btn btn-outline-secondary" type="button" onclick="changeQty(1)">+</button>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <input id="note" type="text" class="form-control" placeholder="Açıklama (opsiyonel)">
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-primary w-100" type="button" onclick="addProductByName()">Ekle</button>
+            </div>
+        </div>
+        <div class="row g-2 align-items-end mb-3">
+            <div class="col-md-5">
+                <input id="barcodeInput" type="text" class="form-control" placeholder="Barkod numarası ile ekle">
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-secondary w-100" type="button" onclick="addProductByBarcode()">Barkoddan Ekle</button>
+            </div>
+        </div>
+        <div class="table-responsive mb-3">
+            <table class="table table-bordered align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Ürün</th>
+                        <th>Adet</th>
+                        <th>Açıklama</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <tr><td colspan="4" class="text-center text-muted">Henüz ürün eklenmedi.</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="d-flex justify-content-between align-items-center">
+            <span id="total" class="text-muted">Toplam: 0 ürün</span>
+            <div>
+                <button class="btn btn-secondary me-2" type="button" onclick="clearAll()">İptal</button>
+                <button class="btn btn-success" type="button" onclick="saveAll()">Tümünü Kaydet</button>
+            </div>
+        </div>
+    </div>
+    <div id="toast" class="toast align-items-center text-bg-success border-0 position-fixed bottom-0 end-0 m-4" role="alert" aria-live="assertive" aria-atomic="true" style="opacity:0;transition:opacity .5s;">
+        <div class="d-flex">
+            <div class="toast-body">Ürün eklendi</div>
+        </div>
+    </div>
+</div>
+<style>
+    #productNameInput,
+    #qty,
+    #note,
+    #barcodeInput,
+    #tableBody input.form-control {
+        border-color: #6c757d;
+        border-width: 1.5px;
+    }
+
+    #productNameInput:focus,
+    #qty:focus,
+    #note:focus,
+    #barcodeInput:focus,
+    #tableBody input.form-control:focus {
+        border-color: #495057;
+        box-shadow: 0 0 0 0.1rem rgba(73, 80, 87, 0.2);
+    }
+</style>
+<script>
+// Ürünler dinamik olarak backend'den çekilecek
+let urunler = [];
+let products = [];
+function changeQty(val){
+    const qty = document.getElementById("qty");
+    qty.value = Math.max(1, Number(qty.value) + val);
+}
+async function addProductByName(){
+    const input = document.getElementById("productNameInput");
+    let name = input.value.trim();
+    let qty = Number(document.getElementById("qty").value);
+    if (!name) return;
+    if (!qty || qty < 1) {
+        alert("Adet 1 veya daha büyük olmalı.");
+        return;
+    }
+    let note = document.getElementById("note").value.trim();
+    // AJAX ile ürün ara
+    let urun = null;
+    try {
+        const resp = await fetch(`/Eksik/UrunAra?query=${encodeURIComponent(name)}`);
+        const data = await resp.json();
+        urun = data.find(u => u.ad.toLowerCase() === name.toLowerCase());
+    } catch {}
+    if(!urun){
+        alert("Ürün bulunamadı!");
+        return;
+    }
+    let existing = products.find(p => p.id === urun.id);
+    if(existing){ existing.qty += qty; }
+    else { products.push({id: urun.id, name: urun.ad, qty, note, barkod: urun.barkod}); }
+    renderTable(); showToast();
+    input.value = "";
+    document.getElementById("note").value = "";
+    document.getElementById("qty").value = 1;
+    closeAutocomplete();
+}
+async function addProductByBarcode(){
+    const input = document.getElementById("barcodeInput");
+    let barkod = input.value.trim();
+    let qty = Number(document.getElementById("qty").value);
+    if (!barkod) return;
+    if (!qty || qty < 1) {
+        alert("Adet 1 veya daha büyük olmalı.");
+        return;
+    }
+    let note = document.getElementById("note").value.trim();
+    let urun = null;
+    try {
+        const resp = await fetch(`/Eksik/BarkodAra?barkod=${encodeURIComponent(barkod)}`);
+        urun = await resp.json();
+    } catch {}
+    if(!urun){
+        alert("Barkod ile ürün bulunamadı!");
+        return;
+    }
+    let existing = products.find(p => p.id === urun.id);
+    if(existing){ existing.qty += qty; }
+    else { products.push({id: urun.id, name: urun.ad, qty, note, barkod}); }
+    renderTable(); showToast();
+    input.value = "";
+    document.getElementById("note").value = "";
+    document.getElementById("qty").value = 1;
+}
+function removeProduct(index){
+    products.splice(index,1); renderTable();
+}
+function clearAll(){
+    if(confirm("Tüm ürünler silinsin mi?")){ products = []; renderTable(); }
+}
+async function saveAll(){
+    if(products.length === 0){ alert("Eklemek için ürün seçiniz."); return; }
+    // Tüm ürünlerin miktarını kontrol et ve düzelt
+    for (let p of products) {
+        if (!p.qty || p.qty < 1) p.qty = 1;
+    }
+    // Debug için gönderilen veriyi göster
+    console.log("Kaydedilecek ürünler:", products);
+    // Backend'in beklediği alanlara dönüştür
+    const satirlar = products.map(p => ({
+        UrunId: p.id,
+        Miktar: p.qty,
+        Aciklama: p.note || ""
+    }));
+    try {
+        const response = await fetch("/Eksik/Ekle", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ satirlar })
+        });
+
+        let result = null;
+        try {
+            result = await response.json();
+        } catch {
+            result = null;
+        }
+
+        if (!response.ok || !result || result.success !== true) {
+            alert(result?.message || "Kayıt sırasında hata oluştu.");
+            return;
+        }
+
+        if (result.bekleyenSevkEngeli > 0) {
+            const urunler = Array.isArray(result.engellenenUrunler) && result.engellenenUrunler.length > 0
+                ? `\n\nEngellenen ürünler:\n- ${result.engellenenUrunler.join("\n- ")}`
+                : "";
+            alert(`${result.warningMessage}${urunler}`);
+        }
+
+        if (result.eklendi > 0) {
+            window.location.href = "/Eksik/SubeListe";
+        } else {
+            alert(result.message || "Kayıt tamamlandı ancak yeni satır eklenmedi.");
+        }
+    } catch {
+        alert("Kayıt sırasında hata oluştu.");
+    }
+}
+function renderTable(){
+    const tbody = document.getElementById("tableBody");
+    tbody.innerHTML = "";
+    if(products.length === 0){
+        tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted">Henüz ürün eklenmedi.</td></tr>`;
+        document.getElementById("total").innerText = "Toplam: 0 ürün";
+        return;
+    }
+    products.forEach((p, i) => {
+        tbody.innerHTML += `<tr>
+            <td>${p.name}</td>
+            <td><input type="number" min="1" class="form-control form-control-sm" style="width:90px" value="${p.qty}" onchange="updateQty(${i}, this.value)"></td>
+            <td><input type="text" class="form-control form-control-sm" style="min-width:120px" value="${p.note ? p.note.replace(/&quot;/g, '"') : ''}" onchange="updateNote(${i}, this.value)"></td>
+            <td><button class="btn btn-link text-danger p-0" onclick="removeProduct(${i})">Sil</button></td>
+        </tr>`;
+    });
+    document.getElementById("total").innerText = "Toplam: " + products.length + " ürün";
+}
+
+function updateQty(index, val){
+    let v = Math.max(1, parseInt(val) || 1);
+    products[index].qty = v;
+    renderTable();
+}
+function updateNote(index, val){
+    products[index].note = val;
+}
+function showToast(){
+    const toast = document.getElementById("toast");
+    toast.style.opacity = 1;
+    setTimeout(()=>{ toast.style.opacity = 0; }, 1200);
+}
+// Otomatik tamamlama (autocomplete) fonksiyonu - AJAX ile
+const productNameInput = document.getElementById("productNameInput");
+const autocompleteList = document.getElementById("autocompleteList");
+productNameInput.addEventListener("input", async function() {
+    const val = this.value.trim().toLowerCase();
+    autocompleteList.innerHTML = "";
+    if(!val) { autocompleteList.style.display = "none"; return; }
+    let matches = [];
+    try {
+        const resp = await fetch(`/Eksik/UrunAra?query=${encodeURIComponent(val)}`);
+        matches = await resp.json();
+    } catch {}
+    if(matches.length === 0) { autocompleteList.style.display = "none"; return; }
+    matches.forEach(u => {
+        const item = document.createElement("button");
+        item.type = "button";
+        item.className = "list-group-item list-group-item-action";
+        item.textContent = u.ad;
+        item.onclick = function() {
+            productNameInput.value = u.ad;
+            autocompleteList.innerHTML = "";
+            autocompleteList.style.display = "none";
+            addProductByName();
+        };
+        autocompleteList.appendChild(item);
+    });
+    autocompleteList.style.display = "block";
+});
+function closeAutocomplete() {
+    autocompleteList.innerHTML = "";
+    autocompleteList.style.display = "none";
+}
+document.addEventListener("click", function(e){
+    if(!autocompleteList.contains(e.target) && e.target !== productNameInput) closeAutocomplete();
+});
+// Enter ile ekleme
+productNameInput.addEventListener("keypress", function(e){
+    if(e.key === "Enter") addProductByName();
+});
+document.getElementById("barcodeInput").addEventListener("keypress", function(e){
+    if(e.key === "Enter") addProductByBarcode();
+});
+document.getElementById("note").addEventListener("keypress", function(e){
+    if(e.key === "Enter") addProductByName();
+});
+</script>

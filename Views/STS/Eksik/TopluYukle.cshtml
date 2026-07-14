@@ -1,0 +1,46 @@
+@{
+    ViewData["Title"] = "Toplu Excel Yükleme";
+}
+
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h1>Toplu Excel Yükleme</h1>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Excel Dosya Formatı</h5>
+                    <p>Dosyanız şu sütunları içermelidir:</p>
+                    <ol>
+                        <li><strong>Ürün Adı</strong> - Sistemde kayıtlı ürün adı</li>
+                        <li><strong>Miktar</strong> - Sayısal değer (örn: 10.5)</li>
+                        <li><strong>Acil</strong> - "Evet" veya "Hayır"</li>
+                        <li><strong>Not</strong> - Açıklama (isteğe bağlı)</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <form method="post" enctype="multipart/form-data">
+                <div class="mb-3">
+                    <label for="file" class="form-label">Excel Dosya Seçiniz *</label>
+                    <input type="file" name="file" id="file" class="form-control" accept=".xlsx, .xls" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Yükle</button>
+                <a href="/Eksik/SubeListe" class="btn btn-secondary">İptal</a>
+            </form>
+
+            @if (TempData["Message"] != null)
+            {
+                <div class="alert alert-info mt-3">
+                    @TempData["Message"]
+                </div>
+            }
+        </div>
+    </div>
+</div>

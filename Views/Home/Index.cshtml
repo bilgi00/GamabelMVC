@@ -1,0 +1,35 @@
+﻿@{
+    ViewData["Title"] = "Ana Sayfa";
+}
+
+<style>
+    .hero-section { min-height: 75vh; display: flex; align-items: center; justify-content: center; }
+    .hero-card { text-align: center; max-width: 520px; width: 100%; }
+    .hero-logo { width: 80px; height: 80px; background: linear-gradient(135deg, #1a237e, #1565c0); border-radius: 18px; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; font-size: 36px; color: white; box-shadow: 0 8px 24px rgba(26,35,126,0.25); }
+    .hero-title { font-size: 28px; font-weight: 800; color: #1a237e; margin-bottom: 6px; letter-spacing: 0.5px; }
+    .hero-subtitle { font-size: 15px; color: #6c757d; margin-bottom: 30px; }
+    .hero-divider { width: 60px; height: 3px; background: linear-gradient(90deg, #1a237e, #1565c0); margin: 0 auto 28px; border-radius: 2px; }
+    .hero-btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 32px; font-size: 15px; font-weight: 600; border-radius: 10px; text-decoration: none; transition: all 0.2s; }
+    .hero-btn-primary { background: linear-gradient(135deg, #1a237e, #1565c0); color: white; border: none; box-shadow: 0 4px 16px rgba(26,35,126,0.3); }
+    .hero-btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(26,35,126,0.4); color: white; }
+</style>
+
+<div class="hero-section">
+    <div class="hero-card">
+        <div class="hero-logo">🏗️</div>
+        <h1 class="hero-title">GAMABEL YATIRIM LTD</h1>
+        <p class="hero-subtitle">Personel Yönetim Portalı</p>
+        <div class="hero-divider"></div>
+        @if (string.IsNullOrEmpty(Context.Session.GetString("KullaniciAdi")))
+        {
+            <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+                <a href="/Account/Login" class="hero-btn hero-btn-primary">🔐 Personel Girişi</a>
+                <a href="/Account/StsLogin" class="hero-btn hero-btn-primary" style="background: linear-gradient(135deg, #0f766e, #0ea5e9);">📦 STS Girişi</a>
+            </div>
+        }
+        else
+        {
+            <a href="/Puantaj" class="hero-btn hero-btn-primary">📊 Puantaj Takvimine Git</a>
+        }
+    </div>
+</div>

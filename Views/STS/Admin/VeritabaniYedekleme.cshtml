@@ -1,0 +1,116 @@
+@model List<string>
+@{
+    ViewData["Title"] = "Veritabanı Yedekleme";
+}
+
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h1>🗄️ Veritabanı Yedekleme ve Geri Yükleme</h1>
+            <p class="text-muted">Yalnızca Admin kullanıcıları seçili tablolar için yedek alabilir ve geri yükleme yapabilir.</p>
+        </div>
+    </div>
+
+    @if (TempData["Basari"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <strong>✓ Başarılı!</strong> @TempData["Basari"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (TempData["Hata"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <strong>✗ Hata!</strong> @TempData["Hata"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (Model == null || Model.Count == 0)
+    {
+        <div class="alert alert-warning">Veritabanı tabloları listelenemedi.</div>
+    }
+    else
+    {
+        <div class="row g-4">
+            <div class="col-lg-6">
+                <div class="card h-100">
+                    <div class="card-header bg-success text-white fw-bold">📥 Seçili Tabloları Yedekle (.sql)</div>
+                    <div class="card-body">
+                        <form method="post" action="/Admin/YedekleSeciliTablolar">
+                            <div class="mb-3">
+                                <button type="button" class="btn btn-sm btn-outline-secondary me-2" onclick="toggleAll('backupTables', true)">Tümünü Seç</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleAll('backupTables', false)">Seçimi Temizle</button>
+                            </div>
+
+                            <div id="backupTables" class="border rounded p-3" style="max-height: 420px; overflow-y: auto;">
+                                @foreach (var table in Model)
+                                {
+                                    <div class="form-check mb-1">
+                                        <input class="form-check-input" type="checkbox" name="selectedTables" value="@table" id="b_@table" />
+                                        <label class="form-check-label" for="b_@table">@table</label>
+                                    </div>
+                                }
+                            </div>
+
+                            <div class="mt-3 d-grid">
+                                <button type="submit" class="btn btn-success">Seçili Tabloları Yedekle</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="card h-100">
+                    <div class="card-header bg-warning fw-bold">📤 Seçili Tablolara Geri Yükle (.sql)</div>
+                    <div class="card-body">
+                        <form method="post" action="/Admin/GeriYukleSeciliTablolar" enctype="multipart/form-data">
+                            <div class="mb-3">
+                                <label class="form-label" for="sqlFile">SQL dosyası</label>
+                                <input class="form-control" type="file" id="sqlFile" name="sqlFile" accept=".sql" required />
+                            </div>
+
+                            <div class="mb-3 form-check">
+                                <input class="form-check-input" type="checkbox" id="clearSelectedTables" name="clearSelectedTables" checked />
+                                <label class="form-check-label" for="clearSelectedTables">Geri yükleme öncesi seçili tabloları temizle (TRUNCATE)</label>
+                            </div>
+
+                            <div class="mb-3">
+                                <button type="button" class="btn btn-sm btn-outline-secondary me-2" onclick="toggleAll('restoreTables', true)">Tümünü Seç</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleAll('restoreTables', false)">Seçimi Temizle</button>
+                            </div>
+
+                            <div id="restoreTables" class="border rounded p-3" style="max-height: 340px; overflow-y: auto;">
+                                @foreach (var table in Model)
+                                {
+                                    <div class="form-check mb-1">
+                                        <input class="form-check-input" type="checkbox" name="selectedTables" value="@table" id="r_@table" />
+                                        <label class="form-check-label" for="r_@table">@table</label>
+                                    </div>
+                                }
+                            </div>
+
+                            <div class="mt-3 d-grid">
+                                <button type="submit" class="btn btn-warning" onclick="return confirm('Seçili tablolar için geri yükleme yapılacak. Devam etmek istiyor musunuz?');">Seçili Tablolara Geri Yükle</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<script>
+    function toggleAll(containerId, checked) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        const checkboxes = container.querySelectorAll('input[type="checkbox"]');
+        for (const checkbox of checkboxes) {
+            checkbox.checked = checked;
+        }
+    }
+</script>

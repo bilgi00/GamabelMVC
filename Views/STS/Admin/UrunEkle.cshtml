@@ -1,0 +1,53 @@
+@model gamabelmvc.Models.STS.StsUrun
+@{
+    ViewData["Title"] = "Yeni Ürün Ekle";
+}
+
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h1>Yeni Ürün Ekle</h1>
+        </div>
+    </div>
+
+    <form method="post" action="/Admin/UrunEkle" class="row g-3">
+        <div class="col-md-6">
+            <label class="form-label">Ürün Kodu *</label>
+            <input type="text" name="Kod" class="form-control" required />
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label">Ürün Adı *</label>
+            <input type="text" name="Ad" class="form-control" required />
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label">Barkod</label>
+            <input type="text" name="Barkod" class="form-control" />
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label">Birim *</label>
+            <select name="Birim" class="form-select" required>
+                <option value="Adet">Adet</option>
+                <option value="Koli">Koli</option>
+                <option value="Paket">Paket</option>
+                <option value="Kg">Kg</option>
+                <option value="Lt">Lt</option>
+            </select>
+        </div>
+
+        <div class="col-md-6 d-flex align-items-end">
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="AktifMi" value="true" checked>
+                <input type="hidden" name="AktifMi" value="false" />
+                <label class="form-check-label">Aktif ürün</label>
+            </div>
+        </div>
+
+        <div class="col-md-12">
+            <button type="submit" class="btn btn-success">Kaydet</button>
+            <a href="/Admin/Urunler" class="btn btn-secondary">İptal</a>
+        </div>
+    </form>
+</div>

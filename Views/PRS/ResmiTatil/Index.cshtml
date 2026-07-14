@@ -1,0 +1,101 @@
+@model List<Dictionary<string, object?>>
+@{
+    ViewData["Title"] = "KKTC Resmi Tatiller";
+    Layout = "_Layout";
+}
+
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="dashboard-header mb-4">
+        <h1 class="mb-1">📅 KKTC Resmi Tatiller</h1>
+        <p class="text-muted">Tüm resmi tatil günlerini görüntüleyin</p>
+    </div>
+
+    <!-- User Info & Logout -->
+    <div class="mb-4 d-flex justify-content-end gap-2">
+        <span class="badge bg-info text-dark" style="height: fit-content;">👤 Hoş geldin, <strong>@ViewBag.KullaniciAdi</strong></span>
+        <a asp-controller="Account" asp-action="Logout" class="btn btn-outline-danger btn-sm">🚪 Çıkış Yap</a>
+    </div>
+
+
+    <!-- Error Alert -->
+    @if (ViewBag.Hata != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+            <strong>❌ Hata:</strong> @ViewBag.Hata
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+
+    <!-- Holidays Table -->
+    @if (Model != null && Model.Count > 0)
+    {
+        <div class="card">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">📋 Tatil Günleri</h5>
+                <span class="badge bg-info">@Model.Count kayıt</span>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+            <thead class="table-light">
+                        <tr>
+                            <th class="text-center" style="width: 50px;">#</th>
+                            <th>🏷️ Tatil Adı</th>
+                            <th class="text-center" style="width: 120px;">📅 Tarih</th>
+                            <th class="text-center" style="width: 100px;">📆 Gün</th>
+                            <th class="text-center" style="width: 120px;">⚡ Türü</th>
+                            <th class="text-center" style="width: 100px;">🔢 Gün No</th>
+                            <th>📝 Açıklama</th>
+                        </tr>
+                    </thead>
+            <tbody>
+                        @foreach (var t in Model)
+                        {
+                            var tarih = (DateTime)t["TatilTarihi"]!;
+                            <tr>
+                                <td class="text-center"><span class="badge bg-light text-dark">@t["Id"]</span></td>
+                                <td><strong>@t["TatilAdi"]</strong></td>
+                                <td class="text-center"><small class="text-muted">@tarih.ToString("dd.MM.yyyy")</small></td>
+                                <td class="text-center"><em>@t["GunAdi"]</em></td>
+                                <td class="text-center">
+                                    @{
+                                        var tur = t["TatilTuru"]?.ToString();
+                                        var badgeClass = tur switch
+                                        {
+                                            "Dini" => "bg-success",
+                                            "Ulusal" => "bg-primary",
+                                            "Resmi" => "bg-info",
+                                            _ => "bg-secondary"
+                                        };
+                                    }
+                                    <span class="badge @badgeClass">@tur</span>
+                                </td>
+                                <td class="text-center">@(t["KacinciGun"] ?? "-")</td>
+                                <td>@(t["Aciklama"] ?? "-")</td>
+                            </tr>
+                        }
+                    </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+    <!-- Empty State -->
+    @if (Model == null || Model.Count == 0)
+    {
+        if (ViewBag.Hata == null)
+        {
+            <div class="alert alert-info alert-dismissible fade show" role="alert">
+                <strong>ℹ️ Bilgi:</strong> Henüz kayıtlı resmi tatil bulunmuyor.
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+    }
+
+    <!-- Navigation -->
+    <div class="mt-5 mb-4">
+        <a href="/Home/Index" class="btn btn-secondary">← Ana Sayfaya Dön</a>
+    </div>
+</div>
