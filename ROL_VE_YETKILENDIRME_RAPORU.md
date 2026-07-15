@@ -114,6 +114,49 @@ if (rol != "admin" && !string.IsNullOrEmpty(kullaniciBirim))
 
 ## 2️⃣ STS MODÜLÜ (Sevkiyat Takip Sistemi)
 
+---
+
+## 3️⃣ YENİ GÜNCELLEME ÖNERİLERİ
+
+Aşağıdaki geliştirmeler, mevcut rol yapısını daha sağlam ve yönetilebilir hale getirecektir:
+
+### 3.1 Kullanıcı → Rol İlişkisi
+- Her kullanıcıya doğrudan bir rol atanması daha temiz bir yapıdır.
+- Bu sayede menü yetkileri sadece rol tablosundan değil, kullanıcı bazlı ilişkilerle de yönetilebilir.
+- Önerilen yapı:
+  - `roll` tablosu: rol ve yetki setlerini tutar.
+  - `admin_kullanicilar` tablosuna `role_id` eklenir.
+  - Girişte kullanıcıya ait rol bilgisi yüklenir.
+
+### 3.2 İşlem Bazlı Yetki Mantığı
+- Sadece menü görünürlüğü değil, aynı zamanda işlem seviyesinde erişim de kontrol edilmelidir.
+- Önerilen yetki türleri:
+  - `ekleme`
+  - `duzenleme`
+  - `silme`
+  - `onaylama`
+  - `rapor_goruntuleme`
+
+### 3.3 URL Erişim Kontrolü
+- Menüde görünmeyen sayfalara doğrudan erişimi engellemek gerekir.
+- Bu, güvenlik ve kullanıcı deneyimi açısından önemlidir.
+- Her controller aksiyonunda yetki kontrolü uygulanmalıdır.
+
+### 3.4 Admin Paneli Geliştirmesi
+- Admin panelinden şu işlemler yapılabilmelidir:
+  - Yeni rol ekleme
+  - Mevcut rolü düzenleme
+  - Kullanıcıya rol atama
+  - Rol bazlı menü yetkilerini değiştirme
+
+### 3.5 Uygulama İçin Önerilen Öncelik Sırası
+1. Kullanıcı → rol ilişkisini kurmak
+2. Menüler için URL erişim kontrolünü eklemek
+3. İşlem bazlı yetki alanlarını tanımlamak
+4. Admin panelinden rol ve kullanıcı atama işlevlerini aktif hale getirmek
+
+Bu yaklaşım ile sistem hem daha modüler hem de daha sürdürülebilir hale gelecektir.
+
 ### 2.1 Roller Tanımı
 
 **Veritabanı Tablosu:**

@@ -66,7 +66,7 @@
         </form>
 
         <!-- Son Yüklemeler -->
-        <h5 style="color:#1e3c72; margin-bottom:10px;">📋 Son Yüklemeler</h5>
+        <h5 style="color:#1e3c72; margin-bottom:10px;">📋 Son Yüklemeler (tarih + dosya)</h5>
         @if (!sonYuklemeler.Any())
         {
             <p style="color:#6c757d; font-size:13px;">Henüz yükleme yapılmadı.</p>
@@ -91,7 +91,7 @@
                             <td><span class="badge-blue">@b.SatirSayisi satır</span></td>
                             <td>
                                 <a href="/OdemeTalimat/FaturaSecim?batchId=@b.Id" class="ot-btn ot-btn-success" style="padding:6px 14px; font-size:12px;">
-                                    ✅ Faturaları Seç
+                                    ✅ Fatura Seç
                                 </a>
                             </td>
                         </tr>

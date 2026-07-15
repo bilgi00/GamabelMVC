@@ -7,8 +7,8 @@
 
 <style>
     .ot-header { background: linear-gradient(135deg, #1e3c72, #2a5298); color: white; padding: 20px 24px; border-radius: 12px 12px 0 0; }
-    .ot-card { background: white; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); margin-bottom: 24px; overflow: hidden; }
-    .ot-card-body { padding: 20px; }
+    .ot-card { background: white; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); margin-bottom: 24px; overflow: visible; }
+    .ot-card-body { padding: 20px 20px 110px; }
     .ot-btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 22px; font-size: 14px; font-weight: 600; border-radius: 8px; text-decoration: none; border: none; cursor: pointer; transition: all 0.2s; }
     .ot-btn-primary { background: linear-gradient(135deg, #1e3c72, #2a5298); color: white; }
     .ot-btn-primary:hover { opacity: 0.9; color: white; transform: translateY(-1px); }
@@ -21,7 +21,7 @@
     .banka-secim { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 14px 16px; margin-bottom: 20px; }
     .banka-secim label { font-weight: 600; color: #1e40af; margin-right: 10px; }
     .banka-secim select { padding: 6px 12px; border: 1px solid #93c5fd; border-radius: 6px; font-size: 14px; min-width: 320px; }
-    .sticky-bar { position: sticky; bottom: 0; background: white; border-top: 2px solid #e2e8f0; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; z-index: 10; }
+    .sticky-bar { position: sticky; bottom: 16px; margin-top: 20px; background: rgba(255,255,255,0.97); backdrop-filter: blur(8px); border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 -6px 20px rgba(15, 23, 42, 0.08); padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; z-index: 20; }
     .tutar-ozet { font-size: 15px; font-weight: 700; color: #1e3c72; }
 </style>
 
@@ -29,7 +29,7 @@
     <div class="ot-header">
         <h1>✅ Ödenecek Faturaları Seçin</h1>
         <p style="opacity:0.85; margin:0; font-size:13px;">
-            İstemediğiniz faturaların kutucuğunu <strong>boş bırakın</strong> — sadece işaretlenen faturalar talimata dahil edilir.
+            Sadece bekleyen faturalar listelenir; daha önce ödenen faturalar bir sonraki ödeme akışında tekrar görünmez.
         </p>
     </div>
     <div class="ot-card-body">

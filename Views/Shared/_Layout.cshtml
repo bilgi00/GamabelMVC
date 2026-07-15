@@ -23,6 +23,26 @@
                     @{
                         var activeModule = Context.Session.GetString("ActiveModule") ?? string.Empty;
                         var isLoggedIn = !string.IsNullOrEmpty(Context.Session.GetString("KullaniciAdi"));
+                        var rol = Context.Session.GetString("Rol") ?? string.Empty;
+                        var normalizedRol = (rol ?? string.Empty).Trim().ToLowerInvariant();
+                        var isAdmin = normalizedRol == "admin";
+                        var isBirimAmiri = normalizedRol == "birim_amiri" || normalizedRol == "birim amiri";
+                        var isSubePersoneli = normalizedRol == "subepersoneli" || normalizedRol == "sube personeli";
+                        var isDepoSorumlusu = normalizedRol == "deposorumlusu" || normalizedRol == "depo sorumlusu";
+                        var canAccessPrsManagement = isAdmin || isBirimAmiri;
+                        var canAccessAdminModules = isAdmin || Context.Session.GetString("Menu_KullaniciYonetimi") == "1";
+                        var canAccessStsAdmin = isAdmin || isDepoSorumlusu;
+                        var canAccessPersonel = isAdmin || isBirimAmiri || Context.Session.GetString("Menu_Personel") == "1";
+                        var canAccessPuantaj = isAdmin || isBirimAmiri || Context.Session.GetString("Menu_Puantaj") == "1";
+                        var canAccessRapor = isAdmin || isBirimAmiri || Context.Session.GetString("Menu_Rapor") == "1";
+                        var canAccessMesai = isAdmin || isBirimAmiri || Context.Session.GetString("Menu_Mesai") == "1";
+                        var canAccessTatiller = isAdmin || isBirimAmiri || Context.Session.GetString("Menu_Tatiller") == "1";
+                        var canAccessOdemeTalimat = isAdmin || isBirimAmiri || Context.Session.GetString("Menu_OdemeTalimat") == "1";
+                        var canAccessFirmaYonetimi = isAdmin || Context.Session.GetString("Menu_FirmaYonetimi") == "1";
+                        var canAccessBankaYonetimi = isAdmin || Context.Session.GetString("Menu_BankaYonetimi") == "1";
+                        var canAccessYetkilendirme = isAdmin || Context.Session.GetString("Menu_Yetkilendirme") == "1";
+                        var canAccessDokumantasyon = isAdmin || Context.Session.GetString("Menu_Dokumantasyon") == "1";
+                        var canAccessSikayetAdmin = isAdmin || Context.Session.GetString("Menu_SikayetAdmin") == "1";
                     }
                     <ul class="navbar-nav flex-grow-1 align-items-center">
                         <li class="nav-item">
@@ -33,14 +53,13 @@
                         </li>
                         @if (isLoggedIn && activeModule == "STS")
                         {
-                            var rol = Context.Session.GetString("Rol") ?? string.Empty;
                             <div class="nav-separator"></div>
                             <li class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle" href="#" id="stsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                     📦 STS Modülü
                                 </a>
                                 <ul class="dropdown-menu" aria-labelledby="stsDropdown">
-                                    @if (rol == "SubePersoneli")
+                                    @if (isSubePersoneli)
                                     {
                                         <li><a class="dropdown-item" href="/Eksik/SubeListe">📋 Sipariş Listesi</a></li>
                                         <li><a class="dropdown-item" href="/Eksik/Gecmis">🕘 Geçmiş Eksikler</a></li>
@@ -57,7 +76,7 @@
                                         <li><hr class="dropdown-divider"></li>
                                         <li><a class="dropdown-item" href="/Sevkiyat/SubeOnay">✓ Şube Onay</a></li>
                                     }
-                                    @if (rol == "Admin")
+                                    @if (canAccessStsAdmin)
                                     {
                                         <li><hr class="dropdown-divider"></li>
                                         <li><a class="dropdown-item" href="/Admin/Subeler">🏢 Şube Yönetimi</a></li>
@@ -74,56 +93,90 @@
                         }
                         else if (isLoggedIn)
                         {
-                            @if (Context.Session.GetString("Rol") == "admin")
+                            @if (canAccessAdminModules)
                             {
                                 <div class="nav-separator"></div>
                                 <li class="nav-item">
                                     <a class="nav-link" asp-area="" asp-controller="Kullanici" asp-action="Index">👤 Kullanıcılar</a>
                                 </li>
                             }
-                            <div class="nav-separator"></div>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-area="" asp-controller="Kullanici" asp-action="Liste2">📋 Personel</a>
-                            </li>
-                            <div class="nav-separator"></div>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-area="" asp-controller="Puantaj" asp-action="Index">📊 Puantaj</a>
-                            </li>
-                            <div class="nav-separator"></div>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-area="" asp-controller="Rapor" asp-action="Index">📈 Rapor</a>
-                            </li>
-                            <div class="nav-separator"></div>
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" id="mesaiDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    ⏰ Ek Mesai
-                                </a>
-                                <ul class="dropdown-menu" aria-labelledby="mesaiDropdown">
-                                    <li><a class="dropdown-item" href="/Mesai/Index">📊 Ek Mesai Çizelgesi</a></li>
-                                    <li><a class="dropdown-item" href="/Mesai/MesaiOdemesi">💰 Mesai Ödeme</a></li>
-                                    <li><a class="dropdown-item" href="/HizliMesaiGirisi/Index">⚡ Hızlı Mesai Girişi</a></li>
-                                </ul>
-                            </li>
-                            <div class="nav-separator"></div>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-area="" asp-controller="ResmiTatil" asp-action="Index">🎌 Tatiller</a>
-                            </li>
-                            <div class="nav-separator"></div>
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" id="odemeTalimatDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    💳 Ödeme Talimatı
-                                </a>
-                                <ul class="dropdown-menu" aria-labelledby="odemeTalimatDropdown">
-                                    <li><a class="dropdown-item" href="/OdemeTalimat">📄 Talimat Ana Sayfa</a></li>
-                                    <li><a class="dropdown-item" href="/OdemeTalimat" onclick="document.getElementById('excelInputNav')?.click(); return false;">📂 Yeni Ödeme Oluştur</a></li>
-                                    @if (Context.Session.GetString("Rol") == "admin")
-                                    {
-                                        <li><hr class="dropdown-divider"></li>
-                                        <li><a class="dropdown-item" href="/OdemeTalimat/Firmalar">🏢 Firma Yönetimi</a></li>
-                                        <li><a class="dropdown-item" href="/OdemeTalimat/Bankalar">🏦 Banka Yönetimi</a></li>
-                                    }
-                                </ul>
-                            </li>
+                            @if (canAccessAdminModules)
+                            {
+                                <div class="nav-separator"></div>
+                                <li class="nav-item">
+                                    <a class="nav-link" asp-area="" asp-controller="RolYetki" asp-action="Index">🔐 Rol Yetkileri</a>
+                                </li>
+                            }
+                            @if (canAccessPrsManagement)
+                            {
+                                @if (canAccessPersonel)
+                                {
+                                    <div class="nav-separator"></div>
+                                    <li class="nav-item">
+                                        <a class="nav-link" asp-area="" asp-controller="Kullanici" asp-action="Liste2">📋 Personel</a>
+                                    </li>
+                                }
+                                @if (canAccessPuantaj)
+                                {
+                                    <div class="nav-separator"></div>
+                                    <li class="nav-item">
+                                        <a class="nav-link" asp-area="" asp-controller="Puantaj" asp-action="Index">📊 Puantaj</a>
+                                    </li>
+                                }
+                                @if (canAccessRapor)
+                                {
+                                    <div class="nav-separator"></div>
+                                    <li class="nav-item">
+                                        <a class="nav-link" asp-area="" asp-controller="Rapor" asp-action="Index">📈 Rapor</a>
+                                    </li>
+                                }
+                                @if (canAccessMesai)
+                                {
+                                    <div class="nav-separator"></div>
+                                    <li class="nav-item dropdown">
+                                        <a class="nav-link dropdown-toggle" href="#" id="mesaiDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                            ⏰ Ek Mesai
+                                        </a>
+                                        <ul class="dropdown-menu" aria-labelledby="mesaiDropdown">
+                                            <li><a class="dropdown-item" href="/Mesai/Index">📊 Ek Mesai Çizelgesi</a></li>
+                                            <li><a class="dropdown-item" href="/Mesai/MesaiOdemesi">💰 Mesai Ödeme</a></li>
+                                            <li><a class="dropdown-item" href="/HizliMesaiGirisi/Index">⚡ Hızlı Mesai Girişi</a></li>
+                                        </ul>
+                                    </li>
+                                }
+                                @if (canAccessTatiller)
+                                {
+                                    <div class="nav-separator"></div>
+                                    <li class="nav-item">
+                                        <a class="nav-link" asp-area="" asp-controller="ResmiTatil" asp-action="Index">🎌 Tatiller</a>
+                                    </li>
+                                }
+                                @if (canAccessOdemeTalimat)
+                                {
+                                    <div class="nav-separator"></div>
+                                    <li class="nav-item dropdown">
+                                        <a class="nav-link dropdown-toggle" href="#" id="odemeTalimatDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                            💳 Ödeme Talimatı
+                                        </a>
+                                        <ul class="dropdown-menu" aria-labelledby="odemeTalimatDropdown">
+                                            <li><a class="dropdown-item" href="/OdemeTalimat">📄 Talimat Ana Sayfa</a></li>
+                                            <li><a class="dropdown-item" href="/OdemeTalimat" onclick="document.getElementById('excelInputNav')?.click(); return false;">📂 Yeni Ödeme Oluştur</a></li>
+                                            @if (canAccessFirmaYonetimi || canAccessBankaYonetimi)
+                                            {
+                                                <li><hr class="dropdown-divider"></li>
+                                            }
+                                            @if (canAccessFirmaYonetimi)
+                                            {
+                                                <li><a class="dropdown-item" href="/OdemeTalimat/Firmalar">🏢 Firma Yönetimi</a></li>
+                                            }
+                                            @if (canAccessBankaYonetimi)
+                                            {
+                                                <li><a class="dropdown-item" href="/OdemeTalimat/Bankalar">🏦 Banka Yönetimi</a></li>
+                                            }
+                                        </ul>
+                                    </li>
+                                }
+                            }
                         }
                     </ul>
                     <ul class="navbar-nav align-items-center">
@@ -155,18 +208,24 @@
                                             </a>
                                         </li>
                                         <li><a class="dropdown-item" href="/HizliMesaiGirisi/Index">⚡ Hızlı Mesai Girişi</a></li>
-                                        @if (Context.Session.GetString("Rol") == "admin")
+                                        @if (canAccessYetkilendirme)
                                         {
                                             <li>
                                                 <a class="dropdown-item" asp-area="" asp-controller="Kullanici" asp-action="Yetkilendirme">
                                                     🔒 Yetkilendirme Yönetimi
                                                 </a>
                                             </li>
+                                        }
+                                        @if (canAccessDokumantasyon)
+                                        {
                                             <li>
                                                 <a class="dropdown-item" asp-area="" asp-controller="Dokumantasyon" asp-action="Index">
                                                     📄 Dokümantasyon
                                                 </a>
                                             </li>
+                                        }
+                                        @if (canAccessSikayetAdmin)
+                                        {
                                             <li>
                                                 <a class="dropdown-item" href="/Sikayet/Admin">🛠️ Şikayet Yönetimi (Admin)</a>
                                             </li>

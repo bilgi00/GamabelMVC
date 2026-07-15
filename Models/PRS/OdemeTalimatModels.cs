@@ -31,6 +31,7 @@ public class OtAcikFatura
     public string FaturaNo { get; set; } = string.Empty;
     public decimal Bakiye { get; set; }
     public bool OdemeyeDahilEdildi { get; set; }
+    public string OdemeDurumu { get; set; } = "bekliyor";
     public int ImportBatchId { get; set; }
 }
 

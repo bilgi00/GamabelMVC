@@ -1,0 +1,60 @@
+@model List<gamabelmvc.Controllers.PRS.RollModel>
+@{
+    ViewData["Title"] = "Rol Yetki Yönetimi";
+}
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="mb-1">🔐 Rol Yetki Yönetimi</h3>
+            <p class="text-muted mb-0">Menü erişimlerini veritabanındaki rol tablosundan yönetin.</p>
+        </div>
+        <a asp-controller="Account" asp-action="Logout" class="btn btn-outline-danger btn-sm">Çıkış Yap</a>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Rol</th>
+                            <th>Açıklama</th>
+                            <th>Aktif</th>
+                            <th>Personel</th>
+                            <th>Puantaj</th>
+                            <th>Rapor</th>
+                            <th>Mesai</th>
+                            <th>Ödeme Talimatı</th>
+                            <th>Yetkilendirme</th>
+                            <th>İşlem</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var rol in Model)
+                        {
+                            <tr>
+                                <form method="post" asp-controller="RolYetki" asp-action="Guncelle">
+                                    <input type="hidden" name="id" value="@rol.Id" />
+                                    <input type="hidden" name="ad" value="@rol.Ad" />
+                                    <td><strong>@rol.Ad</strong></td>
+                                    <td><input type="text" name="aciklama" value="@rol.Aciklama" class="form-control form-control-sm" /></td>
+                                    <td>
+                                        <input type="checkbox" name="aktifMi" value="true" @(rol.AktifMi ? "checked" : "") />
+                                    </td>
+                                    <td><input type="checkbox" name="menuPersonel" value="true" @(rol.Menu_Personel ? "checked" : "") /></td>
+                                    <td><input type="checkbox" name="menuPuantaj" value="true" @(rol.Menu_Puantaj ? "checked" : "") /></td>
+                                    <td><input type="checkbox" name="menuRapor" value="true" @(rol.Menu_Rapor ? "checked" : "") /></td>
+                                    <td><input type="checkbox" name="menuMesai" value="true" @(rol.Menu_Mesai ? "checked" : "") /></td>
+                                    <td><input type="checkbox" name="menuOdemeTalimat" value="true" @(rol.Menu_OdemeTalimat ? "checked" : "") /></td>
+                                    <td><input type="checkbox" name="menuYetkilendirme" value="true" @(rol.Menu_Yetkilendirme ? "checked" : "") /></td>
+                                    <td><button type="submit" class="btn btn-primary btn-sm">Kaydet</button></td>
+                                </form>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

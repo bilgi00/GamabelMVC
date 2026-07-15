@@ -35,8 +35,10 @@ CREATE TABLE IF NOT EXISTS prs_ot_acik_faturalar (
     fatura_no               VARCHAR(100) NOT NULL,
     bakiye                  DECIMAL(18,2) NOT NULL DEFAULT 0,
     odemeye_dahil_edildi    TINYINT(1)   NOT NULL DEFAULT 0,
+    odeme_durumu            VARCHAR(20)  NOT NULL DEFAULT 'bekliyor',
     import_batch_id         INT          NOT NULL,
     INDEX idx_cari_fatura   (cari_kart, fatura_no),
+    INDEX idx_ot_acik_faturalar_durum (odeme_durumu, import_batch_id),
     CONSTRAINT fk_ot_fatura_batch FOREIGN KEY (import_batch_id)
         REFERENCES prs_ot_import_batchlari(id) ON DELETE CASCADE
 );

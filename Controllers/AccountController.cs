@@ -55,11 +55,15 @@ public class AccountController : Controller
                 }
 
                 var personelId = reader.GetInt32(0);
+                var roleName = reader.IsDBNull(2) ? "birim_amiri" : reader.GetString(2);
                 HttpContext.Session.SetInt32("PersonelId", personelId);
                 HttpContext.Session.SetString("KullaniciAdi", model.KullaniciAdi);
                 HttpContext.Session.SetString("Birim", reader.IsDBNull(1) ? "" : reader.GetString(1));
-                HttpContext.Session.SetString("Rol", reader.IsDBNull(2) ? "birim_amiri" : reader.GetString(2));
+                HttpContext.Session.SetString("Rol", roleName);
                 HttpContext.Session.SetString("ActiveModule", "Personel");
+
+                await LoadAndSetRolePermissionsAsync(connection, roleName);
+
                 return RedirectToAction("Index", "Kullanici");
             }
             else
@@ -79,6 +83,60 @@ public class AccountController : Controller
     {
         HttpContext.Session.Clear();
         return RedirectToAction("Login");
+    }
+
+    private async Task LoadAndSetRolePermissionsAsync(MySqlConnection connection, string roleName)
+    {
+        var normalizedRole = (roleName ?? string.Empty).Trim().ToLowerInvariant();
+
+        try
+        {
+            await using var command = new MySqlCommand(@"
+                SELECT menu_kullanici_yonetimi, menu_personel, menu_puantaj, menu_rapor, menu_mesai,
+                       menu_tatiller, menu_odeme_talimat, menu_firma_yonetimi, menu_banka_yonetimi,
+                       menu_yetkilendirme, menu_dokumantasyon, menu_sikayet_admin
+                FROM roll
+                WHERE LOWER(ad) = @Rol
+                LIMIT 1", connection);
+
+            command.Parameters.AddWithValue("@Rol", normalizedRole);
+            await using var reader = await command.ExecuteReaderAsync();
+
+            if (await reader.ReadAsync())
+            {
+                HttpContext.Session.SetString("Menu_KullaniciYonetimi", reader.GetBoolean(0) ? "1" : "0");
+                HttpContext.Session.SetString("Menu_Personel", reader.GetBoolean(1) ? "1" : "0");
+                HttpContext.Session.SetString("Menu_Puantaj", reader.GetBoolean(2) ? "1" : "0");
+                HttpContext.Session.SetString("Menu_Rapor", reader.GetBoolean(3) ? "1" : "0");
+                HttpContext.Session.SetString("Menu_Mesai", reader.GetBoolean(4) ? "1" : "0");
+                HttpContext.Session.SetString("Menu_Tatiller", reader.GetBoolean(5) ? "1" : "0");
+                HttpContext.Session.SetString("Menu_OdemeTalimat", reader.GetBoolean(6) ? "1" : "0");
+                HttpContext.Session.SetString("Menu_FirmaYonetimi", reader.GetBoolean(7) ? "1" : "0");
+                HttpContext.Session.SetString("Menu_BankaYonetimi", reader.GetBoolean(8) ? "1" : "0");
+                HttpContext.Session.SetString("Menu_Yetkilendirme", reader.GetBoolean(9) ? "1" : "0");
+                HttpContext.Session.SetString("Menu_Dokumantasyon", reader.GetBoolean(10) ? "1" : "0");
+                HttpContext.Session.SetString("Menu_SikayetAdmin", reader.GetBoolean(11) ? "1" : "0");
+                return;
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Rol yetki yükleme hatası: {ex.Message}");
+        }
+
+        // Fallback: varsayılan rol tabanlı erişim
+        HttpContext.Session.SetString("Menu_KullaniciYonetimi", normalizedRole == "admin" ? "1" : "0");
+        HttpContext.Session.SetString("Menu_Personel", normalizedRole == "admin" || normalizedRole == "birim_amiri" ? "1" : "0");
+        HttpContext.Session.SetString("Menu_Puantaj", normalizedRole == "admin" || normalizedRole == "birim_amiri" ? "1" : "0");
+        HttpContext.Session.SetString("Menu_Rapor", normalizedRole == "admin" || normalizedRole == "birim_amiri" ? "1" : "0");
+        HttpContext.Session.SetString("Menu_Mesai", normalizedRole == "admin" || normalizedRole == "birim_amiri" ? "1" : "0");
+        HttpContext.Session.SetString("Menu_Tatiller", normalizedRole == "admin" || normalizedRole == "birim_amiri" ? "1" : "0");
+        HttpContext.Session.SetString("Menu_OdemeTalimat", normalizedRole == "admin" || normalizedRole == "birim_amiri" ? "1" : "0");
+        HttpContext.Session.SetString("Menu_FirmaYonetimi", normalizedRole == "admin" ? "1" : "0");
+        HttpContext.Session.SetString("Menu_BankaYonetimi", normalizedRole == "admin" ? "1" : "0");
+        HttpContext.Session.SetString("Menu_Yetkilendirme", normalizedRole == "admin" ? "1" : "0");
+        HttpContext.Session.SetString("Menu_Dokumantasyon", normalizedRole == "admin" ? "1" : "0");
+        HttpContext.Session.SetString("Menu_SikayetAdmin", normalizedRole == "admin" ? "1" : "0");
     }
 
     [HttpGet]

@@ -37,6 +37,12 @@ builder.Services.AddScoped<gamabelmvc.Services.OdemeTalimatService>();
 
 var app = builder.Build();
 
+using (var scope = app.Services.CreateScope())
+{
+    var dbFactory = scope.ServiceProvider.GetRequiredService<DbConnectionFactory>();
+    await dbFactory.InitializeDatabaseAsync();
+}
+
 // Seed test user in Development mode
 if (app.Environment.IsDevelopment())
 {

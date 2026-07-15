@@ -78,9 +78,9 @@ public class OdemeTalimatService
         await using var connection = new MySqlConnection(_connectionString);
         await connection.OpenAsync();
         var cmd = new MySqlCommand(
-            @"SELECT id, cari_kart, fatura_no, bakiye
+            @"SELECT id, cari_kart, fatura_no, bakiye, odeme_durumu
               FROM prs_ot_acik_faturalar
-              WHERE import_batch_id = @bid AND odemeye_dahil_edildi = 0
+              WHERE import_batch_id = @bid AND odeme_durumu = 'bekliyor'
               ORDER BY cari_kart, fatura_no",
             connection);
         cmd.Parameters.AddWithValue("@bid", batchId);
@@ -92,7 +92,8 @@ public class OdemeTalimatService
                 Id = reader.GetInt32(0),
                 CariKart = reader.GetString(1),
                 FaturaNo = reader.GetString(2),
-                Bakiye = reader.GetDecimal(3)
+                Bakiye = reader.GetDecimal(3),
+                OdemeDurumu = reader.IsDBNull(4) ? "bekliyor" : reader.GetString(4)
             });
         }
         return result;
@@ -122,7 +123,7 @@ public class OdemeTalimatService
         // Fatura detayları
         var inClause = string.Join(",", secilenFaturaIdleri.Select((_, i) => $"@fid{i}"));
         var faturaCmd = new MySqlCommand(
-            $"SELECT id, cari_kart, fatura_no, bakiye FROM prs_ot_acik_faturalar WHERE import_batch_id = @batchId AND odemeye_dahil_edildi = 0 AND id IN ({inClause}) FOR UPDATE",
+            $"SELECT id, cari_kart, fatura_no, bakiye FROM prs_ot_acik_faturalar WHERE import_batch_id = @batchId AND odeme_durumu = 'bekliyor' AND id IN ({inClause}) FOR UPDATE",
             connection, tx);
         faturaCmd.Parameters.AddWithValue("@batchId", batchId);
         for (int i = 0; i < secilenFaturaIdleri.Count; i++)
@@ -231,7 +232,7 @@ public class OdemeTalimatService
                     await iliskiCmd.ExecuteNonQueryAsync();
 
                     var updateCmd = new MySqlCommand(
-                        "UPDATE prs_ot_acik_faturalar SET odemeye_dahil_edildi = 1 WHERE id = @id AND import_batch_id = @batchId AND odemeye_dahil_edildi = 0",
+                        "UPDATE prs_ot_acik_faturalar SET odemeye_dahil_edildi = 1, odeme_durumu = 'odendi' WHERE id = @id AND import_batch_id = @batchId AND odeme_durumu = 'bekliyor'",
                         connection, tx);
                     updateCmd.Parameters.AddWithValue("@id", f.Id);
                     updateCmd.Parameters.AddWithValue("@batchId", batchId);

@@ -61,7 +61,7 @@ public class OdemeFaturaImportService
             foreach (var (cariKart, faturaNo, bakiye) in faturalar)
             {
                 var insertFatura = new MySqlCommand(
-                    "INSERT INTO prs_ot_acik_faturalar (cari_kart, fatura_no, bakiye, odemeye_dahil_edildi, import_batch_id) VALUES (@cari, @fatura, @bakiye, 0, @batch)",
+                    "INSERT INTO prs_ot_acik_faturalar (cari_kart, fatura_no, bakiye, odemeye_dahil_edildi, odeme_durumu, import_batch_id) VALUES (@cari, @fatura, @bakiye, 0, 'bekliyor', @batch)",
                     connection, tx);
                 insertFatura.Parameters.AddWithValue("@cari", cariKart);
                 insertFatura.Parameters.AddWithValue("@fatura", faturaNo);
