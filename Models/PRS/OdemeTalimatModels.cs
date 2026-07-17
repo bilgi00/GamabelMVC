@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+
 namespace gamabelmvc.Models.PRS;
 
 public class OtFirma
@@ -47,7 +50,10 @@ public class OtTalimat
     public int ToplamAdet { get; set; }
     public string HazirlayanKullanici { get; set; } = string.Empty;
     public string? OnaylayanKullanici { get; set; }
+    public DateTime? OnayTarihi { get; set; }
+    public string Durum { get; set; } = "beklemede";  // ✅ EKLENDİ
     public List<OtTalimatSatiri> Satirlar { get; set; } = new();
+    
 }
 
 public class OtTalimatSatiri

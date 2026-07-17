@@ -1,3 +1,52 @@
+@model gamabelmvc.Models.PRS.OtTalimat
+
+
+@{
+    ViewData["Title"] = "Talimat Detayı - " + Model.TalimatNo;
+
+    
+    <div class="ot-card-body">
+
+        @if (TempData["Hata"] != null)
+        {
+            <div class="alert-hata">❌ @TempData["Hata"]</div>
+        }
+        @if (TempData["Bilgi"] != null)
+        {
+            <div class="alert-bilgi">ℹ️ @TempData["Bilgi"]</div>
+        }
+        @if (TempData["Basarili"] != null)
+        {
+            <div class="alert-success">✅ @TempData["Basarili"]</div>
+        }
+        @if (ViewBag.Hata != null)
+        {
+            <div class="alert-hata">❌ @ViewBag.Hata</div>
+        }
+
+        </div>
+    
+    // Durum kontrolü - null veya boş ise "beklemede" kabul et
+    string durum = string.IsNullOrEmpty(Model.Durum) ? "beklemede" : Model.Durum;
+    
+    string durumClass = durum switch
+    {
+        "onaylandi" => "badge-green",
+        "beklemede" => "badge-blue",
+        "iptal" => "badge-red",
+        _ => "badge-blue"
+    };
+    
+    string durumText = durum switch
+    {
+        "onaylandi" => "✅ ONAYLANDI",
+        "beklemede" => "⏳ BEKLEMEDE",
+        "iptal" => "❌ İPTAL",
+        _ => "⏳ BEKLEMEDE"
+    };
+    
+    bool kayitliMi = durum == "onaylandi";
+}
 
 <!DOCTYPE html>
 <html lang="tr">
@@ -10,7 +59,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
-        /* ========== A4 KÂĞ IT KONTEYNERI - NORMAL GÖRÜNÜM ========== */
+        /* ========== A4 KÂĞIT KONTEYNERI - NORMAL GÖRÜNÜM ========== */
         .print-container {
             width: 210mm;
             min-height: 297mm;
@@ -35,7 +84,6 @@
             gap: 10px;
         }
 
-        /* Tablo konteyner - sayfa içinde kalmalı */
         .table-responsive {
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
@@ -71,10 +119,28 @@
             font-size: 0.9rem;
         }
 
-        /* Başlık alt çizgisi - mavi */
         .text-center.border-bottom {
             border-bottom: 3px solid #0d6efd !important;
         }
+
+        /* ========== BADGE STILLERI ========== */
+        .badge-blue { background: #dbeafe; color: #1e3c72; padding: 4px 16px; border-radius: 12px; font-size: 14px; font-weight: 600; }
+        .badge-green { background: #d1fae5; color: #065f46; padding: 4px 16px; border-radius: 12px; font-size: 14px; font-weight: 600; }
+        .badge-red { background: #fee2e2; color: #991b1b; padding: 4px 16px; border-radius: 12px; font-size: 14px; font-weight: 600; }
+
+        /* ========== BUTON STILLERI ========== */
+        .ot-btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 22px; font-size: 14px; font-weight: 600; border-radius: 8px; text-decoration: none; border: none; cursor: pointer; transition: all 0.2s; }
+        .ot-btn-primary { background: linear-gradient(135deg, #1e3c72, #2a5298); color: white; }
+        .ot-btn-primary:hover { opacity: 0.9; color: white; transform: translateY(-1px); }
+        .ot-btn-success { background: #198754; color: white; }
+        .ot-btn-success:hover { opacity: 0.9; color: white; }
+        .ot-btn-secondary { background: #6c757d; color: white; }
+        .ot-btn-secondary:hover { opacity: 0.9; color: white; }
+
+        /* ========== ALERT STILLERI ========== */
+        .alert-hata { background: #fee2e2; border: 1px solid #fca5a5; color: #991b1b; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; }
+        .alert-success { background: #d1fae5; border: 1px solid #6ee7b7; color: #065f46; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; }
+        .alert-bilgi { background: #dbeafe; border: 1px solid #93c5fd; color: #1e40af; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; }
 
         /* ========== YAZDIRMA STİLLERİ ========== */
         @@page {
@@ -83,150 +149,92 @@
         }
 
         @@media print {
-            * {
-                margin: 0;
-                padding: 0;
-                box-sizing: border-box;
-            }
-
-            /* Genel ayarlar */
-            html, body {
-                width: 100%;
-                height: 100%;
-                margin: 0;
-                padding: 0;
-                background: white;
-                display: flex;
-                flex-direction: column;
-            }
-
-            body {
-                display: flex;
-                flex-direction: column;
-            }
-
-            /* Yazdırmayan öğeler */
-            .no-print {
-                display: none !important;
-            }
-
-            /* Sayfa konteyneri */
-            .print-container {
-                width: 100% !important;
-                height: 100% !important;
-                min-height: 100% !important;
-                max-height: none !important;
-                padding: 0 !important;
-                margin: 0 !important;
-                box-shadow: none !important;
-                border-radius: 0 !important;
-                overflow: visible !important;
-                display: flex !important;
-                flex-direction: column !important;
-            }
-
-            .print-content {
-                display: flex !important;
-                flex-direction: column !important;
-                justify-content: space-between !important;
-                min-height: 100% !important;
-                height: 100% !important;
-            }
-
-            /* Üst kısım - tablo */
-            .print-content > div:first-child {
-                page-break-inside: avoid;
-                flex-shrink: 0;
-            }
-
-            /* Tablo ayarları */
-            .table-responsive {
-                overflow: visible !important;
-                margin: 0 !important;
-                padding: 0 !important;
-            }
-
-            .table-print {
-                table-layout: fixed !important;
-                width: 100% !important;
-                font-size: 0.85rem !important;
-            }
-
-            .table-print tr {
-                page-break-inside: avoid;
-            }
-
-            .table-print thead {
-                display: table-header-group;
-            }
-
-            /* Renk koruma */
-            .bg-print-primary {
-                background-color: #0d6efd !important;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-            }
-
-            .text-print-white {
-                color: white !important;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-            }
-
-            .bg-print-light {
-                background-color: #f8f9fa !important;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-            }
-
-            .print-color-exact {
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-            }
-
-            /* Alt kısım - SAYFA ALTINA SABİTLENECEK */
-            .print-content > div:last-child {
-                page-break-inside: avoid;
-                margin-top: auto;
-                padding-top: 0;
-                border-top: none;
-                flex-shrink: 0;
-            }
-
-            .mt-auto {
-                margin-top: auto !important;
-            }
-
-            /* İmza alanı - sayfa kesme yok */
-            .row.border-top {
-                page-break-inside: avoid;
-            }
-
-            /* Alt bilgi - sayfa kesme yok */
-            .row.small.text-muted {
-                page-break-inside: avoid;
-            }
-
-            /* Başlık - çerçeve yok */
-            .text-center.border-bottom {
-                page-break-inside: avoid;
-                border: none !important;
-                border-bottom: 2px solid #0d6efd !important;
-            }
-
-            /* Toplam kutusu */
-            .bg-light.border {
-                page-break-inside: avoid;
-            }
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            html, body { width: 100%; height: 100%; margin: 0; padding: 0; background: white; display: flex; flex-direction: column; }
+            body { display: flex; flex-direction: column; }
+            .no-print { display: none !important; }
+            .print-container { width: 100% !important; height: 100% !important; min-height: 100% !important; max-height: none !important; padding: 0 !important; margin: 0 !important; box-shadow: none !important; border-radius: 0 !important; overflow: visible !important; display: flex !important; flex-direction: column !important; }
+            .print-content { display: flex !important; flex-direction: column !important; justify-content: space-between !important; min-height: 100% !important; height: 100% !important; }
+            .print-content > div:first-child { page-break-inside: avoid; flex-shrink: 0; }
+            .table-responsive { overflow: visible !important; margin: 0 !important; padding: 0 !important; }
+            .table-print { table-layout: fixed !important; width: 100% !important; font-size: 0.85rem !important; }
+            .table-print tr { page-break-inside: avoid; }
+            .table-print thead { display: table-header-group; }
+            .bg-print-primary { background-color: #0d6efd !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            .text-print-white { color: white !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            .bg-print-light { background-color: #f8f9fa !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            .print-color-exact { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            .print-content > div:last-child { page-break-inside: avoid; margin-top: auto; padding-top: 0; border-top: none; flex-shrink: 0; }
+            .mt-auto { margin-top: auto !important; }
+            .row.border-top { page-break-inside: avoid; }
+            .row.small.text-muted { page-break-inside: avoid; }
+            .text-center.border-bottom { page-break-inside: avoid; border: none !important; border-bottom: 2px solid #0d6efd !important; }
+            .bg-light.border { page-break-inside: avoid; }
+            .badge-blue, .badge-green, .badge-red { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         }
     </style>
 </head>
 <body class="d-flex justify-content-center align-items-center min-vh-100 p-2" style="background-color: #f5f5f5;">
 
-    <button class="btn btn-primary no-print position-fixed bottom-0 end-0 m-4 rounded-pill shadow px-4 py-2" onclick="printDocument()" style="z-index: 9999;">
-        <i class="fas fa-print me-2"></i> Yazdır
-    </button>
+    <!-- ========== ALERT MESAJLARI ========== -->
+    @if (TempData["Hata"] != null)
+    {
+        <div class="alert-hata no-print" style="position:fixed; top:20px; left:50%; transform:translateX(-50%); z-index:10000; min-width:300px; text-align:center;">
+            ❌ @TempData["Hata"]
+        </div>
+    }
+    @if (TempData["Basarili"] != null)
+    {
+        <div class="alert-success no-print" style="position:fixed; top:20px; left:50%; transform:translateX(-50%); z-index:10000; min-width:300px; text-align:center;">
+            ✅ @TempData["Basarili"]
+        </div>
+    }
+    @if (TempData["Bilgi"] != null)
+    {
+        <div class="alert-bilgi no-print" style="position:fixed; top:20px; left:50%; transform:translateX(-50%); z-index:10000; min-width:300px; text-align:center;">
+            ℹ️ @TempData["Bilgi"]
+        </div>
+    }
 
+    <!-- ========== BUTONLAR (Yazdırmaz) ========== -->
+    <div class="no-print" style="position:fixed; bottom:24px; right:24px; display:flex; flex-direction:column; gap:10px; z-index:9999; align-items:flex-end;">
+        
+        <!-- Durum Badge -->
+        <span class="@durumClass" style="font-size:14px; padding:8px 20px; box-shadow:0 4px 12px rgba(0,0,0,0.15);">
+            @durumText
+        </span>
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <!-- Yazdır Butonu -->
+            <button class="ot-btn ot-btn-primary rounded-pill shadow px-4 py-2" onclick="printDocument()">
+                <i class="fas fa-print me-2"></i> Yazdır
+            </button>
+
+            <!-- Talimatı Kaydet Butonu - DURUM KONTROLÜ -->
+            @if (!kayitliMi)
+            {
+                <form method="post" asp-action="TalimatKaydet" asp-route-id="@Model.Id" style="display:inline;">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="ot-btn ot-btn-success rounded-pill shadow px-4 py-2">
+                        <i class="fas fa-save me-2"></i> Talimatı Kaydet
+                    </button>
+                </form>
+            }
+            else
+            {
+                <button class="ot-btn ot-btn-success rounded-pill shadow px-4 py-2" disabled style="opacity:0.6; cursor:not-allowed;">
+                    <i class="fas fa-check me-2"></i> Kaydedildi
+                </button>
+            }
+
+            <!-- Geri Dön Butonu -->
+            <a href="/OdemeTalimat" class="ot-btn ot-btn-secondary rounded-pill shadow px-4 py-2">
+                <i class="fas fa-arrow-left me-2"></i> Geri Dön
+            </a>
+        </div>
+    </div>
+
+    <!-- ========== A4 KONTEYNER ========== -->
     <div class="print-container">
         
         <div class="print-content">
@@ -235,15 +243,13 @@
             <div>
                 
                 <!-- BAŞLIK -->
-                <div class="text-center border-bottom border-3 pb-3 mb-4">
-                    <h2 class="fw-bold text-primary mb-1">GAMABEL YATIRIM LTD </h2>
-                    <h5 class="fw-medium text-secondary">Ödeme Talimatı</h5>
+                <div class="text-center border-bottom border-3 pb-3 mb-2">
+                    <h2 class="fw-bold text-primary mb-1">GAMABEL YATIRIM LTD</h2>
+                    <h4 class="fw-medium text-secondary">Ödeme Talimatı</h4>
                 </div>
 
                 <!-- TALİMAT NO & TARİH -->
-                   <div class="bg-light rounded-1 p-1 mb-2 border-start border-1 border-primary print-color-exact">
-            
-             
+                <div class="bg-light rounded-1 p-1 mb-1 border-start border-1 print-color-exact">
                     <div class="row">
                         <div class="col-6">
                             <span class="fw-semibold text-secondary">Talimat No:</span>
@@ -257,7 +263,7 @@
                 </div>
 
                 <!-- AÇIKLAMA -->
-                      <p class="mb-4 ">
+                <p class="mb-4">
                     Şubenizde bulunan şirketimize ait <strong>@Model.BankaIBAN</strong> numaralı
                     hesabımızdan aşağıda bilgileri yazılı alıcılara EFT/Havale yapılmasını talep ederiz.
                 </p>
@@ -275,7 +281,7 @@
 
                         <thead class="bg-print-primary text-print-white">
                             <tr>
-                                <th class="text-center"></th>
+                                <th class="text-center">#</th>
                                 <th>Alıcı İsmi</th>
                                 <th>IBAN</th>
                                 <th>Açıklama</th>
@@ -307,43 +313,51 @@
             <div class="mt-auto">
 
                 <!-- TOPLAM -->
-                <div class="bg-light border border-2 border-primary rounded-3 p-3 mb-4 print-color-exact">
-                    <div class="row align-items-center">
-                        <div class="col-md-8">
-                            <small>
-                                <i class="fas fa-calculator text-primary me-1"></i>
-                                @Model.ToplamAdet Adet EFT/Havale yapılmasını ve oluşacak ücret, masraf ve
-                                vergilerin <strong>@Model.BankaIBAN</strong> numaralı hesabımızdan tahsili için gereğinin
-                                yapılmasını arz ederiz.
-                            </small>
+                <div class="bg-light border border-1 mb-1 print-color-exact">
+                    <div class="text-center p-2">
+                        <div>
+                            @Model.ToplamAdet Adet EFT/Havale yapılmasını ve oluşacak ücret, masraf ve
+                            vergilerin <strong>@Model.BankaIBAN</strong> numaralı hesabımızdan tahsili için gereğinin
+                            yapılmasını arz ederiz.
                         </div>
-                        <div class="col-md-4 text-md-end mt-2 mt-md-0">
-                            <span class="fw-bold text-primary fs-6">
-                                Genel Toplam: @Model.ToplamTutar.ToString("N2") TL
-                            </span>
+                        <div class="mt-1">
+                            <strong>Genel Toplam: @Model.ToplamTutar.ToString("N2") TL</strong>
                         </div>
                     </div>
                 </div>
 
-                <!-- İMZA ALANLARI - ÇİZGİSİZ -->
+                <!-- İMZA ALANLARI -->
                 <div class="row border-top pt-4 mb-3">
                     <div class="col-6 text-center">
                         <div class="fw-semibold text-secondary mb-5">HAZIRLAYAN</div>
-
+                        <div style="border-top:1px solid #dee2e6; width:80%; margin:auto; padding-top:4px;">
+                            <small class="text-muted">@Model.HazirlayanKullanici</small>
+                        </div>
                     </div>
                     <div class="col-6 text-center">
                         <div class="fw-semibold text-secondary mb-5">ONAYLAYAN</div>
-
+                        <div style="border-top:1px solid #dee2e6; width:80%; margin:auto; padding-top:4px;">
+                            <small class="text-muted">
+                                @if (!string.IsNullOrEmpty(Model.OnaylayanKullanici))
+                                {
+                                    @Model.OnaylayanKullanici
+                                }
+                                else
+                                {
+                                    <span style="color:#adb5bd;">(Onay bekliyor)</span>
+                                }
+                            </small>
+                        </div>
                     </div>
                 </div>
 
                 <!-- ALT BİLGİ -->
                 <div class="row small text-muted border-top pt-1">
                     <div class="col-4">
-                        <span class="fw-semibold text-primary">FRM.01 v1</span> — Ödeme Talimatı Formu
+                        <span class="fw-semibold text-primary">FRM.01 v2</span>
                     </div>
                     <div class="col-4 text-center">
-                        <i class="far fa-clock me-1"></i> @DateTime.Now.ToString("dd.MM.yyyy HH:mm")
+                        @DateTime.Now.ToString("dd.MM.yyyy HH:mm")
                     </div>
                     <div class="col-4 text-end">
                         <span>Sayfa 1 / 1</span>
@@ -356,6 +370,39 @@
 
     </div>
 
+
+<!-- Detay.cshtml içinde Kaydet Butonu -->
+<div style="display:flex; gap:10px; flex-wrap:wrap;">
+    <!-- Yazdır Butonu -->
+    <button class="ot-btn ot-btn-primary rounded-pill shadow px-4 py-2" onclick="printDocument()">
+        <i class="fas fa-print me-2"></i> Yazdır
+    </button>
+
+    <!-- Talimatı Kaydet Butonu -->
+    @if (Model.Id == 0)
+    {
+        <!-- Geçici talimat - Kaydet butonu aktif -->
+        <form method="post" asp-action="TalimatKaydet" asp-route-id="0" style="display:inline;">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="ot-btn ot-btn-success rounded-pill shadow px-4 py-2">
+                <i class="fas fa-save me-2"></i> Talimatı Kaydet
+            </button>
+        </form>
+    }
+    else
+    {
+        <!-- Kaydedilmiş talimat - Buton devre dışı -->
+        <button class="ot-btn ot-btn-success rounded-pill shadow px-4 py-2" disabled style="opacity:0.6; cursor:not-allowed;">
+            <i class="fas fa-check me-2"></i> Kaydedildi
+        </button>
+    }
+
+    <!-- Geri Dön Butonu -->
+    <a href="/OdemeTalimat" class="ot-btn ot-btn-secondary rounded-pill shadow px-4 py-2">
+        <i class="fas fa-arrow-left me-2"></i> Geri Dön
+    </a>
+</div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
@@ -363,6 +410,20 @@
         function printDocument() {
             window.print();
         }
+
+        // Alert mesajlarını 5 saniye sonra otomatik gizle
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(function() {
+                var alerts = document.querySelectorAll('.alert-hata, .alert-success, .alert-bilgi');
+                alerts.forEach(function(alert) {
+                    alert.style.transition = 'opacity 0.5s';
+                    alert.style.opacity = '0';
+                    setTimeout(function() {
+                        alert.style.display = 'none';
+                    }, 500);
+                });
+            }, 5000);
+        });
     </script>
 </body>
 </html>

@@ -9,17 +9,172 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/gamabelmvc.styles.css" asp-append-version="true" />
+    
+    <style>
+        /* ========== MENU STILLERI ========== */
+        .gbl-navbar {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+            padding: 8px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        .gbl-navbar .navbar-brand {
+            color: white !important;
+            font-weight: 700;
+            font-size: 18px;
+            letter-spacing: 0.5px;
+        }
+        .gbl-navbar .navbar-brand:hover {
+            color: white !important;
+        }
+        .gbl-navbar .nav-link {
+            color: rgba(255,255,255,0.85) !important;
+            font-size: 14px;
+            padding: 6px 12px;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        .gbl-navbar .nav-link:hover {
+            color: white !important;
+            background: rgba(255,255,255,0.1);
+        }
+        .gbl-navbar .nav-link.active {
+            background: rgba(255,255,255,0.2);
+        }
+        .gbl-navbar .dropdown-toggle::after {
+            color: rgba(255,255,255,0.6);
+        }
+        .gbl-navbar .dropdown-menu {
+            background: white;
+            border: none;
+            border-radius: 8px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+            padding: 4px 0;
+            min-width: 220px;
+        }
+        .gbl-navbar .dropdown-item {
+            color: #212529;
+            padding: 8px 16px;
+            font-size: 13px;
+            transition: all 0.15s;
+        }
+        .gbl-navbar .dropdown-item:hover {
+            background: #f0f4ff;
+            color: #1e3c72;
+        }
+        .gbl-navbar .dropdown-item i {
+            width: 20px;
+            text-align: center;
+            margin-right: 8px;
+        }
+        .gbl-navbar .dropdown-divider {
+            margin: 4px 0;
+        }
+        .gbl-navbar .menu-group-title {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #6c757d;
+            padding: 8px 16px 4px;
+            letter-spacing: 0.5px;
+        }
+        .nav-separator {
+            width: 1px;
+            height: 28px;
+            background: rgba(255,255,255,0.2);
+            margin: 0 6px;
+        }
+        .user-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 14px;
+            border-radius: 20px;
+            background: rgba(255,255,255,0.1);
+        }
+        .user-badge:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        .user-icon {
+            font-size: 16px;
+        }
+        .gbl-btn-login {
+            background: rgba(255,255,255,0.15);
+            border-radius: 20px;
+            padding: 4px 16px !important;
+        }
+        .gbl-btn-login:hover {
+            background: rgba(255,255,255,0.25);
+        }
+        .gbl-btn-register {
+            background: rgba(255,255,255,0.08);
+            border-radius: 20px;
+            padding: 4px 16px !important;
+        }
+        .gbl-btn-register:hover {
+            background: rgba(255,255,255,0.18);
+        }
+        /* Footer */
+        .footer {
+            background: #f8f9fa;
+            padding: 12px 0;
+            margin-top: auto;
+        }
+        /* Mobile responsive */
+        @@media (max-width: 991.98px) {
+            .nav-separator {
+                display: none;
+            }
+            .gbl-navbar .dropdown-menu {
+                background: transparent;
+                box-shadow: none;
+                padding-left: 16px;
+            }
+            .gbl-navbar .dropdown-item {
+                color: rgba(255,255,255,0.85);
+                padding: 6px 12px;
+            }
+            .gbl-navbar .dropdown-item:hover {
+                background: rgba(255,255,255,0.1);
+                color: white;
+            }
+            .gbl-navbar .dropdown-divider {
+                border-color: rgba(255,255,255,0.1);
+            }
+            .gbl-navbar .menu-group-title {
+                color: rgba(255,255,255,0.5);
+            }
+            .navbar-collapse {
+                padding: 12px 0;
+            }
+            .gbl-navbar .nav-link {
+                padding: 6px 12px;
+            }
+        }
+        @@media (max-width: 575.98px) {
+            .gbl-navbar .navbar-brand {
+                font-size: 15px;
+            }
+            .user-badge {
+                font-size: 13px;
+                padding: 4px 10px;
+            }
+        }
+    </style>
 </head>
 <body style="display: flex; flex-direction: column; min-height: 100vh;">
+
     <header>
-        <nav class="navbar navbar-expand-sm gbl-navbar mb-3">
+        <nav class="navbar navbar-expand-lg gbl-navbar mb-3">
             <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">GAMABEL YATIRIM</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse"
+                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">
+                    🏢 GAMABEL YATIRIM
+                </a>
+                <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse"
                         aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+                <div class="navbar-collapse collapse d-lg-flex justify-content-between">
                     @{
                         var activeModule = Context.Session.GetString("ActiveModule") ?? string.Empty;
                         var isLoggedIn = !string.IsNullOrEmpty(Context.Session.GetString("KullaniciAdi"));
@@ -44,21 +199,29 @@
                         var canAccessDokumantasyon = isAdmin || Context.Session.GetString("Menu_Dokumantasyon") == "1";
                         var canAccessSikayetAdmin = isAdmin || Context.Session.GetString("Menu_SikayetAdmin") == "1";
                     }
-                    <ul class="navbar-nav flex-grow-1 align-items-center">
+
+                    <!-- SOL MENU - ANA LINKLER -->
+                    <ul class="navbar-nav flex-grow-1 align-items-lg-center">
+                        <!-- Ana Sayfa -->
                         <li class="nav-item">
                             <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Index">🏠 Ana Sayfa</a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" href="/Sikayet">📝 Şikayetler</a>
                         </li>
+
                         @if (isLoggedIn && activeModule == "STS")
                         {
-                            <div class="nav-separator"></div>
+                            <!-- ======================================== -->
+                            <!-- STS MODÜLÜ                             -->
+                            <!-- ======================================== -->
+                            <li class="nav-separator d-none d-lg-block"></li>
                             <li class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle" href="#" id="stsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                     📦 STS Modülü
                                 </a>
                                 <ul class="dropdown-menu" aria-labelledby="stsDropdown">
+                                    <li class="menu-group-title">📋 Sipariş Yönetimi</li>
                                     @if (isSubePersoneli)
                                     {
                                         <li><a class="dropdown-item" href="/Eksik/SubeListe">📋 Sipariş Listesi</a></li>
@@ -79,12 +242,14 @@
                                     @if (canAccessStsAdmin)
                                     {
                                         <li><hr class="dropdown-divider"></li>
+                                        <li class="menu-group-title">⚙️ Yönetim</li>
                                         <li><a class="dropdown-item" href="/Admin/Subeler">🏢 Şube Yönetimi</a></li>
                                         <li><a class="dropdown-item" href="/Admin/Urunler">📦 Ürün Yönetimi</a></li>
                                         <li><a class="dropdown-item" href="/Admin/Kullanicilar">👥 Kullanıcı Yönetimi</a></li>
                                         <li><a class="dropdown-item" href="/Admin/VeritabaniYedekleme">🗄️ Veritabanı Yedekleme</a></li>
                                     }
                                     <li><hr class="dropdown-divider"></li>
+                                    <li class="menu-group-title">📊 Raporlar</li>
                                     <li><a class="dropdown-item" href="/RaporSts/Index">📈 Haftalık Raporlar</a></li>
                                     <li><a class="dropdown-item" href="/RaporSts/DetailedRapor">🔍 Ayrıntılı Rapor</a></li>
                                     <li><a class="dropdown-item" href="/RaporSts/GeçmisHareketler">📋 Geçmiş Hareketler</a></li>
@@ -93,77 +258,63 @@
                         }
                         else if (isLoggedIn)
                         {
-                            @if (canAccessAdminModules)
-                            {
-                                <div class="nav-separator"></div>
-                                <li class="nav-item">
-                                    <a class="nav-link" asp-area="" asp-controller="Kullanici" asp-action="Index">👤 Kullanıcılar</a>
-                                </li>
-                            }
-                            @if (canAccessAdminModules)
-                            {
-                                <div class="nav-separator"></div>
-                                <li class="nav-item">
-                                    <a class="nav-link" asp-area="" asp-controller="RolYetki" asp-action="Index">🔐 Rol Yetkileri</a>
-                                </li>
-                            }
                             @if (canAccessPrsManagement)
                             {
-                                @if (canAccessPersonel)
+                                <li class="nav-separator d-none d-lg-block"></li>
+                                
+                                <!-- ======================================== -->
+                                <!-- 1. PERSONEL YÖNETİMİ DROPDOWN            -->
+                                <!-- ======================================== -->
+                                @if (canAccessPersonel || canAccessPuantaj || canAccessRapor || canAccessMesai)
                                 {
-                                    <div class="nav-separator"></div>
-                                    <li class="nav-item">
-                                        <a class="nav-link" asp-area="" asp-controller="Kullanici" asp-action="Liste2">📋 Personel</a>
-                                    </li>
-                                }
-                                @if (canAccessPuantaj)
-                                {
-                                    <div class="nav-separator"></div>
-                                    <li class="nav-item">
-                                        <a class="nav-link" asp-area="" asp-controller="Puantaj" asp-action="Index">📊 Puantaj</a>
-                                    </li>
-                                }
-                                @if (canAccessRapor)
-                                {
-                                    <div class="nav-separator"></div>
-                                    <li class="nav-item">
-                                        <a class="nav-link" asp-area="" asp-controller="Rapor" asp-action="Index">📈 Rapor</a>
-                                    </li>
-                                }
-                                @if (canAccessMesai)
-                                {
-                                    <div class="nav-separator"></div>
                                     <li class="nav-item dropdown">
-                                        <a class="nav-link dropdown-toggle" href="#" id="mesaiDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                            ⏰ Ek Mesai
+                                        <a class="nav-link dropdown-toggle" href="#" id="personelDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                            👥 Personel
                                         </a>
-                                        <ul class="dropdown-menu" aria-labelledby="mesaiDropdown">
-                                            <li><a class="dropdown-item" href="/Mesai/Index">📊 Ek Mesai Çizelgesi</a></li>
-                                            <li><a class="dropdown-item" href="/Mesai/MesaiOdemesi">💰 Mesai Ödeme</a></li>
-                                            <li><a class="dropdown-item" href="/HizliMesaiGirisi/Index">⚡ Hızlı Mesai Girişi</a></li>
+                                        <ul class="dropdown-menu" aria-labelledby="personelDropdown">
+                                            @if (canAccessPersonel)
+                                            {
+                                                <li><a class="dropdown-item" href="/Kullanici/Liste2">📋 Personel Listesi</a></li>
+                                            }
+                                            @if (canAccessPuantaj)
+                                            {
+                                                <li><a class="dropdown-item" href="/Puantaj/Index">📊 Puantaj</a></li>
+                                            }
+                                            @if (canAccessRapor)
+                                            {
+                                                <li><a class="dropdown-item" href="/Rapor/Index">📈 Rapor</a></li>
+                                            }
+                                            @if (canAccessMesai)
+                                            {
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li class="menu-group-title">⏰ Ek Mesai</li>
+                                                <li><a class="dropdown-item" href="/Mesai/Index">📊 Ek Mesai Çizelgesi</a></li>
+                                                <li><a class="dropdown-item" href="/Mesai/MesaiOdemesi">💰 Mesai Ödeme</a></li>
+                                                <li><a class="dropdown-item" href="/HizliMesaiGirisi/Index">⚡ Hızlı Mesai Girişi</a></li>
+                                            }
                                         </ul>
                                     </li>
                                 }
-                                @if (canAccessTatiller)
-                                {
-                                    <div class="nav-separator"></div>
-                                    <li class="nav-item">
-                                        <a class="nav-link" asp-area="" asp-controller="ResmiTatil" asp-action="Index">🎌 Tatiller</a>
-                                    </li>
-                                }
+
+                                <!-- ======================================== -->
+                                <!-- 2. ÖDEME TALİMATI DROPDOWN              -->
+                                <!-- ======================================== -->
                                 @if (canAccessOdemeTalimat)
                                 {
-                                    <div class="nav-separator"></div>
                                     <li class="nav-item dropdown">
                                         <a class="nav-link dropdown-toggle" href="#" id="odemeTalimatDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                             💳 Ödeme Talimatı
                                         </a>
                                         <ul class="dropdown-menu" aria-labelledby="odemeTalimatDropdown">
-                                            <li><a class="dropdown-item" href="/OdemeTalimat">📄 Talimat Ana Sayfa</a></li>
+                                            <li class="menu-group-title">📄 Talimat İşlemleri</li>
+                                            <li><a class="dropdown-item" href="/OdemeTalimat">📋 Talimat Ana Sayfa</a></li>
+                                            <li><a class="dropdown-item" href="/OdemeTalimat/FaturaSecim">📑 Fatura Seçimi</a></li>
                                             <li><a class="dropdown-item" href="/OdemeTalimat" onclick="document.getElementById('excelInputNav')?.click(); return false;">📂 Yeni Ödeme Oluştur</a></li>
+                                            
                                             @if (canAccessFirmaYonetimi || canAccessBankaYonetimi)
                                             {
                                                 <li><hr class="dropdown-divider"></li>
+                                                <li class="menu-group-title">⚙️ Yönetim</li>
                                             }
                                             @if (canAccessFirmaYonetimi)
                                             {
@@ -176,20 +327,68 @@
                                         </ul>
                                     </li>
                                 }
+
+                                <!-- ======================================== -->
+                                <!-- 3. SİSTEM YÖNETİMİ DROPDOWN             -->
+                                <!-- ======================================== -->
+                                @if (canAccessAdminModules || canAccessTatiller || canAccessYetkilendirme)
+                                {
+                                    <li class="nav-item dropdown">
+                                        <a class="nav-link dropdown-toggle" href="#" id="sistemDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                            ⚙️ Sistem
+                                        </a>
+                                        <ul class="dropdown-menu" aria-labelledby="sistemDropdown">
+                                            <li class="menu-group-title">👥 Kullanıcı Yönetimi</li>
+                                            @if (canAccessAdminModules)
+                                            {
+                                                <li><a class="dropdown-item" href="/Kullanici/Index">👤 Kullanıcılar</a></li>
+                                                <li><a class="dropdown-item" href="/RolYetki/Index">🔐 Rol Yetkileri</a></li>
+                                            }
+                                            @if (canAccessYetkilendirme)
+                                            {
+                                                <li><a class="dropdown-item" href="/Kullanici/Yetkilendirme">🔒 Yetkilendirme</a></li>
+                                            }
+                                            @if (canAccessTatiller)
+                                            {
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li class="menu-group-title">📅 Takvim</li>
+                                                <li><a class="dropdown-item" href="/ResmiTatil/Index">🎌 Tatiller</a></li>
+                                            }
+                                            @if (canAccessDokumantasyon)
+                                            {
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li class="menu-group-title">📄 Yardım</li>
+                                                <li><a class="dropdown-item" href="/Dokumantasyon/Index">📄 Dokümantasyon</a></li>
+                                            }
+                                        </ul>
+                                    </li>
+                                }
+
+                                <!-- ======================================== -->
+                                <!-- 4. ŞİKAYET YÖNETİMİ (Admin)             -->
+                                <!-- ======================================== -->
+                                @if (canAccessSikayetAdmin)
+                                {
+                                    <li class="nav-item">
+                                        <a class="nav-link" href="/Sikayet/Admin">🛠️ Şikayet Yönetimi</a>
+                                    </li>
+                                }
                             }
                         }
                     </ul>
+
+                    <!-- SAĞ MENU - KULLANICI İŞLEMLERİ -->
                     <ul class="navbar-nav align-items-center">
                         @if (!isLoggedIn)
                         {
                             <li class="nav-item">
-                                <a class="nav-link gbl-btn-login" asp-area="" asp-controller="Account" asp-action="Login">Giriş</a>
+                                <a class="nav-link gbl-btn-login" asp-area="" asp-controller="Account" asp-action="Login">🔑 Giriş</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link gbl-btn-register" asp-area="" asp-controller="Account" asp-action="Register">Kayıt Ol</a>
+                                <a class="nav-link gbl-btn-register" asp-area="" asp-controller="Account" asp-action="Register">📝 Kayıt Ol</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link gbl-btn-login" asp-area="" asp-controller="Account" asp-action="StsLogin">STS Giriş</a>
+                                <a class="nav-link gbl-btn-login" asp-area="" asp-controller="Account" asp-action="StsLogin">🏢 STS Giriş</a>
                             </li>
                         }
                         else
@@ -202,33 +401,11 @@
                                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profilDropdown">
                                     @if (activeModule != "STS")
                                     {
-                                        <li>
-                                            <a class="dropdown-item" asp-area="" asp-controller="Kullanici" asp-action="Profil">
-                                                👤 Profil
-                                            </a>
-                                        </li>
+                                        <li><a class="dropdown-item" href="/Kullanici/Profil">👤 Profil</a></li>
                                         <li><a class="dropdown-item" href="/HizliMesaiGirisi/Index">⚡ Hızlı Mesai Girişi</a></li>
-                                        @if (canAccessYetkilendirme)
-                                        {
-                                            <li>
-                                                <a class="dropdown-item" asp-area="" asp-controller="Kullanici" asp-action="Yetkilendirme">
-                                                    🔒 Yetkilendirme Yönetimi
-                                                </a>
-                                            </li>
-                                        }
-                                        @if (canAccessDokumantasyon)
-                                        {
-                                            <li>
-                                                <a class="dropdown-item" asp-area="" asp-controller="Dokumantasyon" asp-action="Index">
-                                                    📄 Dokümantasyon
-                                                </a>
-                                            </li>
-                                        }
                                         @if (canAccessSikayetAdmin)
                                         {
-                                            <li>
-                                                <a class="dropdown-item" href="/Sikayet/Admin">🛠️ Şikayet Yönetimi (Admin)</a>
-                                            </li>
+                                            <li><a class="dropdown-item" href="/Sikayet/Admin">🛠️ Şikayet Yönetimi</a></li>
                                         }
                                     }
                                     else
@@ -236,11 +413,7 @@
                                         <li><a class="dropdown-item" href="/Home/Index">📦 STS Dashboard</a></li>
                                     }
                                     <li><hr class="dropdown-divider"></li>
-                                    <li>
-                                        <a class="dropdown-item text-danger" asp-area="" asp-controller="Account" asp-action="Logout">
-                                            🚪 Çıkış Yap
-                                        </a>
-                                    </li>
+                                    <li><a class="dropdown-item text-danger" asp-area="" asp-controller="Account" asp-action="Logout">🚪 Çıkış Yap</a></li>
                                 </ul>
                             </li>
                         }
@@ -249,18 +422,22 @@
             </div>
         </nav>
     </header>
+
+    <!-- MAIN CONTENT -->
     <div class="container-fluid px-3" style="flex: 1; display: flex; flex-direction: column;">
         <main role="main" class="pb-3" style="flex: 1;">
             @RenderBody()
         </main>
     </div>
 
-    <footer class="border-top footer text-muted">
+    <!-- FOOTER -->
+    <footer class="footer border-top text-muted">
         <div class="container">
             &copy; 2026 - gamabelmvc - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
         </div>
     </footer>
-    <!-- jQuery and Bootstrap JS from CDN -->
+
+    <!-- SCRIPTS -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>

@@ -17,13 +17,21 @@
     .ot-btn-secondary:hover { opacity: 0.9; color: white; }
     .ot-btn-success { background: #198754; color: white; }
     .ot-btn-success:hover { opacity: 0.9; color: white; }
+    .ot-btn-warning { background: #ffc107; color: #212529; }
+    .ot-btn-warning:hover { opacity: 0.9; color: #212529; }
+    .ot-btn-info { background: #0dcaf0; color: #212529; }
+    .ot-btn-info:hover { opacity: 0.9; color: #212529; }
     .ot-table { width: 100%; border-collapse: collapse; font-size: 13px; }
     .ot-table th { background: #f8f9fa; padding: 8px 12px; text-align: left; border-bottom: 2px solid #dee2e6; font-weight: 600; }
     .ot-table td { padding: 8px 12px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
     .ot-table tbody tr:hover { background: #f8f9fa; }
     .badge-blue { background: #dbeafe; color: #1e3c72; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+    .badge-green { background: #d1fae5; color: #065f46; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; }
     .alert-hata { background: #fee2e2; border: 1px solid #fca5a5; color: #991b1b; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; }
     .alert-bilgi { background: #dbeafe; border: 1px solid #93c5fd; color: #1e40af; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; }
+    .alert-success { background: #d1fae5; border: 1px solid #6ee7b7; color: #065f46; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; }
+    .btn-group { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+    .btn-group .ot-btn { padding: 6px 14px; font-size: 12px; }
 </style>
 
 <div class="ot-card">
@@ -31,20 +39,8 @@
         <h1>💳 Ödeme Talimat Sistemi</h1>
         <p style="opacity:0.85; margin:0; font-size:13px;">Excel'den açık faturalar yükleyip firma bazında ödeme talimatı oluşturun</p>
     </div>
-    <div class="ot-card-body">
 
-        @if (TempData["Hata"] != null)
-        {
-            <div class="alert-hata">❌ @TempData["Hata"]</div>
-        }
-        @if (TempData["Bilgi"] != null)
-        {
-            <div class="alert-bilgi">ℹ️ @TempData["Bilgi"]</div>
-        }
-        @if (ViewBag.Hata != null)
-        {
-            <div class="alert-hata">❌ @ViewBag.Hata</div>
-        }
+    
 
         <!-- Yükleme formu -->
         <form method="post" asp-controller="OdemeTalimat" asp-action="Yukle"
@@ -59,11 +55,25 @@
                 <span style="color:#6c757d; font-size:13px;">açık_fatura_listesi.xlsx seçin</span>
                 @if (isAdmin)
                 {
-                    <a href="/OdemeTalimat/Firmalar" class="ot-btn ot-btn-secondary">🏢 Firmalar</a>
-                    <a href="/OdemeTalimat/Bankalar" class="ot-btn ot-btn-secondary">🏦 Bankalar</a>
+   
                 }
             </div>
         </form>
+
+        <!-- Tüm Faturalar Butonu -->
+        <div style="margin-bottom: 16px;">
+            <a href="/OdemeTalimat/FaturaSecim" class="ot-btn ot-btn-success" style="padding: 10px 24px;">
+                📋 Tüm Açık Faturaları Göster
+            </a>
+
+
+
+
+            
+            <span style="color: #6c757d; font-size: 13px; margin-left: 8px;">
+                Tüm batch'lerdeki bekleyen faturaları listeler
+            </span>
+        </div>
 
         <!-- Son Yüklemeler -->
         <h5 style="color:#1e3c72; margin-bottom:10px;">📋 Son Yüklemeler (tarih + dosya)</h5>
@@ -79,7 +89,7 @@
                         <th>Dosya Adı</th>
                         <th>Yükleme Tarihi</th>
                         <th>Satır Sayısı</th>
-                        <th></th>
+                        <th>İşlemler</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -90,9 +100,14 @@
                             <td>@b.YuklemeTarihi.ToString("dd.MM.yyyy HH:mm")</td>
                             <td><span class="badge-blue">@b.SatirSayisi satır</span></td>
                             <td>
-                                <a href="/OdemeTalimat/FaturaSecim?batchId=@b.Id" class="ot-btn ot-btn-success" style="padding:6px 14px; font-size:12px;">
-                                    ✅ Fatura Seç
-                                </a>
+                                <div class="btn-group">
+                                    <!-- Bu batch'e ait faturaları seç -->
+                                    <a href="/OdemeTalimat/FaturaSecim?batchId=@b.Id" 
+                                       class="ot-btn ot-btn-success">
+                                        ✅ Bu Batch
+                                    </a>
+                                   
+                                </div>
                             </td>
                         </tr>
                     }

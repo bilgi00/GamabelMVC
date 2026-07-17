@@ -1,8 +1,11 @@
+@using System.Globalization
+
 @{
     ViewData["Title"] = "Fatura Seçimi";
     var firmaGruplari = ViewBag.FirmaGruplari as List<IGrouping<string, gamabelmvc.Models.PRS.OtAcikFatura>> ?? new();
     var bankalar = ViewBag.Bankalar as List<gamabelmvc.Models.PRS.OtBanka> ?? new();
     int batchId = ViewBag.BatchId ?? 0;
+    string baslik = ViewBag.Baslik ?? "Ödenecek Faturaları Seçin";
 }
 
 <style>
@@ -12,25 +15,44 @@
     .ot-btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 22px; font-size: 14px; font-weight: 600; border-radius: 8px; text-decoration: none; border: none; cursor: pointer; transition: all 0.2s; }
     .ot-btn-primary { background: linear-gradient(135deg, #1e3c72, #2a5298); color: white; }
     .ot-btn-primary:hover { opacity: 0.9; color: white; transform: translateY(-1px); }
+    .ot-btn-secondary { background: #6c757d; color: white; }
+    .ot-btn-secondary:hover { opacity: 0.9; color: white; }
     .firma-grup { border: 1px solid #e2e8f0; border-radius: 10px; margin-bottom: 16px; padding: 14px 16px; background: #fafafa; }
     .firma-grup legend { font-weight: 700; color: #1e3c72; padding: 0 8px; font-size: 14px; }
     .ot-table { width: 100%; border-collapse: collapse; font-size: 13px; }
     .ot-table th { background: #f1f5f9; padding: 6px 10px; text-align: left; font-weight: 600; border-bottom: 2px solid #dee2e6; }
     .ot-table td { padding: 6px 10px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
     .alert-hata { background: #fee2e2; border: 1px solid #fca5a5; color: #991b1b; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; }
+    .alert-bilgi { background: #dbeafe; border: 1px solid #93c5fd; color: #1e40af; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; }
     .banka-secim { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 14px 16px; margin-bottom: 20px; }
     .banka-secim label { font-weight: 600; color: #1e40af; margin-right: 10px; }
     .banka-secim select { padding: 6px 12px; border: 1px solid #93c5fd; border-radius: 6px; font-size: 14px; min-width: 320px; }
     .sticky-bar { position: sticky; bottom: 16px; margin-top: 20px; background: rgba(255,255,255,0.97); backdrop-filter: blur(8px); border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 -6px 20px rgba(15, 23, 42, 0.08); padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; z-index: 20; }
     .tutar-ozet { font-size: 15px; font-weight: 700; color: #1e3c72; }
+    .batch-bilgi { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 16px; margin-bottom: 16px; font-size: 13px; color: #475569; }
+    .batch-bilgi strong { color: #1e3c72; }
+    .badge-blue { background: #dbeafe; color: #1e3c72; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+    .fatura-tutar { font-weight: 600; text-align: right; }
 </style>
 
 <div class="ot-card">
     <div class="ot-header">
-        <h1>✅ Ödenecek Faturaları Seçin</h1>
+        <h3>✅ @baslik</h3>
         <p style="opacity:0.85; margin:0; font-size:13px;">
             Sadece bekleyen faturalar listelenir; daha önce ödenen faturalar bir sonraki ödeme akışında tekrar görünmez.
         </p>
+        @if (batchId > 0)
+        {
+            <p style="opacity:0.7; margin:4px 0 0 0; font-size:12px;">
+                📦 Batch #@batchId - Bu yüklemeye ait faturalar listeleniyor
+            </p>
+        }
+        else
+        {
+            <p style="opacity:0.7; margin:4px 0 0 0; font-size:12px;">
+                📋 Tüm batch'lerdeki bekleyen faturalar listeleniyor
+            </p>
+        }
     </div>
     <div class="ot-card-body">
 
@@ -38,31 +60,47 @@
         {
             <div class="alert-hata">❌ @TempData["Hata"]</div>
         }
+        @if (TempData["Bilgi"] != null)
+        {
+            <div class="alert-bilgi">ℹ️ @TempData["Bilgi"]</div>
+        }
 
         @if (!firmaGruplari.Any())
         {
             <div style="text-align:center; padding:40px; color:#6c757d;">
                 <p style="font-size:32px; margin-bottom:8px;">📭</p>
-                <p>Bu yüklemede ödemeye hazır fatura bulunamadı.</p>
+                @if (batchId > 0)
+                {
+                    <p>Bu yüklemede ödemeye hazır fatura bulunamadı.</p>
+                }
+                else
+                {
+                    <p>Sistemde ödemeye hazır açık fatura bulunamadı.</p>
+                }
                 <a href="/OdemeTalimat" class="ot-btn ot-btn-primary">← Ana Sayfaya Dön</a>
             </div>
         }
         else
         {
             <form method="post" asp-controller="OdemeTalimat" asp-action="TalimatOlustur" id="talimatForm">
+                <!-- batchId hidden input -->
                 <input type="hidden" name="batchId" value="@batchId" />
 
                 <!-- Banka Seçimi -->
                 @if (bankalar.Any())
                 {
-                    <div class="banka-secim">
-                        <label>🏦 Ödemenin yapılacağı hesap:</label>
-                        <select name="bankaId" required>
-                            @foreach (var b in bankalar)
-                            {
-                                <option value="@b.Id">@b.SubeAdi — @b.IBAN</option>
-                            }
-                        </select>
+                    <div class="row align-items-center mb-3">
+                        <label for="bankaId" class="col-auto col-form-label fw-semibold">
+                            🏦 Ödemenin yapılacağı hesap:
+                        </label>
+                        <div class="col">
+                            <select id="bankaId" name="bankaId" class="form-select" required>
+                                @foreach (var b in bankalar)
+                                {
+                                    <option value="@b.Id">@b.SubeAdi — @b.IBAN</option>
+                                }
+                            </select>
+                        </div>
                     </div>
                 }
                 else
@@ -73,11 +111,22 @@
                     </div>
                 }
 
+                <!-- Toplam fatura bilgisi -->
+                <div class="batch-bilgi">
+                    <strong>📊 Toplam:</strong> 
+                    @firmaGruplari.Sum(g => g.Count()) fatura bulundu,
+                    toplam bakiye: <strong>@firmaGruplari.Sum(g => g.Sum(f => f.Bakiye)).ToString("N2") TL</strong>
+                    @if (batchId > 0)
+                    {
+                        <span style="margin-left: 12px;">| Batch ID: <strong>@batchId</strong></span>
+                    }
+                </div>
+
                 <!-- Seç/Kaldır hepsi butonu -->
-                <div style="margin-bottom:12px; display:flex; gap:10px; align-items:center;">
+                <div style="margin-bottom:12px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
                     <button type="button" class="ot-btn ot-btn-primary" style="padding:6px 14px; font-size:12px;" onclick="toggleAll(true)">☑ Tümünü Seç</button>
-                    <button type="button" class="ot-btn" style="padding:6px 14px; font-size:12px; background:#6c757d; color:white;" onclick="toggleAll(false)">☐ Seçimi Kaldır</button>
-                    <span style="color:#6c757d; font-size:13px;" id="secilenAdet">Yükleniyor...</span>
+                    <button type="button" class="ot-btn ot-btn-secondary" style="padding:6px 14px; font-size:12px;" onclick="toggleAll(false)">☐ Seçimi Kaldır</button>
+                    <span style="color:#6c757d; font-size:13px;" id="secilenAdet">0 fatura seçildi</span>
                 </div>
 
                 <!-- Firma bazında fatura grupları -->
@@ -98,6 +147,10 @@
                                     <th style="width:40px;"></th>
                                     <th>Fatura No</th>
                                     <th style="text-align:right;">Bakiye</th>
+                                    @if (batchId == 0)
+                                    {
+                                        <th style="text-align:center; font-size:11px;">Batch</th>
+                                    }
                                 </tr>
                             </thead>
                             <tbody>
@@ -106,10 +159,17 @@
                                     <tr>
                                         <td>
                                             <input type="checkbox" name="secilenFaturaIdleri" value="@f.Id"
-                                                   class="fatura-cb" checked onchange="updateSecilenAdet()" />
+                                                   class="fatura-cb" checked onchange="updateSecilenAdet()"
+                                                   data-tutar="@f.Bakiye.ToString(CultureInfo.InvariantCulture)" />
                                         </td>
                                         <td>@f.FaturaNo</td>
-                                        <td style="text-align:right; font-weight:600;">@f.Bakiye.ToString("N2") TL</td>
+                                        <td class="fatura-tutar">@f.Bakiye.ToString("N2") TL</td>
+                                        @if (batchId == 0)
+                                        {
+                                            <td style="text-align:center; font-size:11px; color:#6c757d;">
+                                                <span class="badge-blue">#@f.ImportBatchId</span>
+                                            </td>
+                                        }
                                     </tr>
                                 }
                             </tbody>
@@ -119,9 +179,9 @@
 
                 <!-- Yapışkan alt bar -->
                 <div class="sticky-bar">
-                    <div class="tutar-ozet" id="toplamTutar">Seçilen toplam: hesaplanıyor...</div>
-                    <div style="display:flex; gap:10px;">
-                        <a href="/OdemeTalimat" class="ot-btn" style="background:#6c757d; color:white; padding:10px 18px;">← Geri</a>
+                    <div class="tutar-ozet" id="toplamTutar">Seçilen toplam: 0,00 TL</div>
+                    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                        <a href="/OdemeTalimat" class="ot-btn ot-btn-secondary" style="padding:10px 18px;">← Geri</a>
                         <button type="submit" class="ot-btn ot-btn-primary" @(!bankalar.Any() ? "disabled" : "")>
                             💳 Talimat Oluştur
                         </button>
@@ -134,27 +194,87 @@
 
 @section Scripts {
 <script>
+    // Sayfa yüklendiğinde hesaplama yap
+    document.addEventListener('DOMContentLoaded', function() {
+        updateSecilenAdet();
+    });
+
+    // Tümünü seç / seçimi kaldır
     function toggleAll(secili) {
-        document.querySelectorAll('.fatura-cb').forEach(cb => cb.checked = secili);
+        document.querySelectorAll('.fatura-cb').forEach(function(cb) {
+            cb.checked = secili;
+        });
         updateSecilenAdet();
     }
 
+    // Seçilen faturaların toplamını hesapla ve güncelle
     function updateSecilenAdet() {
-        const secilen = document.querySelectorAll('.fatura-cb:checked');
-        let toplam = 0;
-        secilen.forEach(cb => {
-            const row = cb.closest('tr');
-            const tutarTd = row.querySelector('td:last-child');
-            if (tutarTd) {
-                const tutarStr = tutarTd.textContent.replace(/\./g, '').replace(',', '.').replace(' TL', '').trim();
-                toplam += parseFloat(tutarStr) || 0;
+        try {
+            var secilen = document.querySelectorAll('.fatura-cb:checked');
+            var toplam = 0;
+            var adet = secilen.length;
+            
+            // Her seçili checkbox için
+            secilen.forEach(function(cb) {
+                // 1. Yöntem: data-tutar attribute'ünden al
+                var tutarAttr = cb.getAttribute('data-tutar');
+                if (tutarAttr) {
+                    var deger = parseFloat(tutarAttr.replace(',', '.').trim());
+                    if (!isNaN(deger) && deger > 0) {
+                        toplam += deger;
+                        return;
+                    }
+                }
+                
+                // 2. Yöntem: Satırdaki tutar sütunundan al
+                var row = cb.closest('tr');
+                if (row) {
+                    var tutarTd = row.querySelector('.fatura-tutar');
+                    if (tutarTd) {
+                        var tutarStr = tutarTd.textContent
+                            .replace(/\./g, '')        // Binlik ayracı kaldır (1.234 → 1234)
+                            .replace(',', '.')          // Ondalık ayracı değiştir (1234,50 → 1234.50)
+                            .replace(' TL', '')         // TL yazısını kaldır
+                            .trim();
+                        var deger = parseFloat(tutarStr);
+                        if (!isNaN(deger) && deger > 0) {
+                            toplam += deger;
+                        }
+                    }
+                }
+            });
+            
+            // Sonuçları ekrana yaz
+            var secilenAdetSpan = document.getElementById('secilenAdet');
+            var toplamTutarSpan = document.getElementById('toplamTutar');
+            
+            if (secilenAdetSpan) {
+                secilenAdetSpan.textContent = adet + ' fatura seçildi';
             }
-        });
-        document.getElementById('secilenAdet').textContent = secilen.length + ' fatura seçildi';
-        document.getElementById('toplamTutar').textContent =
-            'Seçilen toplam: ' + toplam.toLocaleString('tr-TR', { minimumFractionDigits: 2 }) + ' TL';
+            
+            if (toplamTutarSpan) {
+                toplamTutarSpan.textContent = 
+                    'Seçilen toplam: ' + toplam.toLocaleString('tr-TR', { 
+                        minimumFractionDigits: 2, 
+                        maximumFractionDigits: 2 
+                    }) + ' TL';
+            }
+            
+        } catch (e) {
+            console.error('Hata:', e);
+            // Hata durumunda kullanıcıya bilgi ver
+            var toplamTutarSpan = document.getElementById('toplamTutar');
+            if (toplamTutarSpan) {
+                toplamTutarSpan.textContent = 'Seçilen toplam: Hesaplanamadı';
+            }
+        }
     }
 
-    document.addEventListener('DOMContentLoaded', updateSecilenAdet);
+    // Checkbox değiştiğinde tetikle (onchange ile birlikte çalışır)
+    document.addEventListener('change', function(e) {
+        if (e.target.classList && e.target.classList.contains('fatura-cb')) {
+            updateSecilenAdet();
+        }
+    });
 </script>
 }
