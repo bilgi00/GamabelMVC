@@ -1,0 +1,139 @@
+/* ============================================
+   GAMABEL MVC - CSS VARIABLES & STANDARDS
+   ============================================ */
+
+/* Color Palette */
+:root {
+    /* Primary Colors */
+    --gbl-primary: #1565c0;
+    --gbl-primary-dark: #1a237e;
+    --gbl-primary-light: #1976d2;
+    --gbl-primary-lighter: #42a5f5;
+    
+    /* Secondary Colors */
+    --gbl-secondary: #283593;
+    --gbl-secondary-dark: #1a237e;
+    --gbl-secondary-light: #3f51b5;
+    
+    /* Success Colors */
+    --gbl-success: #2e7d32;
+    --gbl-success-light: #4caf50;
+    --gbl-success-lighter: #81c784;
+    
+    /* Warning Colors */
+    --gbl-warning: #f57f17;
+    --gbl-warning-light: #fbc02d;
+    --gbl-warning-lighter: #fff59d;
+    
+    /* Danger/Error Colors */
+    --gbl-danger: #c62828;
+    --gbl-danger-light: #d32f2f;
+    --gbl-danger-lighter: #ef5350;
+    
+    /* Info Colors */
+    --gbl-info: #0277bd;
+    --gbl-info-light: #0288d1;
+    --gbl-info-lighter: #4fc3f7;
+    
+    /* Neutral Colors */
+    --gbl-dark: #212121;
+    --gbl-gray: #757575;
+    --gbl-light-gray: #f5f5f5;
+    --gbl-lighter-gray: #fafafa;
+    --gbl-white: #ffffff;
+    --gbl-border: #e0e0e0;
+    --gbl-border-light: #eeeeee;
+    
+    /* Typography */
+    --gbl-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+    --gbl-font-family-mono: 'SFMono-Regular', 'Consolas', 'Liberation Mono', 'Menlo', monospace;
+    
+    /* Font Sizes */
+    --gbl-font-size-xs: 0.75rem;        /* 12px */
+    --gbl-font-size-sm: 0.875rem;       /* 14px */
+    --gbl-font-size-base: 1rem;         /* 16px */
+    --gbl-font-size-lg: 1.125rem;       /* 18px */
+    --gbl-font-size-xl: 1.25rem;        /* 20px */
+    --gbl-font-size-2xl: 1.5rem;        /* 24px */
+    --gbl-font-size-3xl: 1.875rem;      /* 30px */
+    
+    /* Font Weights */
+    --gbl-font-weight-light: 300;
+    --gbl-font-weight-normal: 400;
+    --gbl-font-weight-medium: 500;
+    --gbl-font-weight-semibold: 600;
+    --gbl-font-weight-bold: 700;
+    --gbl-font-weight-extrabold: 800;
+    
+    /* Line Heights */
+    --gbl-line-height-tight: 1.25;
+    --gbl-line-height-normal: 1.5;
+    --gbl-line-height-relaxed: 1.75;
+    
+    /* Spacing */
+    --gbl-spacing-xs: 0.25rem;         /* 4px */
+    --gbl-spacing-sm: 0.5rem;          /* 8px */
+    --gbl-spacing-md: 1rem;            /* 16px */
+    --gbl-spacing-lg: 1.5rem;          /* 24px */
+    --gbl-spacing-xl: 2rem;            /* 32px */
+    --gbl-spacing-2xl: 3rem;           /* 48px */
+    --gbl-spacing-3xl: 4rem;           /* 64px */
+    
+    /* Border Radius */
+    --gbl-radius-sm: 0.25rem;          /* 4px */
+    --gbl-radius-md: 0.5rem;           /* 8px */
+    --gbl-radius-lg: 0.75rem;          /* 12px */
+    --gbl-radius-xl: 1rem;             /* 16px */
+    --gbl-radius-full: 9999px;
+    
+    /* Shadows */
+    --gbl-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --gbl-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+    --gbl-shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06);
+    --gbl-shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.05);
+    --gbl-shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.1), 0 10px 10px rgba(0, 0, 0, 0.04);
+    
+    /* Transitions */
+    --gbl-transition-fast: 0.15s ease;
+    --gbl-transition-base: 0.2s ease;
+    --gbl-transition-slow: 0.3s ease;
+    
+    /* Z-Index */
+    --gbl-z-dropdown: 1000;
+    --gbl-z-sticky: 1020;
+    --gbl-z-fixed: 1030;
+    --gbl-z-modal-backdrop: 1040;
+    --gbl-z-modal: 1050;
+    --gbl-z-popover: 1060;
+    --gbl-z-tooltip: 1070;
+    
+    /* Breakpoints */
+    --gbl-breakpoint-xs: 0;
+    --gbl-breakpoint-sm: 576px;
+    --gbl-breakpoint-md: 768px;
+    --gbl-breakpoint-lg: 992px;
+    --gbl-breakpoint-xl: 1200px;
+    --gbl-breakpoint-2xl: 1400px;
+}
+
+/* Dark Mode Variables (Future Support) */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --gbl-dark: #f5f5f5;
+        --gbl-gray: #bdbdbd;
+        --gbl-light-gray: #303030;
+        --gbl-lighter-gray: #212121;
+        --gbl-white: #121212;
+    }
+}
+
+/* Print Styles */
+@media print {
+    :root {
+        --gbl-shadow-xs: none;
+        --gbl-shadow-sm: none;
+        --gbl-shadow-md: none;
+        --gbl-shadow-lg: none;
+        --gbl-shadow-xl: none;
+    }
+}

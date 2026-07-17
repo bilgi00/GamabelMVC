@@ -196,18 +196,64 @@
     var ayAdlari = ['','Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
     var izinTipiAdlari = {'İ':'Yıllık İzin','Gİ':'Görev İzni','ÇH':'Çocuk Hastalık','Vİ':'Vefat İzni','Öİ':'Özel İzin','H':'Hastalık'};
 
-    // Yıl dropdown
-    (function() {
-        var ySel = document.getElementById('yilSelect');
-        var now = new Date();
-        for (var y = now.getFullYear() - 2; y <= now.getFullYear() + 1; y++) {
-            var o = document.createElement('option');
-            o.value = y; o.textContent = y;
-            if (y === now.getFullYear()) o.selected = true;
-            ySel.appendChild(o);
+    // Yıl dropdown ve URL'den okuma
+(function() {
+    var ySel = document.getElementById('yilSelect');
+    var now = new Date();
+    var currentYear = now.getFullYear();
+    
+    // URL'den year parametresini oku
+    var urlParams = new URLSearchParams(window.location.search);
+    var urlYear = urlParams.get('year');
+    
+    // Yılları oluştur (2 yıl geriden, 1 yıl ileriye)
+    for (var y = currentYear - 2; y <= currentYear + 1; y++) {
+        var o = document.createElement('option');
+        o.value = y;
+        o.textContent = y;
+        
+        // Seçim öncelik sırası:
+        // 1. URL'de year varsa onu seç
+        // 2. Yoksa mevcut yılı seç
+        if (urlYear && parseInt(urlYear) === y) {
+            o.selected = true;
+        } else if (!urlYear && y === currentYear) {
+            o.selected = true;
         }
-        document.getElementById('aySelect').value = now.getMonth() + 1;
-    })();
+        
+        ySel.appendChild(o);
+    }
+    
+    // Ay seçicisini URL'den veya mevcut aya göre ayarla
+    var aySelect = document.getElementById('aySelect');
+    var urlMonth = urlParams.get('month');
+    if (urlMonth && urlMonth >= 1 && urlMonth <= 12) {
+        aySelect.value = parseInt(urlMonth);
+    } else {
+        aySelect.value = now.getMonth() + 1;
+    }
+})();
+
+// HTML güvenlik fonksiyonu
+function escapeHtml(text) {
+    var div = document.createElement('div');
+    div.appendChild(document.createTextNode(text));
+    return div.innerHTML;
+}
+
+// Yıl değiştiğinde URL'yi güncelle
+document.getElementById('yilSelect').addEventListener('change', function() {
+    var url = new URL(window.location.href);
+    url.searchParams.set('year', this.value);
+    window.location.href = url.toString();
+});
+
+// Ay değiştiğinde URL'yi güncelle
+document.getElementById('aySelect').addEventListener('change', function() {
+    var url = new URL(window.location.href);
+    url.searchParams.set('month', this.value);
+    window.location.href = url.toString();
+});
 
     function escapeHtml(text) {
         var div = document.createElement('div');

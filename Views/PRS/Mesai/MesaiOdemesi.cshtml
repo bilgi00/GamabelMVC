@@ -140,21 +140,69 @@
 
     var ayAdlari = ['','Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
 
-    // Yıl dropdown'ını doldur
-    var yearSel = document.getElementById('yearSelect');
-    var now = new Date();
-    for (var y = now.getFullYear() - 2; y <= now.getFullYear() + 1; y++) {
-        var opt = document.createElement('option');
-        opt.value = y; opt.textContent = y;
-        if (y === now.getFullYear()) opt.selected = true;
-        yearSel.appendChild(opt);
-    }
-    document.getElementById('monthSelect').value = now.getMonth() + 1;
+    // ==================== DÜZELTİLMİŞ FONKSİYON ====================
+    function initDateSelects() {
+        var yearSel = document.getElementById('yearSelect');
+        var monthSel = document.getElementById('monthSelect');
 
-    function escapeHtml(t) {
-        var d = document.createElement('div');
-        d.appendChild(document.createTextNode(t || ''));
-        return d.innerHTML;
+        if (!yearSel || !monthSel) {
+            return;
+        }
+
+        // URL'den parametreleri oku
+        var urlParams = new URLSearchParams(window.location.search);
+        var urlYear = urlParams.get('year');
+        var urlMonth = urlParams.get('month');
+
+        yearSel.innerHTML = '';
+        var now = new Date();
+        var currentYear = now.getFullYear();
+        
+        // Yılları oluştur (2 yıl geriden, 1 yıl ileriye)
+        for (var y = currentYear - 2; y <= currentYear + 1; y++) {
+            var opt = document.createElement('option');
+            opt.value = y;
+            opt.textContent = y;
+            
+            // Seçim öncelik sırası:
+            // 1. URL'de year varsa onu seç
+            // 2. Yoksa mevcut yılı seç
+            if (urlYear && parseInt(urlYear) === y) {
+                opt.selected = true;
+            } else if (!urlYear && y === currentYear) {
+                opt.selected = true;
+            }
+            
+            yearSel.appendChild(opt);
+        }
+        
+        // Ay seçimini URL'den veya mevcut aya göre ayarla
+        if (urlMonth && urlMonth >= 1 && urlMonth <= 12) {
+            monthSel.value = parseInt(urlMonth);
+        } else {
+            monthSel.value = now.getMonth() + 1;
+        }
+    }
+
+    // Yıl değiştiğinde URL'yi güncelle
+    document.getElementById('yearSelect')?.addEventListener('change', function() {
+        var url = new URL(window.location.href);
+        url.searchParams.set('year', this.value);
+        window.location.href = url.toString();
+    });
+
+    // Ay değiştiğinde URL'yi güncelle
+    document.getElementById('monthSelect')?.addEventListener('change', function() {
+        var url = new URL(window.location.href);
+        url.searchParams.set('month', this.value);
+        window.location.href = url.toString();
+    });
+    // ================================================================
+
+    function escapeHtml(text) {
+        var div = document.createElement('div');
+        div.appendChild(document.createTextNode(text || ''));
+        return div.innerHTML;
     }
 
     function formatTurkishCurrency(value) {
@@ -173,6 +221,12 @@
         t.textContent = msg;
         document.body.appendChild(t);
         setTimeout(function() { t.remove(); }, 2500);
+    }
+
+    function getDisplayedToplamMesai() {
+        return (odemeler || []).reduce(function(sum, o) {
+            return sum + (parseFloat(o.toplamSaat) || 0);
+        }, 0);
     }
 
     function renderTable() {
@@ -207,9 +261,10 @@
             tbody.appendChild(tr);
         }
 
-        // Toplam satırını güncelle
+        var toplamMesaiGosterim = getDisplayedToplamMesai();
+
         document.getElementById('tfPersonel').textContent = ozet.toplamPersonel || 0;
-        document.getElementById('tfMesai').textContent = (ozet.toplamMesai || 0).toFixed(1);
+        document.getElementById('tfMesai').textContent = toplamMesaiGosterim.toFixed(1);
         document.getElementById('tfBrut').textContent = formatTurkishCurrency(ozet.saatlikBrut || 0);
         document.getElementById('tfOdeme').textContent = formatTurkishCurrency(ozet.genelToplamOdeme || 0);
 
@@ -219,37 +274,61 @@
     }
 
     function loadOdemeler() {
-        var birim = document.getElementById('birimSelect').value;
-        var yil = parseInt(document.getElementById('yearSelect').value);
-        var ay = parseInt(document.getElementById('monthSelect').value);
+        var birimSel = document.getElementById('birimSelect');
+        var yearSel = document.getElementById('yearSelect');
+        var monthSel = document.getElementById('monthSelect');
 
-        if (!birim) { showToast('Birim seçin', 'warning'); return; }
+        var birim = birimSel ? birimSel.value : '';
+        var yil = yearSel ? parseInt(yearSel.value, 10) : new Date().getFullYear();
+        var ay = monthSel ? parseInt(monthSel.value, 10) : new Date().getMonth() + 1;
+
+        if (!birim) {
+            showToast('Birim seçin', 'warning');
+            return;
+        }
 
         currentBirim = birim;
         currentYil = yil;
         currentAy = ay;
 
-        document.getElementById('btnYukle').disabled = true;
+        var yukleBtn = document.getElementById('btnYukle');
+        if (yukleBtn) {
+            yukleBtn.disabled = true;
+        }
 
-        // hesapla=false ile çağır - sadece personel listesi, ödeme=0
-        fetch('/Mesai/GetMesaiOdemeleri?yil=' + yil + '&ay=' + ay + '&birim=' + encodeURIComponent(birim) + '&hesapla=false')
+        var url = '/Mesai/GetMesaiOdemeleri?yil=' + yil + '&ay=' + ay + '&birim=' + encodeURIComponent(birim) + '&hesapla=false';
+        fetch(url)
             .then(function(r) { return r.json(); })
             .then(function(data) {
-                if (!data.basarili) { showToast('Hata: ' + (data.hata || 'Bilinmeyen hata'), 'error'); return; }
+                if (!data.basarili) {
+                    showToast('Hata: ' + (data.hata || 'Bilinmeyen hata'), 'error');
+                    return;
+                }
                 odemeler = data.odemeler || [];
                 ozet = data.ozet || {};
                 renderTable();
-                document.getElementById('btnHesapla').disabled = false;
+                var hesaplaBtn = document.getElementById('btnHesapla');
+                if (hesaplaBtn) {
+                    hesaplaBtn.disabled = false;
+                }
                 showToast(ayAdlari[ay] + ' ' + yil + ' - Personel listesi yüklendi. Hesaplamak için "Hesapla" tuşuna basınız.');
             })
             .catch(function() { showToast('Veri yüklenemedi', 'error'); })
-            .finally(function() { document.getElementById('btnYukle').disabled = false; });
+            .finally(function() {
+                if (yukleBtn) {
+                    yukleBtn.disabled = false;
+                }
+            });
     }
 
     function calculateOdemeler() {
-        var birim = document.getElementById('birimSelect').value;
-        var yil = parseInt(document.getElementById('yearSelect').value);
-        var ay = parseInt(document.getElementById('monthSelect').value);
+        var birimSel = document.getElementById('birimSelect');
+        var yearSel = document.getElementById('yearSelect');
+        var monthSel = document.getElementById('monthSelect');
+
+        var birim = birimSel ? birimSel.value : '';
+        var yil = yearSel ? parseInt(yearSel.value, 10) : new Date().getFullYear();
+        var ay = monthSel ? parseInt(monthSel.value, 10) : new Date().getMonth() + 1;
 
         if (!birim) { showToast('Birim seçin', 'warning'); return; }
 
@@ -257,10 +336,13 @@
         currentYil = yil;
         currentAy = ay;
 
-        document.getElementById('btnHesapla').disabled = true;
+        var hesaplaBtn = document.getElementById('btnHesapla');
+        if (hesaplaBtn) {
+            hesaplaBtn.disabled = true;
+        }
 
-        // hesapla=true ile çağır - ödeme hesapla
-        fetch('/Mesai/GetMesaiOdemeleri?yil=' + yil + '&ay=' + ay + '&birim=' + encodeURIComponent(birim) + '&hesapla=true')
+        var url = '/Mesai/GetMesaiOdemeleri?yil=' + yil + '&ay=' + ay + '&birim=' + encodeURIComponent(birim) + '&hesapla=true';
+        fetch(url)
             .then(function(r) { return r.json(); })
             .then(function(data) {
                 if (!data.basarili) { showToast('Hata: ' + (data.hata || 'Bilinmeyen hata'), 'error'); return; }
@@ -270,14 +352,56 @@
                 showToast(ayAdlari[ay] + ' ' + yil + ' - Ödeme hesaplamaları tamamlandı.');
             })
             .catch(function() { showToast('Hesaplama yapılamadı', 'error'); })
-            .finally(function() { document.getElementById('btnHesapla').disabled = false; });
+            .finally(function() {
+                if (hesaplaBtn) {
+                    hesaplaBtn.disabled = false;
+                }
+            });
     }
 
-    // Yükle butonu
-    document.getElementById('btnYukle').addEventListener('click', loadOdemeler);
+    function bindEvents() {
+        var yukleBtn = document.getElementById('btnYukle');
+        var hesaplaBtn = document.getElementById('btnHesapla');
+        var birimSel = document.getElementById('birimSelect');
+        var yearSel = document.getElementById('yearSelect');
+        var monthSel = document.getElementById('monthSelect');
 
-    // Hesapla butonu
-    document.getElementById('btnHesapla').addEventListener('click', calculateOdemeler);
+        if (yukleBtn) {
+            yukleBtn.addEventListener('click', loadOdemeler);
+        }
+        if (hesaplaBtn) {
+            hesaplaBtn.addEventListener('click', calculateOdemeler);
+        }
+        if (birimSel) {
+            birimSel.addEventListener('change', function() {
+                if (birimSel.value) {
+                    loadOdemeler();
+                }
+            });
+        }
+        if (yearSel) {
+            yearSel.addEventListener('change', loadOdemeler);
+        }
+        if (monthSel) {
+            monthSel.addEventListener('change', loadOdemeler);
+        }
+    }
+
+    function initPage() {
+        initDateSelects();
+        bindEvents();
+
+        var sel = document.getElementById('birimSelect');
+        if (sel && sel.options.length > 0 && sel.value) {
+            loadOdemeler();
+        }
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initPage);
+    } else {
+        initPage();
+    }
 
     // Excel indir
     document.getElementById('btnExcel').addEventListener('click', function() {
@@ -294,7 +418,8 @@
             html += '<tr><td>' + o.sira + '</td><td>' + escapeHtml(o.adSoyad) + '</td><td>' + escapeHtml(o.birimAdi) + '</td><td>' + o.toplamSaat.toFixed(1) + '</td><td>' + formatTurkishCurrency(o.saatlikBrut) + '</td><td>' + formatTurkishCurrency(o.odemeTutari) + '</td></tr>';
         }
         
-        html += '<tr style="font-weight:bold;background:#e9ecef;"><td colspan="2" style="text-align:right;">GENEL TOPLAM</td><td>' + (ozet.toplamPersonel || 0) + ' Kişi</td><td>' + (ozet.toplamMesai || 0).toFixed(1) + '</td><td>' + formatTurkishCurrency(ozet.saatlikBrut || 0) + '</td><td>' + formatTurkishCurrency(ozet.genelToplamOdeme || 0) + '</td></tr>';
+        var toplamMesaiGosterim = getDisplayedToplamMesai();
+        html += '<tr style="font-weight:bold;background:#e9ecef;"><td colspan="2" style="text-align:right;">GENEL TOPLAM</td><td>' + (ozet.toplamPersonel || 0) + ' Kişi</td><td>' + toplamMesaiGosterim.toFixed(1) + '</td><td>' + formatTurkishCurrency(ozet.saatlikBrut || 0) + '</td><td>' + formatTurkishCurrency(ozet.genelToplamOdeme || 0) + '</td></tr>';
         html += '</tbody></table></body></html>';
 
         var blob = new Blob([html], { type: 'application/vnd.ms-excel' });
@@ -313,14 +438,12 @@
         var pdfDiv = document.createElement('div');
         pdfDiv.style.cssText = 'width:1050px;padding:25px;font-family:Arial,sans-serif;background:white;';
 
-        // Başlık
         pdfDiv.innerHTML = '<div style="text-align:center;margin-bottom:15px;">' +
-            '<h2 style="margin:0;font-size:20px;color:#1e3c72;">GAMABEL YATIRIM LTD</h2>' +
-            '<h3 style="margin:5px 0;font-size:17px;">MESAİ ÖDEME LİSTESİ</h3>' +
-            '<p style="margin:3px 0;font-size:13px;color:#555;">' + ayAdlari[currentAy].toUpperCase() + ' ' + currentYil + '</p>' +
+            '<h2 style="margin:0;font-size:20px;color:#000000;">GAMABEL YATIRIM LTD</h2>' +
+            '<h3 style="margin:5px 0;font-size:17px;color:#000000;">MESAİ ÖDEME LİSTESİ</h3>' +
+            '<p style="margin:3px 0;font-size:13px;color:#000000;">' + ayAdlari[currentAy].toUpperCase() + ' ' + currentYil + '</p>' +
             '</div>';
 
-        // Tablo
         pdfDiv.innerHTML += '<table style="width:100%;border-collapse:collapse;font-size:11px;margin-bottom:15px;">' +
             '<thead><tr><th style="background:#1e3c72;color:white;border:1px solid #333;padding:5px;">#</th>' +
             '<th style="background:#1e3c72;color:white;border:1px solid #333;padding:5px;text-align:left;">Adı Soyadı</th>' +
@@ -339,14 +462,14 @@
                 '<td style="border:1px solid #ddd;padding:4px;text-align:right;font-weight:bold;">' + formatTurkishCurrency(o.odemeTutari) + '</td></tr>';
         }
 
+        var toplamMesaiGosterim = getDisplayedToplamMesai();
         pdfDiv.innerHTML += '<tr style="background:#e9ecef;font-weight:bold;"><td colspan="2" style="border:1px solid #333;padding:5px;text-align:right;">GENEL TOPLAM</td>' +
             '<td style="border:1px solid #333;padding:5px;text-align:center;">' + (ozet.toplamPersonel || 0) + ' Kişi</td>' +
-            '<td style="border:1px solid #333;padding:5px;text-align:right;">' + (ozet.toplamMesai || 0).toFixed(1) + '</td>' +
+            '<td style="border:1px solid #333;padding:5px;text-align:right;">' + toplamMesaiGosterim.toFixed(1) + '</td>' +
             '<td style="border:1px solid #333;padding:5px;text-align:right;">' + formatTurkishCurrency(ozet.saatlikBrut || 0) + '</td>' +
             '<td style="border:1px solid #333;padding:5px;text-align:right;">' + formatTurkishCurrency(ozet.genelToplamOdeme || 0) + '</td></tr>' +
             '</tbody></table>';
 
-        // Footer
         pdfDiv.innerHTML += '<div style="text-align:center;margin-top:15px;font-size:9px;color:#999;">Oluşturulma: ' + new Date().toLocaleDateString('tr-TR') + ' - GAMABEL YATIRIM LTD</div>';
 
         document.body.appendChild(pdfDiv);
@@ -366,17 +489,102 @@
 
     // Yazdır
     document.getElementById('btnYazdir').addEventListener('click', function() {
-        if (odemeler.length === 0) return;
+        if (odemeler.length === 0) {
+            showToast('Yazdırılacak veri yok', 'warning');
+            return;
+        }
+
+        var printStyles = document.createElement('style');
+        printStyles.id = 'printStyles';
+        printStyles.innerHTML = `
+            body * { visibility: hidden; }
+            .print-container, .print-container * { visibility: visible; }
+            .print-container { position: absolute; left: 0; top: 0; width: 100%; padding: 20px; background: white; }
+            .print-container table { width: 100%; border-collapse: collapse; font-size: 11px; }
+            .print-container th, .print-container td { border: 1px solid #000; padding: 5px 8px; text-align: center; }
+            .print-container th { background: #1e3c72; color: white !important; font-weight: bold; }
+            .print-container .text-start { text-align: left !important; }
+            .print-container .text-end { text-align: right !important; }
+            .print-container .total-row { background: #e9ecef !important; font-weight: bold; }
+            .print-container .header { text-align: center; margin-bottom: 15px; font-family: Arial, sans-serif; }
+            .print-container .header h2 { margin: 0; font-size: 18px; color: #000; }
+            .print-container .header h3 { margin: 5px 0; font-size: 15px; color: #000; }
+            .print-container .header p { margin: 3px 0; font-size: 12px; color: #666; }
+            .print-container .footer { margin-top: 15px; text-align: center; font-size: 9px; color: #999; }
+            .no-print, .no-print * { display: none !important; }
+        `;
+        document.head.appendChild(printStyles);
+
+        var printContainer = document.createElement('div');
+        printContainer.className = 'print-container';
+
+        var tableHtml = '';
+        for (var i = 0; i < odemeler.length; i++) {
+            var o = odemeler[i];
+            tableHtml += '<tr>' +
+                '<td>' + o.sira + '</td>' +
+                '<td class="text-start">' + escapeHtml(o.adSoyad) + '</td>' +
+                '<td class="text-start">' + escapeHtml(o.birimAdi) + '</td>' +
+                '<td class="text-end">' + o.toplamSaat.toFixed(1) + '</td>' +
+                '<td class="text-end">' + formatTurkishCurrency(o.saatlikBrut) + '</td>' +
+                '<td class="text-end" style="font-weight:600;">' + formatTurkishCurrency(o.odemeTutari) + '</td>' +
+                '</tr>';
+        }
+
+        var toplamMesaiGosterim = getDisplayedToplamMesai();
+
+        printContainer.innerHTML = `
+            <div class="header">
+                <h2>GAMABEL YATIRIM LTD</h2>
+                <h3>MESAİ ÖDEME LİSTESİ</h3>
+                <p>${ayAdlari[currentAy].toUpperCase()} ${currentYil}</p>
+                <p style="font-size:10px;color:#999;">Birim: ${currentBirim}</p>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width:30px;">#</th>
+                        <th style="width:200px;text-align:left;">Adı Soyadı</th>
+                        <th style="width:150px;text-align:left;">Bölüm</th>
+                        <th style="width:120px;">Toplam Mesai (Saat)</th>
+                        <th style="width:120px;">Saatlik Brüt (₺)</th>
+                        <th style="width:140px;">Ödeme Tutarı (₺)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${tableHtml}
+                </tbody>
+                <tfoot>
+                    <tr class="total-row">
+                        <td colspan="2" style="text-align:right;">GENEL TOPLAM</td>
+                        <td style="text-align:center;">${ozet.toplamPersonel || 0} Kişi</td>
+                        <td class="text-end">${toplamMesaiGosterim.toFixed(1)}</td>
+                        <td class="text-end">${formatTurkishCurrency(ozet.saatlikBrut || 0)}</td>
+                        <td class="text-end" style="font-weight:bold;">${formatTurkishCurrency(ozet.genelToplamOdeme || 0)}</td>
+                    </tr>
+                </tfoot>
+            </table>
+
+            <div class="footer">
+                Oluşturulma Tarihi: ${new Date().toLocaleDateString('tr-TR')} ${new Date().toLocaleTimeString('tr-TR')}
+            </div>
+        `;
+
+        document.body.appendChild(printContainer);
         window.print();
+
+        setTimeout(function() {
+            if (printContainer.parentNode) {
+                printContainer.parentNode.removeChild(printContainer);
+            }
+            var styles = document.getElementById('printStyles');
+            if (styles) {
+                styles.parentNode.removeChild(styles);
+            }
+        }, 100);
     });
 
-    // Admin değilse sayfa yüklendiğinde otomatik yükle
-    (function() {
-        var sel = document.getElementById('birimSelect');
-        if (sel && sel.options.length > 0 && sel.value) {
-            loadOdemeler();
-        }
-    })();
 })();
 </script>
 }
