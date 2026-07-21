@@ -4,25 +4,189 @@
     Layout = "_Layout";
 }
 
-<div class="container-fluid">
+<style>
+    .page-header {
+        padding: 12px 0 8px 0;
+        border-bottom: 2px solid #e9edf4;
+        margin-bottom: 16px;
+    }
+    .page-header h4 {
+        font-weight: 700;
+        color: #1e3c72;
+        margin: 0;
+        font-size: 18px;
+    }
+    .page-header h4 i {
+        margin-right: 8px;
+    }
+    .page-header .text-muted {
+        font-size: 13px;
+        margin: 2px 0 0 0;
+        color: #6c757d;
+    }
+    .user-count-badge {
+        background: #e9edf4;
+        color: #1e3c72;
+        padding: 2px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    .table-users {
+        font-size: 13px;
+        margin-bottom: 0;
+    }
+    .table-users thead th {
+        background: #f1f5f9;
+        color: #1e293b;
+        font-weight: 600;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        padding: 8px 12px;
+        border-bottom: 2px solid #e2e8f0;
+        white-space: nowrap;
+    }
+    .table-users tbody td {
+        padding: 6px 12px;
+        vertical-align: middle;
+        border-bottom: 1px solid #f0f2f5;
+    }
+    .table-users tbody tr:hover {
+        background-color: #f8fafc;
+    }
+    .table-users tbody tr:last-child td {
+        border-bottom: none;
+    }
+    .table-users .user-id {
+        background: #f1f5f9;
+        color: #475569;
+        font-weight: 600;
+        font-size: 11px;
+        padding: 2px 8px;
+        border-radius: 4px;
+        min-width: 30px;
+        display: inline-block;
+        text-align: center;
+    }
+    .table-users .username {
+        font-weight: 600;
+        color: #1e3c72;
+        font-size: 13px;
+    }
+    .table-users .birim-badge {
+        background: #e9edf4;
+        color: #475569;
+        font-weight: 500;
+        font-size: 11px;
+        padding: 3px 10px;
+        border-radius: 12px;
+        white-space: nowrap;
+    }
+    .table-users .rol-badge {
+        font-weight: 600;
+        font-size: 11px;
+        padding: 3px 12px;
+        border-radius: 12px;
+        white-space: nowrap;
+        display: inline-block;
+        min-width: 60px;
+        text-align: center;
+    }
+    .rol-admin { background: #fee2e2; color: #991b1b; }
+    .rol-yonetici { background: #fef3c7; color: #92400e; }
+    .rol-personel { background: #d1fae5; color: #065f46; }
+    .rol-default { background: #e9edf4; color: #475569; }
+    .card-userlist {
+        border: none;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        overflow: hidden;
+    }
+    .card-userlist .card-header {
+        background: white;
+        padding: 10px 16px;
+        border-bottom: 1px solid #e9edf4;
+    }
+    .card-userlist .card-header h5 {
+        font-size: 14px;
+        font-weight: 600;
+        color: #1e3c72;
+        margin: 0;
+    }
+    .card-userlist .card-body {
+        padding: 0;
+    }
+    .table-container {
+        padding: 0 16px 4px 16px;
+    }
+    .alert-custom {
+        border-radius: 8px;
+        padding: 12px 16px;
+        font-size: 13px;
+        border: none;
+    }
+    .alert-custom-info {
+        background: #eff6ff;
+        color: #1e40af;
+    }
+    .alert-custom-danger {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+    .btn-back {
+        background: #f1f5f9;
+        color: #475569;
+        border: none;
+        border-radius: 8px;
+        padding: 6px 16px;
+        font-size: 13px;
+        font-weight: 500;
+        transition: all 0.2s;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .btn-back:hover {
+        background: #e2e8f0;
+        color: #1e293b;
+    }
+    .btn-back i {
+        font-size: 13px;
+    }
+    /* Responsive */
+    @@media (max-width: 768px) {
+        .table-users thead th,
+        .table-users tbody td {
+            padding: 5px 8px;
+            font-size: 12px;
+        }
+        .page-header h4 {
+            font-size: 16px;
+        }
+    }
+</style>
+
+<div class="container-fluid px-0">
+
     <!-- Page Header -->
-    <div class="dashboard-header mb-4">
-        <h1 class="mb-1">👥 Kullanıcı Yönetimi</h1>
-        <p class="text-muted">Sistem kullanıcılarını görüntüleyin ve yönetin</p>
+    <div class="page-header d-flex justify-content-between align-items-center">
+        <div>
+            <h4><i class="fas fa-users-cog"></i> Kullanıcı Yönetimi</h4>
+            <p class="text-muted">Sistem kullanıcılarını görüntüleyin</p>
+        </div>
+        @if (Model != null)
+        {
+            <span class="user-count-badge"><i class="fas fa-user me-1"></i> @Model.Count kullanıcı</span>
+        }
     </div>
-
-    <!-- User Info & Logout -->
-    <div class="mb-4 d-flex justify-content-end gap-2">
-        <span class="badge bg-info text-dark" style="height: fit-content;">👤 Hoş geldin, <strong>@ViewBag.KullaniciAdi</strong></span>
-        <a asp-controller="Account" asp-action="Logout" class="btn btn-outline-danger btn-sm">🚪 Çıkış Yap</a>
-    </div>
-
 
     <!-- Error Alert -->
     @if (ViewBag.Hata != null)
     {
-        <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
-            <strong>❌ Hata:</strong> @ViewBag.Hata
+        <div class="alert alert-custom alert-custom-danger alert-dismissible fade show mb-3" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i> <strong>Hata:</strong> @ViewBag.Hata
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     }
@@ -30,49 +194,50 @@
     <!-- Users Table -->
     @if (Model != null && Model.Count > 0)
     {
-        <div class="card">
-            <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">📋 Kullanıcı Listesi</h5>
-                <span class="badge bg-info">@Model.Count kullanıcı</span>
+        <div class="card card-userlist">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-list me-2"></i>Kullanıcı Listesi</h5>
             </div>
             <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle">
-            <thead class="table-light">
-                        <tr>
-                            <th class="text-center" style="width: 60px;">#</th>
-                            <th>👤 Kullanıcı Adı</th>
-                            <th>✍️ Ad</th>
-                            <th>✍️ Soyad</th>
-                            <th>🏢 Birim</th>
-                            <th class="text-center" style="width: 100px;">⚙️ Rol</th>
-                        </tr>
-                    </thead>
-            <tbody>
-                        @foreach (var k in Model)
-                        {
-                            <tr>
-                                <td class="text-center"><span class="badge bg-light text-dark">@k.Id</span></td>
-                                <td><strong>@k.KullaniciAdi</strong></td>
-                                <td>@k.Ad</td>
-                                <td>@k.Soyad</td>
-                                <td><span class="badge bg-secondary">@k.Birim</span></td>
-                                <td class="text-center">
-                                    @{
-                                        var rolBadgeClass = k.Rol?.ToLower() switch
-                                        {
-                                            "admin" => "bg-danger",
-                                            "yönetici" => "bg-warning text-dark",
-                                            "personel" => "bg-success",
-                                            _ => "bg-secondary"
-                                        };
-                                    }
-                                    <span class="badge @rolBadgeClass">@k.Rol</span>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                    </table>
+                <div class="table-container">
+                    <div class="table-responsive">
+                        <table class="table table-users">
+                            <thead>
+                                <tr>
+                                    <th style="width:50px; text-align:center;">#</th>
+                                    <th>Kullanıcı Adı</th>
+                                    <th>Ad</th>
+                                    <th>Soyad</th>
+                                    <th>Birim</th>
+                                    <th style="text-align:center; width:90px;">Rol</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var k in Model)
+                                {
+                                    <tr>
+                                        <td class="text-center"><span class="user-id">@k.Id</span></td>
+                                        <td><span class="username">@k.KullaniciAdi</span></td>
+                                        <td>@k.Ad</td>
+                                        <td>@k.Soyad</td>
+                                        <td><span class="birim-badge">@k.Birim</span></td>
+                                        <td class="text-center">
+                                            @{
+                                                var rolClass = k.Rol?.ToLower() switch
+                                                {
+                                                    "admin" => "rol-admin",
+                                                    "yönetici" => "rol-yonetici",
+                                                    "personel" => "rol-personel",
+                                                    _ => "rol-default"
+                                                };
+                                            }
+                                            <span class="rol-badge @rolClass">@k.Rol</span>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -83,15 +248,21 @@
     {
         if (ViewBag.Hata == null)
         {
-            <div class="alert alert-info alert-dismissible fade show" role="alert">
-                <strong>ℹ️ Bilgi:</strong> Henüz kayıtlı kullanıcı bulunmuyor.
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            <div class="alert alert-custom alert-custom-info" role="alert">
+                <i class="fas fa-info-circle me-2"></i> Henüz kayıtlı kullanıcı bulunmuyor.
             </div>
         }
     }
 
     <!-- Navigation -->
-    <div class="mt-5 mb-4">
-        <a href="/Home/Index" class="btn btn-secondary">← Ana Sayfaya Dön</a>
+    <div class="mt-3">
+        <a href="/Home/Index" class="btn-back">
+            <i class="fas fa-arrow-left"></i> Ana Sayfaya Dön
+        </a>
     </div>
+
 </div>
+
+@section Scripts {
+    <script src="https://kit.fontawesome.com/your-kit-code.js" crossorigin="anonymous"></script>
+}

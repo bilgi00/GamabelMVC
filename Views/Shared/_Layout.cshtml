@@ -309,8 +309,8 @@
                                             <li class="menu-group-title">📄 Talimat İşlemleri</li>
                                             <li><a class="dropdown-item" href="/OdemeTalimat">📋 Talimat Ana Sayfa</a></li>
                                             <li><a class="dropdown-item" href="/OdemeTalimat/FaturaSecim">📑 Fatura Seçimi</a></li>
-                                            <li><a class="dropdown-item" href="/OdemeTalimat" onclick="document.getElementById('excelInputNav')?.click(); return false;">📂 Yeni Ödeme Oluştur</a></li>
-                                            
+                                            <!-- ✅ Yeni Ödeme Oluştur butonu FaturaSecim sayfasına yönlendiriyor -->
+                                                                         
                                             @if (canAccessFirmaYonetimi || canAccessBankaYonetimi)
                                             {
                                                 <li><hr class="dropdown-divider"></li>
@@ -365,14 +365,9 @@
                                 }
 
                                 <!-- ======================================== -->
-                                <!-- 4. ŞİKAYET YÖNETİMİ (Admin)             -->
+                                <!-- 4. ŞİKAYET YÖNETİMİ (Admin) - KALDIRILDI -->
                                 <!-- ======================================== -->
-                                @if (canAccessSikayetAdmin)
-                                {
-                                    <li class="nav-item">
-                                        <a class="nav-link" href="/Sikayet/Admin">🛠️ Şikayet Yönetimi</a>
-                                    </li>
-                                }
+                                <!-- Artık sadece sağ menüde görünecek -->
                             }
                         }
                     </ul>
@@ -402,7 +397,7 @@
                                     @if (activeModule != "STS")
                                     {
                                         <li><a class="dropdown-item" href="/Kullanici/Profil">👤 Profil</a></li>
-                                        <li><a class="dropdown-item" href="/HizliMesaiGirisi/Index">⚡ Hızlı Mesai Girişi</a></li>
+                                        <!-- ✅ Hızlı Mesai Girişi buradan kaldırıldı - sadece Personel menüsünde kalacak -->
                                         @if (canAccessSikayetAdmin)
                                         {
                                             <li><a class="dropdown-item" href="/Sikayet/Admin">🛠️ Şikayet Yönetimi</a></li>

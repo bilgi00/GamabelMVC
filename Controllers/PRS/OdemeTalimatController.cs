@@ -91,52 +91,85 @@ public class OdemeTalimatController : Controller
     // -----------------------------------------------------------------------
     // FATURA SEÇİM
     // -----------------------------------------------------------------------
-    [HttpGet]
-    public async Task<IActionResult> FaturaSecim(int? batchId = null)
+    // Controllers/PRS/OdemeTalimatController.cs
+// Controllers/PRS/OdemeTalimatController.cs
+// Controllers/PRS/OdemeTalimatController.cs
+// Controllers/PRS/OdemeTalimatController.cs
+[HttpGet]
+public async Task<IActionResult> FaturaSecim(int? batchId = null)
+{
+    if (!IsLoggedIn()) return RedirectToAction("Login", "Account");
+    if (!IsAdmin()) return Forbid();
+
+    try
     {
-        if (!IsLoggedIn()) return RedirectToAction("Login", "Account");
-        if (!IsAdmin()) return Forbid();
-
-        try
+        List<OtAcikFatura> faturalar;
+        
+        if (batchId.HasValue && batchId.Value > 0)
         {
-            List<OtAcikFatura> faturalar;
-            
-            if (batchId.HasValue && batchId.Value > 0)
-            {
-                faturalar = await _talimatService.GetBatchFaturalariAsync(batchId.Value);
-                ViewBag.BatchId = batchId.Value;
-                ViewBag.Baslik = $"Batch #{batchId} - Fatura Seçimi";
-            }
-            else
-            {
-                faturalar = await _talimatService.GetTumAcikFaturalarAsync();
-                ViewBag.BatchId = 0;
-                ViewBag.Baslik = "Tüm Açık Faturalar";
-            }
-            
-            var bankalar = await _talimatService.GetBankalarAsync();
-
-            ViewBag.FirmaGruplari = faturalar.GroupBy(f => f.CariKart).ToList();
-            ViewBag.Bankalar = bankalar;
-            ViewBag.KullaniciAdi = KullaniciAdi();
-
-            if (!faturalar.Any())
-            {
-                if (batchId.HasValue && batchId.Value > 0)
-                    TempData["Bilgi"] = "Bu yüklemede ödemeye dahil edilmemiş fatura kalmadı.";
-                else
-                    TempData["Bilgi"] = "Sistemde ödemeye hazır açık fatura bulunmuyor.";
-            }
+            faturalar = await _talimatService.GetBatchFaturalariAsync(batchId.Value);
+            ViewBag.BatchId = batchId.Value;
+            ViewBag.Baslik = $"Batch #{batchId} - Fatura Seçimi";
         }
-        catch (Exception ex)
+        else
         {
-            TempData["Hata"] = "Veri yükleme hatası: " + ex.Message;
-            return RedirectToAction("Index");
+            faturalar = await _talimatService.GetTumAcikFaturalarAsync();
+            ViewBag.BatchId = 0;
+            ViewBag.Baslik = "Tüm Açık Faturalar";
         }
+        
+        // 🔍 DEBUG: Fatura sayısını logla
+        Console.WriteLine($"Fatura sayısı: {faturalar.Count}");
+        ViewBag.FaturaSayisi = faturalar.Count;
+        ViewBag.IlkFaturalar = faturalar.Take(5).ToList();
+        
+        var bankalar = await _talimatService.GetBankalarAsync();
+        
+        // ✅ Firma bilgilerini Dictionary olarak al (IBAN ve ödeme ismi için)
+        var firmalar = await _talimatService.GetFirmalarAsync();
+        var firmaDict = firmalar
+            .Where(f => !string.IsNullOrWhiteSpace(f.CariIsmi))
+            .ToDictionary(f => f.CariIsmi.Trim(), f => f, StringComparer.OrdinalIgnoreCase);
 
-        return View();
+        // ✅ Firma gruplarını oluştur
+        var firmaGruplari = faturalar
+            .GroupBy(f => f.CariKart)
+            .Select(g =>
+            {
+                var cariAnahtar = (g.Key ?? "").Trim();
+                var firma = firmaDict.TryGetValue(cariAnahtar, out var firmaBilgisi) ? firmaBilgisi : null;
+
+                return new
+                {
+                    FirmaAdi = g.Key,
+                    OdemeIsmi = firma?.OdemeIsmi ?? g.Key,
+                    IBAN = firma?.IBAN ?? string.Empty,
+                    ToplamBakiye = g.Sum(f => f.Bakiye),
+                    Faturalar = g.ToList()
+                };
+            })
+            .ToList();
+
+        ViewBag.FirmaDict = firmaDict;
+        ViewBag.FirmaGruplari = firmaGruplari;
+        ViewBag.Bankalar = bankalar;
+        ViewBag.KullaniciAdi = KullaniciAdi();
+
+        if (!faturalar.Any())
+        {
+            TempData["Bilgi"] = batchId.HasValue 
+                ? "Bu yüklemede ödemeye dahil edilmemiş fatura kalmadı." 
+                : "Sistemde ödemeye hazır açık fatura bulunmuyor.";
+        }
+    }
+    catch (Exception ex)
+    {
+        TempData["Hata"] = "Veri yükleme hatası: " + ex.Message;
+        return RedirectToAction("Index");
     }
 
+    return View();
+}
     // -----------------------------------------------------------------------
     // TALİMAT OLUŞTUR - SADECE GEÇİCİ OLUŞTUR (KAYIT YOK)
     // -----------------------------------------------------------------------
@@ -179,7 +212,8 @@ public class OdemeTalimatController : Controller
             var options = new JsonSerializerOptions 
             { 
                 WriteIndented = false,
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                PropertyNameCaseInsensitive = true
             };
             
             HttpContext.Session.SetString("GeciciTalimat", JsonSerializer.Serialize(geciciTalimat, options));
@@ -218,7 +252,10 @@ public class OdemeTalimatController : Controller
                 return RedirectToAction("Index");
             }
 
-            var geciciTalimat = JsonSerializer.Deserialize<OtTalimat>(geciciTalimatJson);
+            var geciciTalimat = JsonSerializer.Deserialize<OtTalimat>(geciciTalimatJson, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
             
             // Null kontrolü
             if (geciciTalimat == null)
@@ -261,7 +298,10 @@ public class OdemeTalimatController : Controller
                 return RedirectToAction("Index");
             }
 
-            var geciciTalimat = JsonSerializer.Deserialize<OtTalimat>(geciciTalimatJson);
+            var geciciTalimat = JsonSerializer.Deserialize<OtTalimat>(geciciTalimatJson, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
             var secilenFaturaIdleri = JsonSerializer.Deserialize<List<int>>(geciciFaturaIdleriJson);
 
             // Null kontrolü

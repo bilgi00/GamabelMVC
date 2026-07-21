@@ -425,7 +425,7 @@ public class MesaiController : Controller
                 var adSoyad = reader.GetString(1);
                 var birimAdi = reader.GetString(2);
                 var toplamSaat = reader.GetDecimal(3);
-                var toplamSaatGoruntuleme = Math.Round(toplamSaat, 1);
+                var toplamSaatGoruntuleme = Math.Round(toplamSaat, 2);
                 
                 // Hesapla parametresine göre ödeme hesapla veya 0 göster
                 var odeme = hesapla ? Math.Round(toplamSaatGoruntuleme * brut, 2) : 0m;
@@ -454,7 +454,7 @@ public class MesaiController : Controller
                 ozet = new
                 {
                     toplamPersonel = sira,
-                    toplamMesai = Math.Round(toplamMesai, 1),
+                    toplamMesai = Math.Round(toplamMesai, 2),
                     saatlikBrut = Math.Round(brut, 2),
                     genelToplamOdeme = Math.Round(toplamOdeme, 2),
                     toplamMesaiFormatted = toplamMesai.ToString("0.00"),

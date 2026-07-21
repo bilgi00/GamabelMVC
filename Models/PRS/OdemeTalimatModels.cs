@@ -27,6 +27,20 @@ public class OtImportBatch
     public int SatirSayisi { get; set; }
 }
 
+public class OtFaturaViewModel
+{
+    public int Id { get; set; }
+    public string CariKart { get; set; } = string.Empty;
+    public string FaturaNo { get; set; } = string.Empty;
+    public decimal Bakiye { get; set; }
+    public string OdemeDurumu { get; set; } = "bekliyor";
+    public int ImportBatchId { get; set; }
+    
+    // ✅ JOIN ile gelen firma bilgileri
+    public string? OdemeIsmi { get; set; }
+    public string? IBAN { get; set; }
+}
+
 public class OtAcikFatura
 {
     public int Id { get; set; }
@@ -55,6 +69,7 @@ public class OtTalimat
     public List<OtTalimatSatiri> Satirlar { get; set; } = new();
     
 }
+
 
 public class OtTalimatSatiri
 {

@@ -4,652 +4,1015 @@
 }
 
 <style>
-    .puantaj-wrapper { width: 100%; margin: 0 auto; background: white; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); overflow: hidden; }
-    .puantaj-header { background: linear-gradient(135deg, #1e3c72, #2a5298); color: white; padding: 20px 24px; }
-    .puantaj-header h1 { font-size: 24px; margin-bottom: 8px; }
-    .puantaj-header p { opacity: 0.9; font-size: 14px; }
-        .controls { padding: 20px 24px; background: #f8f9fa; border-bottom: 1px solid #e9ecef; display: flex; flex-wrap: wrap; gap: 15px; align-items: center; justify-content: space-between; }
-        .date-controls { display: flex; gap: 10px; align-items: center; }
-        .date-controls select, .date-controls button { padding: 8px 16px; border: 1px solid #ddd; border-radius: 8px; background: white; font-size: 14px; cursor: pointer; transition: all 0.2s; }
-        .date-controls button { background: #2a5298; color: white; border: none; }
-        .date-controls button:hover { background: #1e3c72; }
-        .birim-selector { display: flex; align-items: center; gap: 10px; background: white; padding: 5px 15px; border-radius: 8px; border: 1px solid #ddd; }
-        .birim-selector label { font-weight: 600; color: #333; }
-        .birim-selector select { padding: 6px 12px; border: 1px solid #ddd; border-radius: 6px; background: white; font-size: 14px; cursor: pointer; }
-        .legend { display: flex; gap: 15px; flex-wrap: wrap; }
-        .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; }
-        .legend-color { width: 18px; height: 18px; border-radius: 4px; }
-        .legend-color.x { background: #28a745; }
-        .legend-color.i { background: #ffc107; }
-        .legend-color.oi { background: #fd7e14; }
-        .legend-color.ci { background: #20c997; }
-        .legend-color.v { background: #6f42c1; }
-        .legend-color.oz { background: #e83e8c; }
-        .legend-color.h { background: #dc3545; }
-        .action-buttons { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-        .action-buttons button { padding: 8px 16px; border: none; border-radius: 8px; cursor: pointer; font-weight: 500; transition: all 0.2s; }
-        .btn-save { background: #28a745; color: white; }
-        .btn-save:hover { background: #218838; }
-        .btn-export { background: #17a2b8; color: white; }
-        .btn-export:hover { background: #138496; }
-        .btn-batch { background: #fd7e14; color: white; }
-        .btn-batch:hover { background: #e96a0a; }
-        .btn-auto-save { background: #6c757d; color: white; }
-        .btn-auto-save.active { background: #28a745; }
-        .btn-back { background: #6c757d; color: white; text-decoration: none; display: inline-block; }
-        .btn-back:hover { background: #5a6268; color: white; }
-        .auto-save-status { font-size: 11px; padding: 4px 10px; border-radius: 20px; background: #e9ecef; }
-        .birim-badge { background: #e9ecef; padding: 6px 15px; border-radius: 20px; font-size: 13px; font-weight: 500; }
-        .table-wrapper { overflow-x: auto; padding: 0 10px 10px 10px; }
-        .puantaj-table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
-        .puantaj-table th { background: #f8f9fa; padding: 6px 2px; text-align: center; border: 1px solid #dee2e6; font-weight: 600; position: sticky; top: 0; z-index: 10; font-size: 12px; }
-        .puantaj-table td { padding: 4px 1px; text-align: center; border: 1px solid #dee2e6; font-size: 12px; }
-        .puantaj-table tbody tr:nth-child(even) { background: #f5f7fa; }
-        .puantaj-table tbody tr:nth-child(odd) { background: #ffffff; }
-        .puantaj-table tr:hover { background: #e8edf3 !important; }
-        .personel-info { text-align: left !important; font-weight: 500; white-space: nowrap; padding-left: 8px !important; overflow: hidden; text-overflow: ellipsis; max-width: 150px; font-size: 12px; position: sticky; left: 0; z-index: 5; background: inherit; box-shadow: 2px 0 4px rgba(0,0,0,0.05); }
-        .durum-cell { cursor: pointer; transition: all 0.15s; font-weight: 600; font-size: 12px; position: relative; overflow: hidden; }
-        .durum-cell.x { background: #d4edda; color: #155724; }
-        .durum-cell.i { background: #fff3cd; color: #856404; }
-        .durum-cell.oi { background: #ffe5d0; color: #b85c00; }
-        .durum-cell.ci { background: #d1f7e9; color: #0b5e42; }
-        .durum-cell.v { background: #e2d9f3; color: #4a2f8d; }
-        .durum-cell.oz { background: #f8d7e6; color: #a12a6e; }
-        .durum-cell.h { background: #f8d7da; color: #721c24; }
-        .durum-cell:hover { opacity: 0.85; transform: scale(1.05); box-shadow: 0 0 6px rgba(0,0,0,0.2); z-index: 1; }
-        .total-cell { background: #e9ecef; font-weight: 600; }
-        .hakkedis-cell { background: #d1ecf1; font-weight: 700; color: #0c5460; }
-        .weekend { background: #fce4ec; }
-        .puantaj-table th.weekend { background: #e91e63; color: white; }
-        .footer { padding: 16px 24px; background: #f8f9fa; border-top: 1px solid #e9ecef; display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #6c757d; flex-wrap: wrap; gap: 10px; }
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
-        .modal.active { display: flex; backdrop-filter: blur(4px); }
-        .modal-content { background: white; border-radius: 16px; padding: 28px; width: 500px; max-width: 90%; max-height: 80vh; overflow-y: auto; animation: modalSlideUp 0.25s ease; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
-        .modal-content h3 { margin-bottom: 16px; color: #333; }
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; margin-bottom: 5px; font-weight: 600; color: #555; }
-        .form-group select, .form-group input, .form-group textarea { width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; }
-        .form-group select[multiple] { height: 120px; }
-        .date-range { display: flex; gap: 10px; }
-        .date-range input { flex: 1; }
-        .modal-buttons { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
-        .modal-buttons button { padding: 8px 20px; border: none; border-radius: 8px; cursor: pointer; }
-        .btn-modal-save { background: #28a745; color: white; }
-        .btn-modal-cancel { background: #6c757d; color: white; }
-        .toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 2000; }
-        .toast { background: white; border-radius: 8px; padding: 12px 20px; margin-top: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); animation: slideIn 0.3s ease; display: flex; align-items: center; gap: 10px; }
-        .toast.success { border-left: 4px solid #28a745; }
-        .toast.error { border-left: 4px solid #dc3545; }
-        .toast.warning { border-left: 4px solid #ffc107; }
-        .toast.info { border-left: 4px solid #17a2b8; }
-        @@keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-        @@keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
-        @@keyframes modalSlideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        .today-col { box-shadow: inset 0 3px 0 #ffc107, inset 0 -3px 0 #ffc107; }
-        .puantaj-table th.today-col { background: #2a5298 !important; color: white !important; font-weight: 700; }
-        .puantaj-table th:first-child { position: sticky; left: 0; z-index: 15; }
-        .hakkedis-good { background: #d4edda !important; color: #155724 !important; }
-        .hakkedis-mid { background: #fff3cd !important; color: #856404 !important; }
-        .hakkedis-low { background: #f8d7da !important; color: #721c24 !important; }
-        .btn-legend-toggle { padding: 6px 14px; border: 1px solid #ddd; border-radius: 8px; background: white; font-size: 12px; cursor: pointer; transition: all 0.2s; color: #333; font-weight: 500; }
-        .btn-legend-toggle:hover { background: #e9ecef; }
-        .durum-cell:active { transform: scale(0.88); transition: all 0.05s; }
-        @@media (max-width: 768px) {
-            .controls { padding: 12px 16px; gap: 10px; }
-            .date-controls { flex-wrap: wrap; justify-content: center; }
-            .action-buttons { justify-content: center; flex-wrap: wrap; }
-            .action-buttons button { flex: 1; min-width: 100px; text-align: center; }
-            .puantaj-header h1 { font-size: 18px; }
-            .puantaj-header p { font-size: 12px; }
-            .footer { flex-direction: column; text-align: center; }
-            .birim-selector { flex-wrap: wrap; justify-content: center; }
-        }
-    </style>
+    /* ========== ANA KONTEYNER ========== */
+    .puantaj-wrapper {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        overflow: hidden;
+        width: 100%;
+        margin: 0 auto;
+    }
+    .puantaj-header {
+        background: linear-gradient(135deg, #1e3c72, #2a5298);
+        color: white;
+        padding: 18px 24px;
+    }
+    .puantaj-header h1 {
+        font-size: 22px;
+        margin-bottom: 4px;
+        font-weight: 600;
+    }
+    .puantaj-header p {
+        opacity: 0.85;
+        font-size: 13px;
+        margin: 0;
+    }
 
-    <div class="puantaj-wrapper">
-        <div class="puantaj-header">
-            <h1>📅 Gelişmiş Puantaj Takvimi</h1>
-            <p>Toplu İzin Girişi | Otomatik Kaydetme | Veritabanı Entegrasyonu</p>
+    /* ========== KONTROLLER ========== */
+    .controls {
+        padding: 14px 20px;
+        background: #f8fafc;
+        border-bottom: 1px solid #e9edf4;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .controls .form-select,
+    .controls .form-control {
+        border-radius: 8px;
+        border: 1px solid #d1d9e6;
+        font-size: 13px;
+        padding: 6px 12px;
+        background: white;
+        min-width: 100px;
+    }
+    .controls .form-select:focus,
+    .controls .form-control:focus {
+        border-color: #2a5298;
+        box-shadow: 0 0 0 3px rgba(42,82,152,0.12);
+    }
+    .btn-puantaj {
+        border-radius: 8px;
+        padding: 6px 16px;
+        font-size: 13px;
+        font-weight: 500;
+        border: none;
+        transition: all 0.2s;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+    .btn-puantaj:hover {
+        transform: translateY(-1px);
+        opacity: 0.92;
+    }
+    .btn-primary-puantaj { background: #2a5298; color: white; }
+    .btn-success-puantaj { background: #198754; color: white; }
+    .btn-info-puantaj { background: #0dcaf0; color: #212529; }
+    .btn-warning-puantaj { background: #fd7e14; color: white; }
+    .btn-secondary-puantaj { background: #6c757d; color: white; }
+    .btn-outline-puantaj { background: transparent; border: 1px solid #d1d9e6; color: #1e293b; }
+
+    .date-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .date-controls .form-select { width: auto; }
+    .action-buttons { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+    .birim-badge {
+        background: #e9edf4;
+        padding: 4px 14px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 500;
+        color: #1e293b;
+    }
+
+    /* ========== LEGEND ========== */
+    .legend {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        padding: 8px 0;
+    }
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 11px;
+        font-weight: 500;
+        color: #1e293b;
+    }
+    .legend-color {
+        width: 20px;
+        height: 20px;
+        border-radius: 4px;
+        border: 1px solid rgba(0,0,0,0.06);
+    }
+    .legend-color.lx { background: #d4edda; }
+    .legend-color.li { background: #fff3cd; }
+    .legend-color.lgi { background: #ffe5d0; }
+    .legend-color.lch { background: #d1f7e9; }
+    .legend-color.lv { background: #e2d9f3; }
+    .legend-color.loz { background: #f8d7e6; }
+    .legend-color.lh { background: #f8d7da; }
+
+    .btn-legend-toggle {
+        background: transparent;
+        border: 1px solid #d1d9e6;
+        border-radius: 8px;
+        padding: 4px 14px;
+        font-size: 12px;
+        cursor: pointer;
+        transition: all 0.2s;
+        color: #1e293b;
+    }
+    .btn-legend-toggle:hover { background: #e9edf4; }
+
+    /* ========== TABLO KONTEYNERİ ========== */
+    .table-wrapper {
+        overflow: auto;
+        padding: 0 12px 12px 12px;
+        max-height: 75vh;
+        position: relative;
+    }
+    .table-wrapper::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+    .table-wrapper::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 4px;
+    }
+    .table-wrapper::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 4px;
+    }
+    .table-wrapper::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+    }
+
+    /* ========== TABLO ========== */
+    .puantaj-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        font-size: 12px;
+        table-layout: fixed;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    /* Sütun Genişlikleri */
+    .puantaj-table .col-personel { width: 260px; min-width: 200px; max-width: 280px; }
+    .puantaj-table .col-gun { width: 36px; min-width: 32px; max-width: 40px; }
+    .puantaj-table .col-sayac { width: 50px; min-width: 44px; max-width: 56px; }
+    .puantaj-table .col-hakkedis { width: 80px; min-width: 70px; max-width: 90px; }
+
+    /* Başlık */
+    .puantaj-table thead th {
+        background: #f1f5f9;
+        color: #1e293b;
+        font-weight: 600;
+        font-size: 11px;
+        text-align: center;
+        padding: 6px 2px;
+        border-bottom: 2px solid #e2e8f0;
+        border-right: 1px solid #e2e8f0;
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        white-space: nowrap;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+    .puantaj-table thead th:last-child { border-right: none; }
+
+    /* Hücreler */
+    .puantaj-table tbody td {
+        padding: 2px 1px;
+        text-align: center;
+        border-bottom: 1px solid #e9edf4;
+        border-right: 1px solid #e9edf4;
+        font-size: 12px;
+        font-weight: 500;
+        vertical-align: middle;
+        transition: background 0.15s;
+    }
+    .puantaj-table tbody td:last-child { border-right: none; }
+
+    /* Personel Sütunu - Sticky */
+    .puantaj-table .col-personel-sticky {
+        position: sticky;
+        left: 0;
+        z-index: 10;
+        background: white;
+        box-shadow: 2px 0 6px rgba(0,0,0,0.04);
+        text-align: left !important;
+        padding-left: 12px !important;
+        font-weight: 500;
+        font-size: 12px;
+        color: #1e293b;
+        border-right: 2px solid #e2e8f0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 260px;
+    }
+
+    /* Satır hover */
+    .puantaj-table tbody tr:hover td {
+        background-color: #f1f5f9 !important;
+    }
+    .puantaj-table tbody tr:hover .col-personel-sticky {
+        background-color: #f1f5f9 !important;
+    }
+
+    /* Çift satır renkleri */
+    .puantaj-table tbody tr:nth-child(even) td {
+        background-color: #fafcfd;
+    }
+    .puantaj-table tbody tr:nth-child(even) .col-personel-sticky {
+        background-color: #fafcfd;
+    }
+
+    /* ========== DURUM RENKLERİ ========== */
+    .durum-cell { cursor: pointer; transition: all 0.15s; font-weight: 600; border-radius: 2px; }
+    .durum-cell:hover { transform: scale(1.08); box-shadow: 0 2px 8px rgba(0,0,0,0.12); z-index: 5; position: relative; }
+    .durum-cell:active { transform: scale(0.92); }
+
+    .durum-x { background: #d4edda; color: #155724; }
+    .durum-i { background: #fff3cd; color: #856404; }
+    .durum-gi { background: #ffe5d0; color: #b85c00; }
+    .durum-ch { background: #d1f7e9; color: #0b5e42; }
+    .durum-vi { background: #e2d9f3; color: #4a2f8d; }
+    .durum-oi { background: #f8d7e6; color: #a12a6e; }
+    .durum-h { background: #f8d7da; color: #721c24; }
+
+    /* Hafta Sonu */
+    .durum-cell.weekend { opacity: 0.6; }
+    .puantaj-table thead th.weekend { background: #e91e63; color: white; }
+
+    /* Resmi Tatil */
+    .durum-cell.tatil {
+        border: 2px solid #dc3545 !important;
+        position: relative;
+    }
+    .durum-cell.tatil::after {
+        content: "🎌";
+        position: absolute;
+        top: -4px;
+        right: -4px;
+        font-size: 8px;
+    }
+    .puantaj-table thead th.tatil {
+        background: #dc3545 !important;
+        color: white !important;
+    }
+
+    /* Bugün sütunu */
+    .puantaj-table .today-col {
+        box-shadow: inset 0 2px 0 #ffc107, inset 0 -2px 0 #ffc107;
+        background: rgba(255,193,7,0.06);
+    }
+    .puantaj-table thead th.today-col {
+        background: #2a5298 !important;
+        color: white !important;
+        box-shadow: inset 0 2px 0 #ffc107, inset 0 -2px 0 #ffc107;
+    }
+
+    /* ========== SAYAÇ ve HAKEDİŞ ========== */
+    .total-cell {
+        background: #f1f5f9 !important;
+        font-weight: 600;
+        color: #1e293b;
+    }
+    .hakkedis-cell {
+        font-weight: 700;
+        font-size: 13px;
+    }
+    .hakkedis-good { background: #d4edda !important; color: #155724 !important; }
+    .hakkedis-mid { background: #fff3cd !important; color: #856404 !important; }
+    .hakkedis-low { background: #f8d7da !important; color: #721c24 !important; }
+
+    /* ========== FOOTER ========== */
+    .footer {
+        padding: 12px 20px;
+        background: #f8fafc;
+        border-top: 1px solid #e9edf4;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 12px;
+        color: #64748b;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    .auto-save-status {
+        background: #e9edf4;
+        padding: 2px 12px;
+        border-radius: 12px;
+        font-size: 11px;
+        color: #475569;
+    }
+    .auto-save-status.active {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    /* ========== MODAL ========== */
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: rgba(0,0,0,0.5);
+        backdrop-filter: blur(4px);
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-content {
+        background: white;
+        border-radius: 16px;
+        padding: 28px 32px;
+        max-width: 480px;
+        width: 92%;
+        max-height: 90vh;
+        overflow-y: auto;
+        animation: modalSlideUp 0.25s ease;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    @*@keyframes modalSlideUp {
+        from { transform: translateY(30px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }*@
+    .modal-content h3 { margin-bottom: 12px; font-weight: 600; color: #1e293b; font-size: 18px; }
+    .modal-content .form-label { font-weight: 600; color: #475569; font-size: 13px; }
+    .modal-content .form-select,
+    .modal-content .form-control {
+        border-radius: 8px;
+        border: 1px solid #d1d9e6;
+        font-size: 13px;
+    }
+    .modal-content .form-select:focus,
+    .modal-content .form-control:focus {
+        border-color: #2a5298;
+        box-shadow: 0 0 0 3px rgba(42,82,152,0.12);
+    }
+    .modal-actions {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+        margin-top: 16px;
+    }
+    .modal-actions button { padding: 8px 24px; border-radius: 8px; border: none; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+    .modal-actions .btn-cancel { background: #e9edf4; color: #475569; }
+    .modal-actions .btn-cancel:hover { background: #d1d9e6; }
+    .modal-actions .btn-save-modal { background: #198754; color: white; }
+    .modal-actions .btn-save-modal:hover { opacity: 0.9; }
+
+    /* ========== TOAST ========== */
+    .toast-container {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 99999;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        max-width: 380px;
+    }
+    .toast-item {
+        background: white;
+        border-radius: 10px;
+        padding: 12px 18px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 13px;
+        font-weight: 500;
+        animation: slideIn 0.3s ease;
+        border-left: 4px solid #2a5298;
+    }
+    .toast-item.success { border-left-color: #198754; }
+    .toast-item.error { border-left-color: #dc3545; }
+    .toast-item.warning { border-left-color: #ffc107; }
+    .toast-item.info { border-left-color: #0dcaf0; }
+    @*@keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }*@
+    @*@keyframes fadeOut {
+        from { opacity: 1; }
+        to { opacity: 0; }
+    }*@
+
+    /* ========== RESPONSIVE ========== */
+    @@media (max-width: 992px) {
+        .controls { flex-direction: column; align-items: stretch; gap: 10px; }
+        .date-controls { justify-content: center; flex-wrap: wrap; }
+        .action-buttons { justify-content: center; }
+        .legend { justify-content: center; }
+        .puantaj-table .col-personel { width: 160px; min-width: 120px; max-width: 180px; }
+        .puantaj-table .col-gun { width: 30px; min-width: 26px; max-width: 34px; }
+        .puantaj-table .col-sayac { width: 40px; min-width: 36px; max-width: 44px; }
+        .puantaj-table .col-hakkedis { width: 60px; min-width: 52px; max-width: 68px; }
+        .puantaj-table .col-personel-sticky { max-width: 160px; font-size: 11px; padding-left: 8px !important; }
+        .puantaj-table thead th { font-size: 10px; padding: 4px 1px; }
+        .puantaj-table tbody td { font-size: 11px; padding: 1px; }
+    }
+    @@media (max-width: 576px) {
+        .puantaj-header h1 { font-size: 17px; }
+        .puantaj-header p { font-size: 12px; }
+        .controls { padding: 10px 12px; }
+        .puantaj-table .col-personel { width: 100px; min-width: 80px; max-width: 120px; }
+        .puantaj-table .col-gun { width: 26px; min-width: 22px; max-width: 30px; }
+        .puantaj-table .col-sayac { width: 34px; min-width: 30px; max-width: 38px; }
+        .puantaj-table .col-hakkedis { width: 50px; min-width: 44px; max-width: 56px; }
+        .puantaj-table .col-personel-sticky { max-width: 120px; font-size: 10px; padding-left: 4px !important; }
+        .puantaj-table thead th { font-size: 9px; padding: 3px 1px; }
+        .puantaj-table tbody td { font-size: 10px; padding: 1px; }
+        .footer { flex-direction: column; text-align: center; gap: 4px; }
+        .action-buttons .btn-puantaj { font-size: 11px; padding: 4px 10px; }
+        .date-controls .form-select { font-size: 12px; padding: 4px 8px; min-width: 70px; }
+        .modal-content { padding: 20px 16px; }
+    }
+</style>
+
+<div class="puantaj-wrapper">
+    <!-- HEADER -->
+    <div class="puantaj-header">
+        <h1><i class="fas fa-calendar-alt me-2"></i>Puantaj Takvimi</h1>
+        <p>Toplu İzin Girişi | Otomatik Kaydetme | Veritabanı Entegrasyonu</p>
+    </div>
+
+    <!-- KONTROLLER -->
+    <div class="controls">
+        <div class="date-controls">
+            <select id="yearSelect" class="form-select">
+                <option value="2024">2024</option>
+                <option value="2025">2025</option>
+                <option value="2026" selected>2026</option>
+            </select>
+            <select id="monthSelect" class="form-select">
+                <option value="1">Ocak</option>
+                <option value="2">Şubat</option>
+                <option value="3" selected>Mart</option>
+                <option value="4">Nisan</option>
+                <option value="5">Mayıs</option>
+                <option value="6">Haziran</option>
+                <option value="7">Temmuz</option>
+                <option value="8">Ağustos</option>
+                <option value="9">Eylül</option>
+                <option value="10">Ekim</option>
+                <option value="11">Kasım</option>
+                <option value="12">Aralık</option>
+            </select>
+            <button class="btn-puantaj btn-primary-puantaj" id="loadBtn"><i class="fas fa-sync-alt me-1"></i>Yükle</button>
         </div>
 
-        <div class="controls">
-            <div class="date-controls">
-                <select id="yearSelect">
-                    <option value="2024">2024</option>
-                    <option value="2025">2025</option>
-                    <option value="2026" selected>2026</option>
-                </select>
-                <select id="monthSelect">
-                    <option value="1">Ocak</option>
-                    <option value="2">Şubat</option>
-                    <option value="3" selected>Mart</option>
-                    <option value="4">Nisan</option>
-                    <option value="5">Mayıs</option>
-                    <option value="6">Haziran</option>
-                    <option value="7">Temmuz</option>
-                    <option value="8">Ağustos</option>
-                    <option value="9">Eylül</option>
-                    <option value="10">Ekim</option>
-                    <option value="11">Kasım</option>
-                    <option value="12">Aralık</option>
-                </select>
-                <button id="loadBtn">📅 Yükle</button>
-            </div>
+        <div class="action-buttons">
+            <button class="btn-puantaj btn-warning-puantaj" id="batchIzinBtn"><i class="fas fa-users me-1"></i>Toplu İzin</button>
+            <button class="btn-puantaj btn-outline-puantaj" id="autoSaveBtn"><i class="fas fa-clock me-1"></i>Oto Kayıt: Kapalı</button>
+            <button class="btn-puantaj btn-success-puantaj" id="saveBtn"><i class="fas fa-save me-1"></i>Kaydet</button>
+            <button class="btn-puantaj btn-info-puantaj" id="exportBtn"><i class="fas fa-file-excel me-1"></i>Dışa Aktar</button>
+            <span class="birim-badge" id="birimBadge">🏢 Tüm Birimler</span>
+        </div>
 
-            <div class="birim-selector">
-                <label>🏢 Birim:</label>
-                <select id="birimSelect" @(ViewBag.Rol != "admin" ? "disabled" : "")>
-                    @if (ViewBag.Rol == "admin")
-                    {
-                        <option value="all">Tüm Birimler</option>
-                    }
-                    @if (ViewBag.Birimler != null)
-                    {
-                        @foreach (string b in ViewBag.Birimler)
-                        {
-                            if (ViewBag.Rol != "admin")
-                            {
-                                @:<option value="@b" selected>@b</option>
-                            }
-                            else
-                            {
-                                @:<option value="@b">@b</option>
-                            }
-                        }
-                    }
-                </select>
-            </div>
-
-            <button class="btn-legend-toggle" id="legendToggleBtn" onclick="toggleLegend()">🎨 Renk Açıklamaları ▼</button>
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+            <button class="btn-legend-toggle" id="legendToggleBtn">🎨 Renk Açıklamaları ▼</button>
             <div class="legend" id="legendPanel" style="display:none;">
-                <div class="legend-item"><div class="legend-color x"></div><span>X</span></div>
-                <div class="legend-item"><div class="legend-color i"></div><span>Yıllık</span></div>
-                <div class="legend-item"><div class="legend-color oi"></div><span>Görev</span></div>
-                <div class="legend-item"><div class="legend-color ci"></div><span>Çocuk</span></div>
-                <div class="legend-item"><div class="legend-color v"></div><span>Vefat</span></div>
-                <div class="legend-item"><div class="legend-color oz"></div><span>Özel</span></div>
-                <div class="legend-item"><div class="legend-color h"></div><span>Hastalık</span></div>
-            </div>
-
-            <div class="action-buttons">
-                <button class="btn-batch" id="batchIzinBtn">📋 Toplu İzin</button>
-                <button class="btn-auto-save" id="autoSaveBtn">⚡ Oto Kayıt: Kapalı</button>
-                <button class="btn-save" id="saveBtn">💾 Kaydet</button>
-                <button class="btn-export" id="exportBtn">📎 Excel / PDF</button>
-                <div class="birim-badge" id="birimBadge">Birim: Tüm Birimler</div>
-            </div>
-        </div>
-
-        <div class="table-wrapper">
-            <table class="puantaj-table" id="puantajTable">
-                <thead id="tableHeader"></thead>
-                <tbody id="tableBody"></tbody>
-            </table>
-        </div>
-
-        <div class="footer">
-            <span>⚡ Hücreye tıklayarak düzenleyin | Klavye: X,İ,G,Ç,V,Ö,H</span>
-            <span>📊 <span id="totalPersonel">0</span> personel | 30 Gün Bazlı Hakediş</span>
-            <span id="autoSaveStatus" class="auto-save-status">💾 Otomatik Kayıt: Kapalı</span>
-        </div>
-    </div>
-
-    <!-- Tekil Düzenleme Modal -->
-    <div id="editModal" class="modal">
-        <div class="modal-content">
-            <h3>✏️ Durum Düzenle</h3>
-            <p id="modalPersonelInfo"></p>
-            <p id="modalTarihInfo"></p>
-            <div class="form-group">
-                <select id="modalDurum">
-                    <option value="X">✅ Çalıştı (X)</option>
-                    <option value="İ">🟡 Yıllık İzin (İ)</option>
-                    <option value="Gİ">🟠 Görev İzni (Gİ)</option>
-                    <option value="ÇH">🟢 Çocuk Hastalık (ÇH)</option>
-                    <option value="Vİ">🟣 Vefat İzni (Vİ)</option>
-                    <option value="Öİ">🔴 Özel İzin (Öİ)</option>
-                    <option value="H">🔴 Hastalık (H)</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <textarea id="modalAciklama" rows="3" placeholder="Açıklama (opsiyonel)"></textarea>
-            </div>
-            <div class="modal-buttons">
-                <button class="btn-modal-cancel" onclick="closeModal()">İptal</button>
-                <button class="btn-modal-save" onclick="saveModal()">Kaydet</button>
+                <div class="legend-item"><span class="legend-color lx"></span>X</div>
+                <div class="legend-item"><span class="legend-color li"></span>İ</div>
+                <div class="legend-item"><span class="legend-color lgi"></span>Gİ</div>
+                <div class="legend-item"><span class="legend-color lch"></span>ÇH</div>
+                <div class="legend-item"><span class="legend-color lv"></span>Vİ</div>
+                <div class="legend-item"><span class="legend-color loz"></span>Öİ</div>
+                <div class="legend-item"><span class="legend-color lh"></span>H</div>
             </div>
         </div>
     </div>
 
-    <!-- Toplu İzin Modal -->
-    <div id="batchModal" class="modal">
-        <div class="modal-content">
-            <h3>📋 Toplu İzin Girişi</h3>
-            <div class="form-group">
-                <label>👥 Personel Seç (Ctrl ile çoklu seçim)</label>
-                <select id="batchPersonelSelect" multiple size="6"></select>
-            </div>
-            <div class="form-group">
-                <label>📅 Tarih Aralığı</label>
-                <div class="date-range">
-                    <input type="date" id="baslangicTarih">
-                    <input type="date" id="bitisTarih">
-                </div>
-            </div>
-            <div class="form-group">
-                <label>📌 İzin Türü</label>
-                <select id="batchIzinTipi">
-                    <option value="İ">🟡 Yıllık İzin (İ)</option>
-                    <option value="Gİ">🟠 Görev İzni (Gİ)</option>
-                    <option value="ÇH">🟢 Çocuk Hastalık (ÇH)</option>
-                    <option value="Vİ">🟣 Vefat İzni (Vİ)</option>
-                    <option value="Öİ">🔴 Özel İzin (Öİ)</option>
-                    <option value="H">🔴 Hastalık (H)</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>📝 Açıklama</label>
-                <textarea id="batchAciklama" rows="2" placeholder="Toplu izin açıklaması"></textarea>
-            </div>
-            <div class="modal-buttons">
-                <button class="btn-modal-cancel" onclick="closeBatchModal()">İptal</button>
-                <button class="btn-modal-save" onclick="saveBatchIzin()">Toplu Ekle</button>
-            </div>
-        </div>
+    <!-- TABLO -->
+    <div class="table-wrapper">
+        <table class="puantaj-table" id="puantajTable">
+            <thead id="tableHeader"></thead>
+            <tbody id="tableBody"></tbody>
+        </table>
     </div>
 
-    <div id="toastContainer" class="toast-container"></div>
+    <!-- FOOTER -->
+    <div class="footer">
+        <span><i class="fas fa-info-circle me-1"></i>Hücreye tıklayarak düzenleyin | Klavye: X,İ,G,Ç,V,Ö,H</span>
+        <span><i class="fas fa-users me-1"></i><span id="totalPersonel">0</span> personel</span>
+        <span id="autoSaveStatus" class="auto-save-status">💾 Otomatik Kayıt: Kapalı</span>
+    </div>
+</div>
 
-    <!-- Ay Kilitli Popup -->
-    <div id="kilitPopupOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; justify-content:center; align-items:center;">
-        <div style="background:white; border-radius:12px; padding:30px 40px; max-width:420px; width:90%; text-align:center; box-shadow:0 8px 32px rgba(0,0,0,0.3); animation:popupIn 0.3s ease;">
-            <div style="font-size:48px; margin-bottom:10px;">🔒</div>
-            <h5 style="color:#dc3545; font-weight:bold; margin-bottom:10px;">Ay Kilitli</h5>
-            <p id="kilitPopupMesaj" style="color:#555; margin-bottom:20px;"></p>
-            <button onclick="kilitPopupKapat()" style="background:#dc3545; color:white; border:none; padding:8px 30px; border-radius:6px; font-size:14px; cursor:pointer;">Tamam</button>
+<!-- ========== MODAL ========== -->
+<div id="editModal" class="modal-overlay">
+    <div class="modal-content">
+        <h3><i class="fas fa-edit me-2"></i>Durum Düzenle</h3>
+        <p id="modalPersonelInfo" class="fw-semibold text-primary"></p>
+        <p id="modalTarihInfo" class="text-muted small"></p>
+        <div class="mb-3">
+            <label class="form-label">Durum</label>
+            <select id="modalDurum" class="form-select">
+                <option value="X">✅ Çalıştı (X)</option>
+                <option value="İ">🟡 Yıllık İzin (İ)</option>
+                <option value="Gİ">🟠 Görev İzni (Gİ)</option>
+                <option value="ÇH">🟢 Çocuk Hastalık (ÇH)</option>
+                <option value="Vİ">🟣 Vefat İzni (Vİ)</option>
+                <option value="Öİ">🔴 Özel İzin (Öİ)</option>
+                <option value="H">🔴 Hastalık (H)</option>
+            </select>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Açıklama (opsiyonel)</label>
+            <textarea id="modalAciklama" class="form-control" rows="3"></textarea>
+        </div>
+        <div class="modal-actions">
+            <button class="btn-cancel" onclick="closeModal()">İptal</button>
+            <button class="btn-save-modal" onclick="saveModal()">Kaydet</button>
         </div>
     </div>
-    <style>
-        @@keyframes popupIn { from { transform: scale(0.7); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-    </style>
+</div>
 
-    <script>
-        // İzin türleri
-        var izinTurleri = ['İ', 'Gİ', 'ÇH', 'Vİ', 'Öİ', 'H'];
+<!-- ========== TOPLU İZİN MODAL ========== -->
+<div id="batchModal" class="modal-overlay">
+    <div class="modal-content">
+        <h3><i class="fas fa-users me-2"></i>Toplu İzin Girişi</h3>
+        <div class="mb-3">
+            <label class="form-label">👥 Personel Seç (Ctrl ile çoklu)</label>
+            <select id="batchPersonelSelect" class="form-select" multiple size="6"></select>
+        </div>
+        <div class="row g-2 mb-3">
+            <div class="col-6">
+                <label class="form-label">Başlangıç</label>
+                <input type="date" id="baslangicTarih" class="form-control">
+            </div>
+            <div class="col-6">
+                <label class="form-label">Bitiş</label>
+                <input type="date" id="bitisTarih" class="form-control">
+            </div>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">İzin Türü</label>
+            <select id="batchIzinTipi" class="form-select">
+                <option value="İ">🟡 Yıllık İzin (İ)</option>
+                <option value="Gİ">🟠 Görev İzni (Gİ)</option>
+                <option value="ÇH">🟢 Çocuk Hastalık (ÇH)</option>
+                <option value="Vİ">🟣 Vefat İzni (Vİ)</option>
+                <option value="Öİ">🔴 Özel İzin (Öİ)</option>
+                <option value="H">🔴 Hastalık (H)</option>
+            </select>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Açıklama</label>
+            <textarea id="batchAciklama" class="form-control" rows="2" placeholder="Toplu izin açıklaması"></textarea>
+        </div>
+        <div class="modal-actions">
+            <button class="btn-cancel" onclick="closeBatchModal()">İptal</button>
+            <button class="btn-save-modal" onclick="saveBatchIzin()">Toplu Ekle</button>
+        </div>
+    </div>
+</div>
 
-        // Durum verileri
-        var personeller = [];
-        var calismaVerileri = {};
-        var degisenler = {};
-        var currentYear = 2026;
-        var currentMonth = 3;
-        var kullaniciRol = '@(ViewBag.Rol ?? "birim_amiri")';
-        var kullaniciBirim = '@(ViewBag.KullaniciBirim ?? "")';
-        var seciliBirim = kullaniciRol === 'admin' ? 'all' : kullaniciBirim;
-        var autoSaveEnabled = false;
-        var autoSaveTimer = null;
-        var resmiTatiller = {}; // { gun: tatilAdi }
+<!-- ========== KİLİT POPUP ========== -->
+<div id="kilitPopupOverlay" class="modal-overlay">
+    <div style="background:white; border-radius:12px; padding:30px 36px; max-width:400px; width:90%; text-align:center; box-shadow:0 8px 32px rgba(0,0,0,0.3);">
+        <div style="font-size:48px; margin-bottom:10px;">🔒</div>
+        <h5 style="color:#dc3545; font-weight:700; margin-bottom:10px;">Ay Kilitli</h5>
+        <p id="kilitPopupMesaj" style="color:#555; margin-bottom:20px;"></p>
+        <button onclick="kilitPopupKapat()" style="background:#dc3545; color:white; border:none; padding:8px 32px; border-radius:6px; font-size:14px; cursor:pointer;">Tamam</button>
+    </div>
+</div>
 
-        // --- YARDIMCI ---
-        function getMonthName(m) {
-            return ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'][m-1];
-        }
-        function isWeekend(y, m, d) { var dt = new Date(y, m-1, d); return dt.getDay()===0||dt.getDay()===6; }
-        function getDurumClass(d) { return {'X':'x','İ':'i','Gİ':'oi','ÇH':'ci','Vİ':'v','Öİ':'oz','H':'h'}[d]||'x'; }
-        function getDurumDisplay(d) { return {'X':'X','İ':'İ','Gİ':'Gİ','ÇH':'ÇH','Vİ':'Vİ','Öİ':'Öİ','H':'H'}[d]||'X'; }
-        function getPersonelAdi(pid) { var p = personeller.find(function(x){return x.id===pid;}); return p ? p.ad+' '+p.soyad : ''; }
-        function getFilteredPersoneller() {
-            return personeller;
-        }
-        function calculateHakkedis(pid) {
-            var izinGunleri = 0, data = calismaVerileri[pid] || {};
-            for (var g = 1; g <= 30; g++) {
-                var d = data[g];
-                var izinli = d && izinTurleri.indexOf(d) >= 0;
-                if (izinli) izinGunleri++;
-            }
-            return 30 - izinGunleri;
-        }
+<!-- ========== TOAST ========== -->
+<div id="toastContainer" class="toast-container"></div>
 
-        // --- KİLİT POPUP ---
-        function showKilitPopup(msg) {
-            document.getElementById('kilitPopupMesaj').textContent = msg;
-            var overlay = document.getElementById('kilitPopupOverlay');
-            overlay.style.display = 'flex';
-        }
-        function kilitPopupKapat() {
-            document.getElementById('kilitPopupOverlay').style.display = 'none';
-        }
-        document.getElementById('kilitPopupOverlay').addEventListener('click', function(e) {
-            if (e.target === this) kilitPopupKapat();
-        });
+<!-- ========== SCRIPTS ========== -->
+<script src="https://kit.fontawesome.com/your-kit-code.js" crossorigin="anonymous"></script>
+<script>
+    // ============================================================
+    // KONFIGÜRASYON
+    // ============================================================
+    var izinTurleri = ['İ', 'Gİ', 'ÇH', 'Vİ', 'Öİ', 'H'];
+    var personeller = [];
+    var calismaVerileri = {};
+    var degisenler = {};
+    var currentYear = 2026;
+    var currentMonth = 3;
+    var kullaniciRol = '@(ViewBag.Rol ?? "birim_amiri")';
+    var kullaniciBirim = '@(ViewBag.KullaniciBirim ?? "")';
+    var seciliBirim = kullaniciRol === 'admin' ? 'all' : kullaniciBirim;
+    var autoSaveEnabled = false;
+    var autoSaveTimer = null;
+    var resmiTatiller = {};
 
-        // --- TOAST ---
-        function showToast(msg, type) {
-            type = type || 'info';
-            var c = document.getElementById('toastContainer');
-            var t = document.createElement('div');
-            t.className = 'toast ' + type;
-            var icon = type==='success'?'✅':type==='error'?'❌':type==='warning'?'⚠️':'ℹ️';
-            t.innerHTML = '<span>'+icon+'</span><span>'+msg+'</span>';
-            c.appendChild(t);
-            setTimeout(function(){ t.style.animation='fadeOut 0.3s ease'; setTimeout(function(){t.remove();},300); },3000);
-        }
+    // ============================================================
+    // YARDIMCI FONKSİYONLAR
+    // ============================================================
+    function getMonthName(m) { return ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'][m-1]; }
+    function isWeekend(y, m, d) { var dt = new Date(y, m-1, d); return dt.getDay()===0 || dt.getDay()===6; }
+    function getDurumClass(d) { return {'X':'x','İ':'i','Gİ':'gi','ÇH':'ch','Vİ':'vi','Öİ':'oi','H':'h'}[d]||'x'; }
+    function getDurumDisplay(d) { return {'X':'X','İ':'İ','Gİ':'Gİ','ÇH':'ÇH','Vİ':'Vİ','Öİ':'Öİ','H':'H'}[d]||'X'; }
+    function getPersonelAdi(pid) { var p = personeller.find(function(x){return x.id===pid;}); return p ? p.ad+' '+p.soyad : ''; }
+    function getFilteredPersoneller() { return personeller; }
 
-        // --- VERİTABANINDAN VERİ ÇEK ---
-        function loadPersoneller() {
-            fetch('/Puantaj/GetPersoneller?birim=' + encodeURIComponent(seciliBirim))
-                .then(function(r){return r.json();})
-                .then(function(data){
-                    if (data.hata) { showToast('Hata: '+data.hata,'error'); return; }
-                    personeller = data;
-                    loadIzinler();
-                })
-                .catch(function(){ showToast('Personel verisi alınamadı','error'); });
+    function calculateHakkedis(pid) {
+        var izinGunleri = 0, data = calismaVerileri[pid] || {};
+        for (var g = 1; g <= 30; g++) {
+            var d = data[g];
+            if (d && izinTurleri.indexOf(d) >= 0) izinGunleri++;
         }
+        return 30 - izinGunleri;
+    }
 
-        function loadIzinler() {
-            // Önce resmi tatilleri çek, sonra izinleri yükle
-            fetch('/Puantaj/GetResmiTatiller?yil='+currentYear+'&ay='+currentMonth)
-                .then(function(r){return r.json();})
-                .then(function(tatilData){
-                    resmiTatiller = {};
-                    if (Array.isArray(tatilData)) {
-                        for (var i=0; i<tatilData.length; i++) {
-                            resmiTatiller[tatilData[i].gun] = tatilData[i].tatilAdi;
-                        }
-                    }
-                    return fetch('/Puantaj/GetIzinler?yil='+currentYear+'&ay='+currentMonth);
-                })
-                .then(function(r){return r.json();})
-                .then(function(data){
-                    if (data.hata) { showToast('Hata: '+data.hata,'error'); return; }
-                    calismaVerileri = {};
-                    for (var idx=0; idx<data.length; idx++) {
-                        var iz = data[idx];
-                        if (!calismaVerileri[iz.personelId]) calismaVerileri[iz.personelId] = {};
-                        calismaVerileri[iz.personelId][iz.gun] = iz.izinTipi;
-                        if (iz.aciklama) calismaVerileri[iz.personelId]['aciklama_'+iz.gun] = iz.aciklama;
-                    }
-                    degisenler = {};
-                    renderTable();
-                    var tatilSayisi = Object.keys(resmiTatiller).length;
-                    var msg = getMonthName(currentMonth)+' '+currentYear+' verileri yüklendi';
-                    if (tatilSayisi > 0) msg += ' ('+tatilSayisi+' resmi tatil günü)';
-                    showToast(msg,'info');
-                })
-                .catch(function(){ showToast('İzin verisi alınamadı','error'); });
-        }
+    // ============================================================
+    // KİLİT POPUP
+    // ============================================================
+    function showKilitPopup(msg) {
+        document.getElementById('kilitPopupMesaj').textContent = msg;
+        document.getElementById('kilitPopupOverlay').classList.add('active');
+    }
+    function kilitPopupKapat() {
+        document.getElementById('kilitPopupOverlay').classList.remove('active');
+    }
 
-        // --- VERİTABANINA KAYDET ---
-        function saveChanges(showMsg) {
-            if (Object.keys(degisenler).length === 0) {
-                if (showMsg) showToast('Kaydedilecek değişiklik yok','info');
-                return;
-            }
-            var izinler = [];
-            for (var pid in degisenler) {
-                for (var gun in degisenler[pid]) {
-                    var durum = degisenler[pid][gun];
-                    var aciklama = (calismaVerileri[pid] && calismaVerileri[pid]['aciklama_'+gun]) || '';
-                    izinler.push({
-                        PersonelId: parseInt(pid),
-                        Yil: currentYear,
-                        Ay: currentMonth,
-                        Gun: parseInt(gun),
-                        IzinTipi: durum,
-                        Aciklama: aciklama
-                    });
+    // ============================================================
+    // TOAST
+    // ============================================================
+    function showToast(msg, type) {
+        type = type || 'info';
+        var c = document.getElementById('toastContainer');
+        var t = document.createElement('div');
+        t.className = 'toast-item ' + type;
+        var icon = type==='success'?'✅':type==='error'?'❌':type==='warning'?'⚠️':'ℹ️';
+        t.innerHTML = '<span>'+icon+'</span><span>'+msg+'</span>';
+        c.appendChild(t);
+        setTimeout(function(){ t.style.animation='fadeOut 0.3s ease'; setTimeout(function(){t.remove();},300); },3500);
+    }
+
+    // ============================================================
+    // VERİ YÜKLEME
+    // ============================================================
+    function loadPersoneller() {
+        fetch('/Puantaj/GetPersoneller?birim=' + encodeURIComponent(seciliBirim))
+            .then(function(r){return r.json();})
+            .then(function(data){
+                if (data.hata) { showToast('Hata: '+data.hata,'error'); return; }
+                personeller = data;
+                loadIzinler();
+            })
+            .catch(function(){ showToast('Personel verisi alınamadı','error'); });
+    }
+
+    function loadIzinler() {
+        fetch('/Puantaj/GetResmiTatiller?yil='+currentYear+'&ay='+currentMonth)
+            .then(function(r){return r.json();})
+            .then(function(tatilData){
+                resmiTatiller = {};
+                if (Array.isArray(tatilData)) {
+                    for (var i=0; i<tatilData.length; i++) resmiTatiller[tatilData[i].gun] = tatilData[i].tatilAdi;
                 }
-            }
-            fetch('/Puantaj/KaydetIzin', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(izinler)
+                return fetch('/Puantaj/GetIzinler?yil='+currentYear+'&ay='+currentMonth);
             })
             .then(function(r){return r.json();})
             .then(function(data){
-                if (data.basarili) {
-                    if (showMsg) showToast('✅ ' + data.mesaj, 'success');
-                    degisenler = {};
-                } else {
-                    if (data.mesaj && data.mesaj.indexOf('kilitlenmiş') > -1) {
-                        showKilitPopup(data.mesaj);
-                    } else {
-                        showToast('Hata: ' + data.mesaj, 'error');
-                    }
+                if (data.hata) { showToast('Hata: '+data.hata,'error'); return; }
+                calismaVerileri = {};
+                for (var idx=0; idx<data.length; idx++) {
+                    var iz = data[idx];
+                    if (!calismaVerileri[iz.personelId]) calismaVerileri[iz.personelId] = {};
+                    calismaVerileri[iz.personelId][iz.gun] = iz.izinTipi;
+                    if (iz.aciklama) calismaVerileri[iz.personelId]['aciklama_'+iz.gun] = iz.aciklama;
                 }
+                degisenler = {};
+                renderTable();
+                var tatilSayisi = Object.keys(resmiTatiller).length;
+                var msg = getMonthName(currentMonth)+' '+currentYear+' yüklendi';
+                if (tatilSayisi > 0) msg += ' ('+tatilSayisi+' resmi tatil)';
+                showToast(msg,'info');
             })
-            .catch(function(){ showToast('Kaydetme hatası','error'); });
-        }
+            .catch(function(){ showToast('İzin verisi alınamadı','error'); });
+    }
 
-        function updateDurum(pid, gun, yeniDurum, aciklama) {
-            if (!calismaVerileri[pid]) calismaVerileri[pid] = {};
-            var eski = calismaVerileri[pid][gun];
-            if (eski === yeniDurum) return false;
-            calismaVerileri[pid][gun] = yeniDurum;
-            if (aciklama) calismaVerileri[pid]['aciklama_'+gun] = aciklama;
-            if (!degisenler[pid]) degisenler[pid] = {};
-            degisenler[pid][gun] = yeniDurum;
-            return true;
+    // ============================================================
+    // KAYDET
+    // ============================================================
+    function saveChanges(showMsg) {
+        if (Object.keys(degisenler).length === 0) {
+            if (showMsg) showToast('Kaydedilecek değişiklik yok','info');
+            return;
         }
-
-        // --- OTOMATİK KAYDETME ---
-        function scheduleAutoSave() {
-            if (autoSaveTimer) clearTimeout(autoSaveTimer);
-            if (autoSaveEnabled && Object.keys(degisenler).length > 0) {
-                autoSaveTimer = setTimeout(function(){ saveChanges(true); autoSaveTimer=null; }, 3000);
-            }
-        }
-        function toggleAutoSave() {
-            autoSaveEnabled = !autoSaveEnabled;
-            var btn = document.getElementById('autoSaveBtn');
-            var st = document.getElementById('autoSaveStatus');
-            if (autoSaveEnabled) {
-                btn.textContent = '⚡ Oto Kayıt: Açık'; btn.classList.add('active');
-                st.innerHTML = '💾 Otomatik Kayıt: Açık (3sn)';
-                showToast('Otomatik kaydetme açıldı','success');
-            } else {
-                btn.textContent = '⚡ Oto Kayıt: Kapalı'; btn.classList.remove('active');
-                st.innerHTML = '💾 Otomatik Kayıt: Kapalı';
-                if (autoSaveTimer) { clearTimeout(autoSaveTimer); autoSaveTimer=null; }
-                showToast('Otomatik kaydetme kapatıldı','info');
-            }
-        }
-
-        // --- TOPLU İZİN ---
-        function openBatchModal() {
-            var sel = document.getElementById('batchPersonelSelect');
-            sel.innerHTML = '';
-            getFilteredPersoneller().forEach(function(p) {
-                var opt = document.createElement('option');
-                opt.value = p.id;
-                opt.textContent = p.ad + ' ' + p.soyad + ' (' + p.birim + ')';
-                sel.appendChild(opt);
-            });
-            var defDate = currentYear + '-' + String(currentMonth).padStart(2,'0') + '-01';
-            var maxDay = Math.min(30, new Date(currentYear, currentMonth, 0).getDate());
-            document.getElementById('baslangicTarih').value = defDate;
-            document.getElementById('bitisTarih').value = currentYear+'-'+String(currentMonth).padStart(2,'0')+'-'+String(maxDay).padStart(2,'0');
-            document.getElementById('batchAciklama').value = '';
-            document.getElementById('batchModal').classList.add('active');
-        }
-        function closeBatchModal() { document.getElementById('batchModal').classList.remove('active'); }
-
-        function saveBatchIzin() {
-            var opts = document.getElementById('batchPersonelSelect').selectedOptions;
-            var pids = Array.from(opts).map(function(o){return parseInt(o.value);});
-            var bas = new Date(document.getElementById('baslangicTarih').value);
-            var bit = new Date(document.getElementById('bitisTarih').value);
-            var tip = document.getElementById('batchIzinTipi').value;
-            var acik = document.getElementById('batchAciklama').value;
-            if (pids.length===0) { showToast('Personel seçin','warning'); return; }
-            if (isNaN(bas)||isNaN(bit)) { showToast('Geçerli tarih girin','warning'); return; }
-            var eklenen = 0;
-            var gunler = [];
-            for (var d=new Date(bas); d<=bit; d.setDate(d.getDate()+1)) {
-                if (d.getMonth()+1===currentMonth && d.getDate()>=1 && d.getDate()<=30) gunler.push(d.getDate());
-            }
-            pids.forEach(function(pid) {
-                gunler.forEach(function(gun) {
-                    if (updateDurum(pid, gun, tip, acik)) eklenen++;
+        var izinler = [];
+        for (var pid in degisenler) {
+            for (var gun in degisenler[pid]) {
+                var durum = degisenler[pid][gun];
+                var aciklama = (calismaVerileri[pid] && calismaVerileri[pid]['aciklama_'+gun]) || '';
+                izinler.push({
+                    PersonelId: parseInt(pid),
+                    Yil: currentYear,
+                    Ay: currentMonth,
+                    Gun: parseInt(gun),
+                    IzinTipi: durum,
+                    Aciklama: aciklama
                 });
-            });
-            if (eklenen>0) {
-                renderTable();
-                showToast(eklenen+' kayıt eklendi','success');
-                if (autoSaveEnabled) scheduleAutoSave();
+            }
+        }
+        fetch('/Puantaj/KaydetIzin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(izinler)
+        })
+        .then(function(r){return r.json();})
+        .then(function(data){
+            if (data.basarili) {
+                if (showMsg) showToast('✅ ' + data.mesaj, 'success');
+                degisenler = {};
             } else {
-                showToast('Yeni kayıt yok','info');
+                if (data.mesaj && data.mesaj.indexOf('kilitlenmiş') > -1) {
+                    showKilitPopup(data.mesaj);
+                } else {
+                    showToast('Hata: ' + data.mesaj, 'error');
+                }
             }
-            closeBatchModal();
+        })
+        .catch(function(){ showToast('Kaydetme hatası','error'); });
+    }
+
+    function updateDurum(pid, gun, yeniDurum, aciklama) {
+        if (!calismaVerileri[pid]) calismaVerileri[pid] = {};
+        var eski = calismaVerileri[pid][gun];
+        if (eski === yeniDurum) return false;
+        calismaVerileri[pid][gun] = yeniDurum;
+        if (aciklama) calismaVerileri[pid]['aciklama_'+gun] = aciklama;
+        if (!degisenler[pid]) degisenler[pid] = {};
+        degisenler[pid][gun] = yeniDurum;
+        return true;
+    }
+
+    // ============================================================
+    // OTOMATİK KAYDETME
+    // ============================================================
+    function scheduleAutoSave() {
+        if (autoSaveTimer) clearTimeout(autoSaveTimer);
+        if (autoSaveEnabled && Object.keys(degisenler).length > 0) {
+            autoSaveTimer = setTimeout(function(){ saveChanges(true); autoSaveTimer=null; }, 3000);
         }
+    }
 
-        // --- TABLO ---
-        function renderTable() {
-            var filtered = getFilteredPersoneller();
-            var gunSayisi = 30;
-            var today = new Date();
-            var isCurrentMonth = (currentYear === today.getFullYear() && currentMonth === (today.getMonth() + 1));
-            var todayDay = today.getDate();
-            var hdr = '<tr><th>Personel</th>';
-            for (var i=1;i<=gunSayisi;i++) {
-                var wk = isWeekend(currentYear,currentMonth,i);
-                var tatilMi = resmiTatiller.hasOwnProperty(i);
-                var thStyle = '';
-                var thTitle = '';
-                var todayCls = (isCurrentMonth && i === todayDay) ? ' today-col' : '';
-                if (tatilMi) {
-                    thStyle = ' style="background:#dc3545;color:white;"';
-                    thTitle = ' title="'+resmiTatiller[i]+'"';
-                } else if (wk) {
-                    thStyle = '';
-                }
-                hdr += '<th class="'+(wk?'weekend':'')+todayCls+'"'+thStyle+thTitle+' style="width:28px;'+(tatilMi?'background:#dc3545;color:white;':'')+'">'+i+'</th>';
-            }
-            hdr += '<th>X</th><th>İ</th><th>H</th><th>Hakediş</th></tr>';
-            document.getElementById('tableHeader').innerHTML = hdr;
+    function toggleAutoSave() {
+        autoSaveEnabled = !autoSaveEnabled;
+        var btn = document.getElementById('autoSaveBtn');
+        var st = document.getElementById('autoSaveStatus');
+        if (autoSaveEnabled) {
+            btn.innerHTML = '<i class="fas fa-clock me-1"></i>Oto Kayıt: Açık';
+            btn.className = 'btn-puantaj btn-success-puantaj';
+            st.textContent = '💾 Otomatik Kayıt: Açık (3sn)';
+            st.className = 'auto-save-status active';
+            showToast('Otomatik kaydetme açıldı','success');
+        } else {
+            btn.innerHTML = '<i class="fas fa-clock me-1"></i>Oto Kayıt: Kapalı';
+            btn.className = 'btn-puantaj btn-outline-puantaj';
+            st.textContent = '💾 Otomatik Kayıt: Kapalı';
+            st.className = 'auto-save-status';
+            if (autoSaveTimer) { clearTimeout(autoSaveTimer); autoSaveTimer=null; }
+            showToast('Otomatik kaydetme kapatıldı','info');
+        }
+    }
 
-            var body = '';
-            filtered.forEach(function(p) {
-                var tX=0, tI=0, tH=0;
-                body += '<tr data-personel-id="'+p.id+'">';
-                body += '<td class="personel-info">'+p.ad+' '+p.soyad+'</td>';
-                for (var gun=1;gun<=gunSayisi;gun++) {
-                    var durum = (calismaVerileri[p.id] && calismaVerileri[p.id][gun]) || 'X';
-                    var cls = getDurumClass(durum);
-                    var disp = getDurumDisplay(durum);
-                    if (durum==='X') tX++;
-                    else if (durum==='H') tH++;
-                    else if (izinTurleri.indexOf(durum)>=0) tI++;
-                    var wk = isWeekend(currentYear,currentMonth,gun);
-                    var tatilMi = resmiTatiller.hasOwnProperty(gun);
-                    var cellStyle = '';
-                    if (tatilMi && !wk) cellStyle = ' style="border: 2px solid #dc3545;"';
-                    var todayCls2 = (isCurrentMonth && gun === todayDay) ? ' today-col' : '';
-                    body += '<td class="durum-cell '+cls+(wk?' weekend':'')+todayCls2+'"'+cellStyle+' data-gun="'+gun+'" data-personel="'+p.id+'" onclick="openModal('+p.id+','+gun+',\''+durum.replace(/'/g,"\\'")+'\',' + "'" + p.ad+' '+p.soyad + "'" + ')"'+(tatilMi?' title="'+resmiTatiller[gun]+'"':'')+'>'+disp+'</td>';
-                }
-                var hak = calculateHakkedis(p.id);
-                var hakCls = hak >= 28 ? 'hakkedis-good' : (hak >= 25 ? 'hakkedis-mid' : 'hakkedis-low');
-                body += '<td class="total-cell">'+tX+'</td>';
-                body += '<td class="total-cell">'+tI+'</td>';
-                body += '<td class="total-cell">'+tH+'</td>';
-                body += '<td class="hakkedis-cell '+hakCls+'">'+hak+'</td>';
-                body += '</tr>';
+    // ============================================================
+    // TOPLU İZİN
+    // ============================================================
+    function openBatchModal() {
+        var sel = document.getElementById('batchPersonelSelect');
+        sel.innerHTML = '';
+        getFilteredPersoneller().forEach(function(p) {
+            var opt = document.createElement('option');
+            opt.value = p.id;
+            opt.textContent = p.ad + ' ' + p.soyad + ' (' + p.birim + ')';
+            sel.appendChild(opt);
+        });
+        var defDate = currentYear + '-' + String(currentMonth).padStart(2,'0') + '-01';
+        var maxDay = Math.min(30, new Date(currentYear, currentMonth, 0).getDate());
+        document.getElementById('baslangicTarih').value = defDate;
+        document.getElementById('bitisTarih').value = currentYear+'-'+String(currentMonth).padStart(2,'0')+'-'+String(maxDay).padStart(2,'0');
+        document.getElementById('batchAciklama').value = '';
+        document.getElementById('batchModal').classList.add('active');
+    }
+
+    function closeBatchModal() {
+        document.getElementById('batchModal').classList.remove('active');
+    }
+
+    function saveBatchIzin() {
+        var opts = document.getElementById('batchPersonelSelect').selectedOptions;
+        var pids = Array.from(opts).map(function(o){return parseInt(o.value);});
+        var bas = new Date(document.getElementById('baslangicTarih').value);
+        var bit = new Date(document.getElementById('bitisTarih').value);
+        var tip = document.getElementById('batchIzinTipi').value;
+        var acik = document.getElementById('batchAciklama').value;
+        if (pids.length===0) { showToast('Personel seçin','warning'); return; }
+        if (isNaN(bas)||isNaN(bit)) { showToast('Geçerli tarih girin','warning'); return; }
+        var eklenen = 0;
+        var gunler = [];
+        for (var d=new Date(bas); d<=bit; d.setDate(d.getDate()+1)) {
+            if (d.getMonth()+1===currentMonth && d.getDate()>=1 && d.getDate()<=30) gunler.push(d.getDate());
+        }
+        pids.forEach(function(pid) {
+            gunler.forEach(function(gun) {
+                if (updateDurum(pid, gun, tip, acik)) eklenen++;
             });
-            document.getElementById('tableBody').innerHTML = body;
-            document.getElementById('totalPersonel').innerText = filtered.length;
-            document.getElementById('birimBadge').innerHTML = '🏢 Birim: '+(seciliBirim==='all'?'Tüm Birimler':seciliBirim);
+        });
+        if (eklenen>0) {
+            renderTable();
+            showToast(eklenen+' kayıt eklendi','success');
+            if (autoSaveEnabled) scheduleAutoSave();
+        } else {
+            showToast('Yeni kayıt yok','info');
         }
+        closeBatchModal();
+    }
 
-        function toggleLegend() {
-            var panel = document.getElementById('legendPanel');
-            var btn = document.getElementById('legendToggleBtn');
-            if (panel.style.display === 'none') {
-                panel.style.display = 'flex';
-                btn.textContent = '🎨 Renk Açıklamaları ▲';
-            } else {
-                panel.style.display = 'none';
-                btn.textContent = '🎨 Renk Açıklamaları ▼';
+    // ============================================================
+    // TABLO OLUŞTURMA
+    // ============================================================
+    function renderTable() {
+        var filtered = getFilteredPersoneller();
+        var gunSayisi = 30;
+        var today = new Date();
+        var isCurrentMonth = (currentYear === today.getFullYear() && currentMonth === (today.getMonth() + 1));
+        var todayDay = today.getDate();
+
+        // --- HEADER ---
+        var hdr = '<tr><th class="col-personel" style="position:sticky;left:0;z-index:25;">Personel</th>';
+        for (var i=1; i<=gunSayisi; i++) {
+            var wk = isWeekend(currentYear,currentMonth,i);
+            var tatilMi = resmiTatiller.hasOwnProperty(i);
+            var cls = '';
+            var style = '';
+            var title = '';
+            if (wk) cls += ' weekend';
+            if (tatilMi) { cls += ' tatil'; title = ' title="'+resmiTatiller[i]+'"'; }
+            if (isCurrentMonth && i === todayDay) cls += ' today-col';
+            hdr += '<th class="col-gun'+cls+'"'+style+title+'>'+i+'</th>';
+        }
+        hdr += '<th class="col-sayac">X</th><th class="col-sayac">İ</th><th class="col-sayac">H</th><th class="col-hakkedis">Hakediş</th></tr>';
+        document.getElementById('tableHeader').innerHTML = hdr;
+
+        // --- BODY ---
+        var body = '';
+        filtered.forEach(function(p) {
+            var tX=0, tI=0, tH=0;
+            body += '<tr data-personel-id="'+p.id+'">';
+            body += '<td class="col-personel-sticky">'+p.ad+' '+p.soyad+'</td>';
+            for (var gun=1; gun<=gunSayisi; gun++) {
+                var durum = (calismaVerileri[p.id] && calismaVerileri[p.id][gun]) || 'X';
+                var cls = 'durum-' + getDurumClass(durum);
+                var disp = getDurumDisplay(durum);
+                if (durum==='X') tX++;
+                else if (durum==='H') tH++;
+                else if (izinTurleri.indexOf(durum)>=0) tI++;
+                var wk = isWeekend(currentYear,currentMonth,gun);
+                var tatilMi = resmiTatiller.hasOwnProperty(gun);
+                var extraCls = '';
+                if (wk) extraCls += ' weekend';
+                if (tatilMi) extraCls += ' tatil';
+                if (isCurrentMonth && gun === todayDay) extraCls += ' today-col';
+                var titleAttr = tatilMi ? ' title="'+resmiTatiller[gun]+'"' : '';
+                body += '<td class="durum-cell '+cls+extraCls+'" data-gun="'+gun+'" data-personel="'+p.id+'" onclick="openModal('+p.id+','+gun+',\''+durum.replace(/'/g,"\\'")+'\')"'+titleAttr+'>'+disp+'</td>';
             }
-        }
+            var hak = calculateHakkedis(p.id);
+            var hakCls = hak >= 28 ? 'hakkedis-good' : (hak >= 25 ? 'hakkedis-mid' : 'hakkedis-low');
+            body += '<td class="total-cell col-sayac">'+tX+'</td>';
+            body += '<td class="total-cell col-sayac">'+tI+'</td>';
+            body += '<td class="total-cell col-sayac">'+tH+'</td>';
+            body += '<td class="hakkedis-cell '+hakCls+' col-hakkedis">'+hak+'</td>';
+            body += '</tr>';
+        });
+        document.getElementById('tableBody').innerHTML = body;
+        document.getElementById('totalPersonel').innerText = filtered.length;
+        document.getElementById('birimBadge').innerHTML = '🏢 '+(seciliBirim==='all'?'Tüm Birimler':seciliBirim);
+    }
 
-        // --- MODAL ---
-        var modalPersonelId = null, modalGun = null;
-        function openModal(pid, gun, cur, adi) {
-            modalPersonelId = pid; modalGun = gun;
-            document.getElementById('modalPersonelInfo').innerHTML = '<strong>👤 '+adi+'</strong>';
-            document.getElementById('modalTarihInfo').innerHTML = '<strong>📅 '+gun+' '+getMonthName(currentMonth)+' '+currentYear+'</strong>';
-            document.getElementById('modalDurum').value = cur;
-            document.getElementById('modalAciklama').value = (calismaVerileri[pid] && calismaVerileri[pid]['aciklama_'+gun]) || '';
-            document.getElementById('editModal').classList.add('active');
+    // ============================================================
+    // LEGEND
+    // ============================================================
+    function toggleLegend() {
+        var panel = document.getElementById('legendPanel');
+        var btn = document.getElementById('legendToggleBtn');
+        if (panel.style.display === 'none') {
+            panel.style.display = 'flex';
+            btn.textContent = '🎨 Renk Açıklamaları ▲';
+        } else {
+            panel.style.display = 'none';
+            btn.textContent = '🎨 Renk Açıklamaları ▼';
         }
-        function closeModal() { document.getElementById('editModal').classList.remove('active'); }
-        function saveModal() {
-            var dur = document.getElementById('modalDurum').value;
-            var acik = document.getElementById('modalAciklama').value;
-            if (updateDurum(modalPersonelId, modalGun, dur, acik)) {
-                renderTable();
-                showToast(getPersonelAdi(modalPersonelId)+' - '+modalGun+' günü '+getDurumDisplay(dur),'success');
-                if (autoSaveEnabled) scheduleAutoSave();
-            }
-            closeModal();
-        }
+    }
 
-        // --- KLAVYE ---
-        document.addEventListener('keydown', function(e) {
-            var t = e.target;
-            if (t.classList && t.classList.contains('durum-cell')) {
-                var pid = parseInt(t.dataset.personel), gun = parseInt(t.dataset.gun), nd = null;
-                var key = e.key.toUpperCase();
-                if (key==='X') nd='X'; else if (key==='İ'||key==='I') nd='İ'; else if (key==='G') nd='Gİ';
-                else if (key==='Ç'||key==='C') nd='ÇH'; else if (key==='V') nd='Vİ';
-                else if (key==='Ö'||key==='O') nd='Öİ'; else if (key==='H') nd='H';
-                if (nd) {
-                    e.preventDefault();
-                    if (updateDurum(pid, gun, nd)) {
-                        renderTable();
-                        showToast(getPersonelAdi(pid)+' - '+gun+' günü '+getDurumDisplay(nd),'info');
-                        if (autoSaveEnabled) scheduleAutoSave();
-                    }
+    // ============================================================
+    // MODAL
+    // ============================================================
+    var modalPersonelId = null, modalGun = null;
+
+    function openModal(pid, gun, cur) {
+        modalPersonelId = pid;
+        modalGun = gun;
+        var adi = getPersonelAdi(pid);
+        document.getElementById('modalPersonelInfo').textContent = '👤 ' + adi;
+        document.getElementById('modalTarihInfo').textContent = '📅 ' + gun + ' ' + getMonthName(currentMonth) + ' ' + currentYear;
+        document.getElementById('modalDurum').value = cur;
+        document.getElementById('modalAciklama').value = (calismaVerileri[pid] && calismaVerileri[pid]['aciklama_'+gun]) || '';
+        document.getElementById('editModal').classList.add('active');
+    }
+
+    function closeModal() {
+        document.getElementById('editModal').classList.remove('active');
+    }
+
+    function saveModal() {
+        var dur = document.getElementById('modalDurum').value;
+        var acik = document.getElementById('modalAciklama').value;
+        if (updateDurum(modalPersonelId, modalGun, dur, acik)) {
+            renderTable();
+            showToast(getPersonelAdi(modalPersonelId) + ' - ' + modalGun + ' günü ' + getDurumDisplay(dur), 'success');
+            if (autoSaveEnabled) scheduleAutoSave();
+        }
+        closeModal();
+    }
+
+    // ============================================================
+    // KLAVYE
+    // ============================================================
+    document.addEventListener('keydown', function(e) {
+        var t = e.target;
+        if (t.classList && t.classList.contains('durum-cell')) {
+            var pid = parseInt(t.dataset.personel), gun = parseInt(t.dataset.gun), nd = null;
+            var key = e.key.toUpperCase();
+            if (key==='X') nd='X';
+            else if (key==='İ'||key==='I') nd='İ';
+            else if (key==='G') nd='Gİ';
+            else if (key==='Ç'||key==='C') nd='ÇH';
+            else if (key==='V') nd='Vİ';
+            else if (key==='Ö'||key==='O') nd='Öİ';
+            else if (key==='H') nd='H';
+            if (nd) {
+                e.preventDefault();
+                if (updateDurum(pid, gun, nd)) {
+                    renderTable();
+                    showToast(getPersonelAdi(pid) + ' - ' + gun + ' günü ' + getDurumDisplay(nd), 'info');
+                    if (autoSaveEnabled) scheduleAutoSave();
                 }
             }
-            if (e.ctrlKey && e.key==='s') { e.preventDefault(); saveChanges(true); }
-        });
-
-        // --- EXCEL / PDF ÇIKTI SAYFASI ---
-        function openCiktiPage() {
-            // Önce kaydedilmemiş değişiklikleri kaydet
-            if (Object.keys(degisenler).length > 0) {
-                saveChanges(false);
-            }
-            var url = '/Puantaj/Cikti?yil='+currentYear+'&ay='+currentMonth+'&birim='+encodeURIComponent(seciliBirim);
-            window.open(url, '_blank');
         }
+        if (e.ctrlKey && e.key==='s') { e.preventDefault(); saveChanges(true); }
+    });
 
-        // --- OLAY DİNLEYİCİLER ---
-        document.getElementById('loadBtn').addEventListener('click', function() {
-            currentYear = parseInt(document.getElementById('yearSelect').value);
-            currentMonth = parseInt(document.getElementById('monthSelect').value);
-            loadPersoneller();
-        });
-        document.getElementById('birimSelect').addEventListener('change', function(e) {
-            seciliBirim = e.target.value;
-            loadPersoneller();
-        });
-        document.getElementById('saveBtn').addEventListener('click', function(){ saveChanges(true); });
-        document.getElementById('exportBtn').addEventListener('click', openCiktiPage);
-        document.getElementById('batchIzinBtn').addEventListener('click', openBatchModal);
-        document.getElementById('autoSaveBtn').addEventListener('click', toggleAutoSave);
-        document.getElementById('editModal').addEventListener('click', function(e){ if(e.target===this) closeModal(); });
-        document.getElementById('batchModal').addEventListener('click', function(e){ if(e.target===this) closeBatchModal(); });
+    // ============================================================
+    // DIŞA AKTAR
+    // ============================================================
+    function openCiktiPage() {
+        if (Object.keys(degisenler).length > 0) saveChanges(false);
+        var url = '/Puantaj/Cikti?yil='+currentYear+'&ay='+currentMonth+'&birim='+encodeURIComponent(seciliBirim);
+        window.open(url, '_blank');
+    }
 
-        // Sayfa kapanmadan kaydet
-        window.addEventListener('beforeunload', function() {
-            if (Object.keys(degisenler).length > 0) saveChanges(false);
-        });
-
-        // BAŞLANGIÇ
+    // ============================================================
+    // OLAY DİNLEYİCİLER
+    // ============================================================
+    document.getElementById('loadBtn').addEventListener('click', function() {
+        currentYear = parseInt(document.getElementById('yearSelect').value);
+        currentMonth = parseInt(document.getElementById('monthSelect').value);
         loadPersoneller();
-    </script>
-</div>
+    });
+    document.getElementById('birimSelect')?.addEventListener('change', function(e) {
+        seciliBirim = e.target.value;
+        loadPersoneller();
+    });
+    document.getElementById('saveBtn').addEventListener('click', function(){ saveChanges(true); });
+    document.getElementById('exportBtn').addEventListener('click', openCiktiPage);
+    document.getElementById('batchIzinBtn').addEventListener('click', openBatchModal);
+    document.getElementById('autoSaveBtn').addEventListener('click', toggleAutoSave);
+    document.getElementById('legendToggleBtn').addEventListener('click', toggleLegend);
+
+    // Modalları dışarı tıklayınca kapat
+    document.getElementById('editModal').addEventListener('click', function(e){ if(e.target===this) closeModal(); });
+    document.getElementById('batchModal').addEventListener('click', function(e){ if(e.target===this) closeBatchModal(); });
+    document.getElementById('kilitPopupOverlay').addEventListener('click', function(e){ if(e.target===this) kilitPopupKapat(); });
+
+    // Sayfa kapanmadan kaydet
+    window.addEventListener('beforeunload', function() {
+        if (Object.keys(degisenler).length > 0) saveChanges(false);
+    });
+
+    // ============================================================
+    // BAŞLANGIÇ
+    // ============================================================
+    loadPersoneller();
+</script>

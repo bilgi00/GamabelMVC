@@ -1,0 +1,718 @@
+@{
+    ViewData["Title"] = "Personel Rapor";
+    Layout = "_Layout";
+}
+
+<style>
+    .rapor-header {
+        background: linear-gradient(135deg, #1e3c72, #2a5298);
+        color: white;
+        padding: 20px 24px;
+        border-radius: 12px 12px 0 0;
+    }
+    .rapor-header h3 {
+        margin: 0;
+        font-weight: 600;
+    }
+    .rapor-header p {
+        opacity: 0.85;
+        margin: 4px 0 0 0;
+        font-size: 13px;
+    }
+    .rapor-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+        overflow: hidden;
+        margin-bottom: 24px;
+    }
+    .rapor-card-body {
+        padding: 20px 24px;
+    }
+    .rapor-filter-group {
+        background: #f8fafc;
+        border-radius: 10px;
+        padding: 16px 20px;
+        border: 1px solid #e2e8f0;
+    }
+    .rapor-filter-group label {
+        font-weight: 600;
+        color: #1e3c72;
+        font-size: 13px;
+        margin-bottom: 4px;
+    }
+    .rapor-filter-group .form-select,
+    .rapor-filter-group .form-control {
+        border-radius: 8px;
+        border: 1px solid #d1d9e6;
+        font-size: 13px;
+    }
+    .rapor-filter-group .form-select:focus,
+    .rapor-filter-group .form-control:focus {
+        border-color: #2a5298;
+        box-shadow: 0 0 0 3px rgba(42, 82, 152, 0.15);
+    }
+    .rapor-check-group {
+        background: #f8fafc;
+        border-radius: 10px;
+        padding: 12px 20px;
+        border: 1px solid #e2e8f0;
+    }
+    .rapor-check-group .form-check {
+        padding-left: 28px;
+    }
+    .rapor-check-group .form-check-input {
+        width: 18px;
+        height: 18px;
+        margin-left: -28px;
+        margin-top: 3px;
+        cursor: pointer;
+        border-radius: 4px;
+        border: 2px solid #d1d9e6;
+    }
+    .rapor-check-group .form-check-input:checked {
+        background-color: #2a5298;
+        border-color: #2a5298;
+    }
+    .rapor-check-group .form-check-label {
+        font-size: 13px;
+        font-weight: 500;
+        color: #1e293b;
+        cursor: pointer;
+    }
+    .rapor-check-group .form-check-label i {
+        margin-right: 6px;
+    }
+    .btn-rapor-yukle {
+        background: linear-gradient(135deg, #1e3c72, #2a5298);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 10px 24px;
+        font-weight: 600;
+        font-size: 14px;
+        transition: all 0.2s;
+        width: 100%;
+    }
+    .btn-rapor-yukle:hover {
+        opacity: 0.9;
+        transform: translateY(-1px);
+        color: white;
+        box-shadow: 0 4px 12px rgba(42, 82, 152, 0.3);
+    }
+    .btn-rapor-yukle i {
+        margin-right: 8px;
+    }
+    .rapor-card-header {
+        background: linear-gradient(135deg, #1e3c72, #2a5298);
+        color: white;
+        padding: 14px 20px;
+        border-radius: 10px 10px 0 0;
+        font-weight: 600;
+        font-size: 15px;
+    }
+    .rapor-card-header i {
+        margin-right: 8px;
+    }
+    .rapor-table {
+        font-size: 13px;
+        border-collapse: collapse;
+    }
+    .rapor-table thead th {
+        background: #1e3c72;
+        color: white;
+        padding: 10px 14px;
+        font-weight: 600;
+        border: none;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .rapor-table tbody td {
+        padding: 8px 14px;
+        border-bottom: 1px solid #e9edf4;
+        vertical-align: middle;
+    }
+    .rapor-table tbody tr:hover {
+        background: #f1f5f9;
+    }
+    .rapor-table tfoot td {
+        background: #f1f5f9;
+        padding: 10px 14px;
+        font-weight: 700;
+        border-top: 2px solid #d1d9e6;
+    }
+    .badge-izin {
+        background: #fef3c7;
+        color: #92400e;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 11px;
+    }
+    .badge-mesai {
+        background: #dbeafe;
+        color: #1e40af;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 11px;
+    }
+    .badge-statu {
+        background: #d1fae5;
+        color: #065f46;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 11px;
+    }
+    .loading-overlay {
+        display: none;
+        text-align: center;
+        padding: 40px 0;
+    }
+    .loading-overlay .spinner-border {
+        width: 48px;
+        height: 48px;
+        color: #2a5298;
+    }
+    .loading-overlay p {
+        margin-top: 12px;
+        color: #6c757d;
+        font-weight: 500;
+    }
+    .bos-uyari {
+        background: #f1f5f9;
+        border: 1px dashed #94a3b8;
+        border-radius: 10px;
+        padding: 30px 20px;
+        text-align: center;
+        color: #64748b;
+        font-weight: 500;
+        display: none;
+    }
+    .bos-uyari i {
+        font-size: 32px;
+        display: block;
+        margin-bottom: 8px;
+        color: #94a3b8;
+    }
+    .rapor-alt-bilgi {
+        font-size: 12px;
+        color: #94a3b8;
+        text-align: right;
+        padding: 8px 16px;
+        border-top: 1px solid #e9edf4;
+        background: #fafcfd;
+        border-radius: 0 0 10px 10px;
+    }
+    .rapor-icerik {
+        padding: 16px 20px;
+    }
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    .table-hover tbody tr:hover {
+        background-color: #f1f5f9 !important;
+    }
+    .table-striped tbody tr:nth-of-type(odd) {
+        background-color: #fafcfd;
+    }
+    /* Responsive */
+    @@media (max-width: 768px) {
+        .rapor-filter-group {
+            padding: 12px 16px;
+        }
+        .rapor-check-group {
+            padding: 10px 16px;
+        }
+        .rapor-check-group .form-check {
+            padding-left: 24px;
+        }
+        .rapor-check-group .form-check-input {
+            width: 16px;
+            height: 16px;
+            margin-left: -24px;
+        }
+        .rapor-table {
+            font-size: 12px;
+        }
+        .rapor-table thead th,
+        .rapor-table tbody td,
+        .rapor-table tfoot td {
+            padding: 6px 10px;
+        }
+    }
+    @@media (max-width: 576px) {
+        .rapor-card-body {
+            padding: 12px 16px;
+        }
+        .rapor-icerik {
+            padding: 10px 12px;
+        }
+        .btn-rapor-yukle {
+            padding: 8px 16px;
+            font-size: 13px;
+        }
+    }
+</style>
+
+<div class="container-fluid px-0">
+
+    <!-- Başlık -->
+    <div class="rapor-card">
+        <div class="rapor-header">
+            <h3><i class="fas fa-chart-bar me-2"></i>Personel Durum Raporu</h3>
+            <p>Personel statü, izin ve mesai bilgilerini tek bir ekranda görüntüleyin</p>
+        </div>
+        <div class="rapor-card-body">
+
+            @if (ViewBag.Hata != null)
+            {
+                <div class="alert alert-danger border-0 rounded-10">
+                    <i class="fas fa-exclamation-triangle me-2"></i> @ViewBag.Hata
+                </div>
+            }
+
+            <!-- Filtreler -->
+            <div class="rapor-filter-group row g-3 mb-3">
+                <div class="col-md-4 col-lg-3">
+                    <label for="birimSelect"><i class="fas fa-building me-1"></i> Birim Seçin</label>
+                    <select id="birimSelect" class="form-select" @(ViewBag.Rol != "admin" ? "disabled" : "")>
+                        @if (ViewBag.Rol == "admin")
+                        {
+                            <option value="">-- Birim seçiniz --</option>
+                            <option value="__TUMU__">Tüm Personel</option>
+                        }
+                        @if (ViewBag.Birimler != null)
+                        {
+                            @foreach (string birim in ViewBag.Birimler)
+                            {
+                                if (ViewBag.Rol != "admin")
+                                {
+                                    <option value="@birim" selected>@birim</option>
+                                }
+                                else
+                                {
+                                    <option value="@birim">@birim</option>
+                                }
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3 col-lg-2">
+                    <label for="yilSelect"><i class="fas fa-calendar me-1"></i> Yıl</label>
+                    <select id="yilSelect" class="form-select"></select>
+                </div>
+                <div class="col-md-3 col-lg-2">
+                    <label for="aySelect"><i class="fas fa-calendar-alt me-1"></i> Ay</label>
+                    <select id="aySelect" class="form-select">
+                        <option value="1">Ocak</option>
+                        <option value="2">Şubat</option>
+                        <option value="3">Mart</option>
+                        <option value="4">Nisan</option>
+                        <option value="5">Mayıs</option>
+                        <option value="6">Haziran</option>
+                        <option value="7">Temmuz</option>
+                        <option value="8">Ağustos</option>
+                        <option value="9">Eylül</option>
+                        <option value="10">Ekim</option>
+                        <option value="11">Kasım</option>
+                        <option value="12">Aralık</option>
+                    </select>
+                </div>
+                <div class="col-md-2 col-lg-2 d-flex align-items-end">
+                    <button class="btn-rapor-yukle" id="btnRaporYukle">
+                        <i class="fas fa-sync-alt"></i> Rapor Yükle
+                    </button>
+                </div>
+            </div>
+
+            <!-- Rapor Seçimi -->
+            <div class="rapor-check-group mb-3">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="chkStatu" checked>
+                            <label class="form-check-label" for="chkStatu">
+                                <i class="fas fa-user-tie text-primary"></i> Personel Statü Raporu
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="chkIzin" checked>
+                            <label class="form-check-label" for="chkIzin">
+                                <i class="fas fa-calendar-check text-warning"></i> İzin Kullanan Personeller
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="chkMesai" checked>
+                            <label class="form-check-label" for="chkMesai">
+                                <i class="fas fa-clock text-info"></i> Mesai Yapan Personeller
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading -->
+            <div class="loading-overlay" id="yukleniyor">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Yükleniyor...</span>
+                </div>
+                <p><i class="fas fa-spinner fa-spin me-2"></i> Raporlar yükleniyor, lütfen bekleyin...</p>
+            </div>
+
+            <!-- ========================================================== -->
+            <!-- 1. STATÜ RAPORU -->
+            <!-- ========================================================== -->
+            <div id="raporContainer" style="display:none;">
+                <div class="card border-0 shadow-sm mt-3">
+                    <div class="rapor-card-header">
+                        <i class="fas fa-chart-pie"></i> <span id="birimBaslik">Personel Statü Raporu</span>
+                    </div>
+                    <div class="rapor-icerik">
+                        <div class="table-responsive">
+                            <table class="table rapor-table table-striped table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th style="width:60px;">#</th>
+                                        <th>Personel Statüsü</th>
+                                        <th style="width:150px; text-align:right;">Toplam</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="raporBody">
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <td colspan="2" class="text-end">Genel Toplam</td>
+                                        <td id="genelToplam" style="text-align:right; color:#1e3c72; font-size:16px;"></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                        <div class="rapor-alt-bilgi">
+                            <i class="fas fa-info-circle me-1"></i> Personel statü dağılımı
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="bosUyari" class="bos-uyari mt-3">
+                <i class="fas fa-users"></i>
+                Seçili birimde kayıtlı personel bulunmuyor.
+            </div>
+
+            <!-- ========================================================== -->
+            <!-- 2. İZİN RAPORU -->
+            <!-- ========================================================== -->
+            <div id="izinContainer" class="mt-4" style="display:none;">
+                <div class="card border-0 shadow-sm">
+                    <div class="rapor-card-header" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+                        <i class="fas fa-calendar-check"></i> İzin Kullanan Personeller
+                    </div>
+                    <div class="rapor-icerik">
+                        <div class="table-responsive">
+                            <table class="table rapor-table table-striped table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th style="width:60px;">#</th>
+                                        <th>Ad Soyad</th>
+                                        <th>Birim</th>
+                                        <th>İzin Türü</th>
+                                        <th style="text-align:right;">Gün Sayısı</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="izinBody"></tbody>
+                                <tfoot>
+                                    <tr>
+                                        <td colspan="4" class="text-end">Toplam İzin Günü</td>
+                                        <td id="izinToplam" style="text-align:right; color:#92400e; font-size:16px;"></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                        <div class="rapor-alt-bilgi">
+                            <i class="fas fa-info-circle me-1"></i> Seçilen ay ve yıla ait izin bilgileri
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="izinBosUyari" class="bos-uyari mt-3">
+                <i class="fas fa-calendar-times"></i>
+                Bu ay izin kullanan personel bulunmuyor.
+            </div>
+
+            <!-- ========================================================== -->
+            <!-- 3. MESAİ RAPORU -->
+            <!-- ========================================================== -->
+            <div id="mesaiContainer" class="mt-4" style="display:none;">
+                <div class="card border-0 shadow-sm">
+                    <div class="rapor-card-header" style="background: linear-gradient(135deg, #0891b2, #0e7490);">
+                        <i class="fas fa-clock"></i> Mesai Yapan Personeller
+                    </div>
+                    <div class="rapor-icerik">
+                        <div class="table-responsive">
+                            <table class="table rapor-table table-striped table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th style="width:50px;">#</th>
+                                        <th>Ad Soyad</th>
+                                        <th>Birim</th>
+                                        <th style="text-align:center;">Mesai Gün</th>
+                                        <th style="text-align:right;">Fiili Saat</th>
+                                        <th style="text-align:right;">Zam 0.1</th>
+                                        <th style="text-align:right;">Zam 0.5</th>
+                                        <th style="text-align:right; min-width:80px;">Toplam Saat</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="mesaiBody"></tbody>
+                                <tfoot>
+                                    <tr>
+                                        <td colspan="3" class="text-end">TOPLAM</td>
+                                        <td id="mesaiGunToplam" style="text-align:center;"></td>
+                                        <td id="mesaiFiiliToplam" style="text-align:right;"></td>
+                                        <td id="mesaiZam01Toplam" style="text-align:right;"></td>
+                                        <td id="mesaiZam05Toplam" style="text-align:right;"></td>
+                                        <td id="mesaiSaatToplam" style="text-align:right; color:#0e7490; font-size:16px;"></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                        <div class="rapor-alt-bilgi">
+                            <i class="fas fa-info-circle me-1"></i> Seçilen ay ve yıla ait mesai bilgileri
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="mesaiBosUyari" class="bos-uyari mt-3">
+                <i class="fas fa-clock"></i>
+                Bu ay mesai yapan personel bulunmuyor.
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script src="https://kit.fontawesome.com/your-kit-code.js" crossorigin="anonymous"></script>
+<script>
+    var ayAdlari = ['', 'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+    var izinTipiAdlari = {
+        'İ': 'Yıllık İzin',
+        'Gİ': 'Görev İzni',
+        'ÇH': 'Çocuk Hastalık',
+        'Vİ': 'Vefat İzni',
+        'Öİ': 'Özel İzin',
+        'H': 'Hastalık'
+    };
+
+    // Yıl dropdown ve URL'den okuma
+    (function() {
+        var ySel = document.getElementById('yilSelect');
+        var now = new Date();
+        var currentYear = now.getFullYear();
+
+        var urlParams = new URLSearchParams(window.location.search);
+        var urlYear = urlParams.get('year');
+
+        for (var y = currentYear - 2; y <= currentYear + 1; y++) {
+            var o = document.createElement('option');
+            o.value = y;
+            o.textContent = y;
+            if (urlYear && parseInt(urlYear) === y) {
+                o.selected = true;
+            } else if (!urlYear && y === currentYear) {
+                o.selected = true;
+            }
+            ySel.appendChild(o);
+        }
+
+        var aySelect = document.getElementById('aySelect');
+        var urlMonth = urlParams.get('month');
+        if (urlMonth && urlMonth >= 1 && urlMonth <= 12) {
+            aySelect.value = parseInt(urlMonth);
+        } else {
+            aySelect.value = now.getMonth() + 1;
+        }
+    })();
+
+    // HTML güvenlik
+    function escapeHtml(text) {
+        var div = document.createElement('div');
+        div.appendChild(document.createTextNode(text));
+        return div.innerHTML;
+    }
+
+    // Yıl değiştiğinde URL'yi güncelle
+    document.getElementById('yilSelect').addEventListener('change', function() {
+        var url = new URL(window.location.href);
+        url.searchParams.set('year', this.value);
+        window.location.href = url.toString();
+    });
+
+    // Ay değiştiğinde URL'yi güncelle
+    document.getElementById('aySelect').addEventListener('change', function() {
+        var url = new URL(window.location.href);
+        url.searchParams.set('month', this.value);
+        window.location.href = url.toString();
+    });
+
+    function tumRaporlariYukle() {
+        var birim = document.getElementById('birimSelect').value;
+        if (!birim) return;
+
+        var yil = parseInt(document.getElementById('yilSelect').value);
+        var ay = parseInt(document.getElementById('aySelect').value);
+
+        var chkStatu = document.getElementById('chkStatu').checked;
+        var chkIzin = document.getElementById('chkIzin').checked;
+        var chkMesai = document.getElementById('chkMesai').checked;
+
+        if (!chkStatu && !chkIzin && !chkMesai) {
+            alert('Lütfen en az bir rapor seçin.');
+            return;
+        }
+
+        // Tümünü gizle
+        document.getElementById('raporContainer').style.display = 'none';
+        document.getElementById('bosUyari').style.display = 'none';
+        document.getElementById('izinContainer').style.display = 'none';
+        document.getElementById('izinBosUyari').style.display = 'none';
+        document.getElementById('mesaiContainer').style.display = 'none';
+        document.getElementById('mesaiBosUyari').style.display = 'none';
+        document.getElementById('yukleniyor').style.display = 'block';
+
+        var bekleyen = 0;
+        if (chkStatu) bekleyen++;
+        if (chkIzin) bekleyen++;
+        if (chkMesai) bekleyen++;
+
+        function tamamlandi() {
+            bekleyen--;
+            if (bekleyen <= 0) document.getElementById('yukleniyor').style.display = 'none';
+        }
+
+        // 1) Statü raporu
+        if (chkStatu) {
+            fetch('/Rapor/GetStatuRapor?birim=' + encodeURIComponent(birim))
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    var tbody = document.getElementById('raporBody');
+                    tbody.innerHTML = '';
+                    if (data.hata) {
+                        document.getElementById('bosUyari').textContent = 'Hata: ' + data.hata;
+                        document.getElementById('bosUyari').style.display = 'block';
+                        tamamlandi();
+                        return;
+                    }
+                    if (data.length === 0) {
+                        document.getElementById('bosUyari').style.display = 'block';
+                        tamamlandi();
+                        return;
+                    }
+                    var genel = 0;
+                    for (var i = 0; i < data.length; i++) {
+                        genel += data[i].toplam;
+                        var tr = document.createElement('tr');
+                        tr.innerHTML = '<td>' + (i + 1) + '</td><td><span class="badge-statu">' + escapeHtml(data[i].statu) + '</span></td><td style="text-align:right; font-weight:600;">' + data[i].toplam + '</td>';
+                        tbody.appendChild(tr);
+                    }
+                    var birimAdi = (birim === '__TUMU__' ? 'Tüm Personel' : birim);
+                    document.getElementById('birimBaslik').textContent = birimAdi + ' - Personel Statü Raporu';
+                    document.getElementById('genelToplam').textContent = genel;
+                    document.getElementById('raporContainer').style.display = 'block';
+                    tamamlandi();
+                }).catch(function() { tamamlandi(); });
+        }
+
+        // 2) İzin raporu
+        if (chkIzin) {
+            fetch('/Rapor/GetIzinRapor?birim=' + encodeURIComponent(birim) + '&yil=' + yil + '&ay=' + ay)
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    var tbody = document.getElementById('izinBody');
+                    tbody.innerHTML = '';
+                    if (data.hata || data.length === 0) {
+                        document.getElementById('izinBosUyari').style.display = 'block';
+                        tamamlandi();
+                        return;
+                    }
+                    var toplam = 0;
+                    for (var i = 0; i < data.length; i++) {
+                        toplam += data[i].gunSayisi;
+                        var tipAdi = izinTipiAdlari[data[i].izinTipi] || data[i].izinTipi;
+                        var tr = document.createElement('tr');
+                        tr.innerHTML = '<td>' + (i + 1) + '</td><td>' + escapeHtml(data[i].ad + ' ' + data[i].soyad) +
+                            '</td><td>' + escapeHtml(data[i].birim) +
+                            '</td><td><span class="badge-izin">' + escapeHtml(tipAdi) + '</span></td><td style="text-align:right;">' + data[i].gunSayisi + '</td>';
+                        tbody.appendChild(tr);
+                    }
+                    document.getElementById('izinToplam').textContent = toplam;
+                    document.getElementById('izinContainer').style.display = 'block';
+                    tamamlandi();
+                }).catch(function() { tamamlandi(); });
+        }
+
+        // 3) Mesai raporu
+        if (chkMesai) {
+            fetch('/Rapor/GetMesaiRapor?birim=' + encodeURIComponent(birim) + '&yil=' + yil + '&ay=' + ay)
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    var tbody = document.getElementById('mesaiBody');
+                    tbody.innerHTML = '';
+                    if (data.hata || data.length === 0) {
+                        document.getElementById('mesaiBosUyari').style.display = 'block';
+                        tamamlandi();
+                        return;
+                    }
+                    var tGun = 0,
+                        tFiili = 0,
+                        tZam01 = 0,
+                        tZam05 = 0,
+                        tSaat = 0;
+                    for (var i = 0; i < data.length; i++) {
+                        var d = data[i];
+                        tGun += d.mesaiGun;
+                        tFiili += parseFloat(d.toplamFiili);
+                        tZam01 += parseFloat(d.toplamZam01);
+                        tZam05 += parseFloat(d.toplamZam05);
+                        tSaat += parseFloat(d.toplamSaat);
+                        var tr = document.createElement('tr');
+                        tr.innerHTML = '<td>' + (i + 1) + '</td><td>' + escapeHtml(d.adSoyad) +
+                            '</td><td>' + escapeHtml(d.birim) +
+                            '</td><td style="text-align:center;">' + d.mesaiGun +
+                            '</td><td style="text-align:right;">' + parseFloat(d.toplamFiili).toFixed(1) +
+                            '</td><td style="text-align:right;">' + parseFloat(d.toplamZam01).toFixed(1) +
+                            '</td><td style="text-align:right;">' + parseFloat(d.toplamZam05).toFixed(1) +
+                            '</td><td style="text-align:right; font-weight:600; color:#0e7490;">' + parseFloat(d.toplamSaat).toFixed(1) + '</td>';
+                        tbody.appendChild(tr);
+                    }
+                    document.getElementById('mesaiGunToplam').textContent = tGun;
+                    document.getElementById('mesaiFiiliToplam').textContent = tFiili.toFixed(1);
+                    document.getElementById('mesaiZam01Toplam').textContent = tZam01.toFixed(1);
+                    document.getElementById('mesaiZam05Toplam').textContent = tZam05.toFixed(1);
+                    document.getElementById('mesaiSaatToplam').textContent = tSaat.toFixed(1);
+                    document.getElementById('mesaiContainer').style.display = 'block';
+                    tamamlandi();
+                }).catch(function() { tamamlandi(); });
+        }
+    }
+
+    document.getElementById('btnRaporYukle').addEventListener('click', tumRaporlariYukle);
+
+    // Birim amiri için otomatik yükle
+    (function() {
+        var sel = document.getElementById('birimSelect');
+        if (sel.value && sel.disabled) {
+            tumRaporlariYukle();
+        }
+    })();
+</script>
+}

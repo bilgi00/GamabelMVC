@@ -2,18 +2,13 @@
     ViewData["Title"] = "Personel Listesi";
     Layout = "_Layout";
 }
-
+ 
+ 
 <div class="container-fluid">
     <!-- Page Header -->
-    <div class="dashboard-header mb-4">
-        <h1 class="mb-1">👥 Personel Listesi</h1>
-        <p class="text-muted">Birim bazında personelleri görüntüleyin ve yönetin</p>
-    </div>
-
-    <!-- User Info & Logout -->
-    <div class="mb-4 d-flex justify-content-end gap-2">
-        <span class="badge bg-info text-dark" style="height: fit-content;">Hoş geldin, <strong>@ViewBag.KullaniciAdi</strong></span>
-        <a asp-controller="Account" asp-action="Logout" class="btn btn-outline-danger btn-sm">🚪 Çıkış Yap</a>
+    <div class="dashboard-header">
+        <h3 class="mb-1">👥 Personel Listesi</h3>
+        <p>Birim bazında personelleri görüntüleyin ve yönetin</p>
     </div>
 
     <!-- Error Alert -->
@@ -276,5 +271,7 @@
             sonucDiv.style.display = 'block';
         });
     }
+    
+
 </script>
 }

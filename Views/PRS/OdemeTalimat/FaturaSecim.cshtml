@@ -2,10 +2,13 @@
 
 @{
     ViewData["Title"] = "Fatura Seçimi";
-    var firmaGruplari = ViewBag.FirmaGruplari as List<IGrouping<string, gamabelmvc.Models.PRS.OtAcikFatura>> ?? new();
+    var firmaGruplari = ViewBag.FirmaGruplari as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
     var bankalar = ViewBag.Bankalar as List<gamabelmvc.Models.PRS.OtBanka> ?? new();
     int batchId = ViewBag.BatchId ?? 0;
     string baslik = ViewBag.Baslik ?? "Ödenecek Faturaları Seçin";
+    var firmaGruplariList = firmaGruplari.ToList();
+    var toplamFaturaSayisi = firmaGruplariList.Sum(g => ((IEnumerable<dynamic>)g.Faturalar).Count());
+    var toplamBakiye = firmaGruplariList.Sum(g => ((IEnumerable<dynamic>)g.Faturalar).Sum(f => (decimal)f.Bakiye));
 }
 
 <style>
@@ -19,6 +22,28 @@
     .ot-btn-secondary:hover { opacity: 0.9; color: white; }
     .firma-grup { border: 1px solid #e2e8f0; border-radius: 10px; margin-bottom: 16px; padding: 14px 16px; background: #fafafa; }
     .firma-grup legend { font-weight: 700; color: #1e3c72; padding: 0 8px; font-size: 14px; }
+    .firma-grup legend .firma-bilgi {
+        font-weight: 400; 
+        color: #475569; 
+        font-size: 12px;
+        margin-left: 8px;
+    }
+    .firma-grup legend .firma-bilgi .odeme-ismi {
+        background: #dbeafe;
+        color: #1e40af;
+        padding: 2px 10px;
+        border-radius: 12px;
+        margin-right: 6px;
+    }
+    .firma-grup legend .firma-bilgi .iban-badge {
+        background: #f1f5f9;
+        color: #475569;
+        padding: 2px 10px;
+        border-radius: 12px;
+        font-family: monospace;
+        font-size: 11px;
+        letter-spacing: 0.5px;
+    }
     .ot-table { width: 100%; border-collapse: collapse; font-size: 13px; }
     .ot-table th { background: #f1f5f9; padding: 6px 10px; text-align: left; font-weight: 600; border-bottom: 2px solid #dee2e6; }
     .ot-table td { padding: 6px 10px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
@@ -83,7 +108,6 @@
         else
         {
             <form method="post" asp-controller="OdemeTalimat" asp-action="TalimatOlustur" id="talimatForm">
-                <!-- batchId hidden input -->
                 <input type="hidden" name="batchId" value="@batchId" />
 
                 <!-- Banka Seçimi -->
@@ -114,8 +138,8 @@
                 <!-- Toplam fatura bilgisi -->
                 <div class="batch-bilgi">
                     <strong>📊 Toplam:</strong> 
-                    @firmaGruplari.Sum(g => g.Count()) fatura bulundu,
-                    toplam bakiye: <strong>@firmaGruplari.Sum(g => g.Sum(f => f.Bakiye)).ToString("N2") TL</strong>
+                    @toplamFaturaSayisi fatura bulundu,
+                    toplam bakiye: <strong>@toplamBakiye.ToString("N2") TL</strong>
                     @if (batchId > 0)
                     {
                         <span style="margin-left: 12px;">| Batch ID: <strong>@batchId</strong></span>
@@ -129,16 +153,26 @@
                     <span style="color:#6c757d; font-size:13px;" id="secilenAdet">0 fatura seçildi</span>
                 </div>
 
-                <!-- Firma bazında fatura grupları -->
+                <!-- ✅ Firma bazında fatura grupları - CariKart = CariIsmi ile eşleştirilmiş -->
                 @foreach (var grup in firmaGruplari)
                 {
-                    var grupToplam = grup.Sum(f => f.Bakiye);
                     <fieldset class="firma-grup">
                         <legend>
-                            🏢 @grup.Key
+                            🏢 @grup.FirmaAdi
+                            <span class="firma-bilgi">
+                                <span class="odeme-ismi">💳 @(string.IsNullOrWhiteSpace(grup.IBAN) ? "Eşleşme bulunmadı" : grup.OdemeIsmi)</span>
+                                @if (!string.IsNullOrWhiteSpace(grup.IBAN))
+                                {
+                                    <span class="iban-badge">🏦 @grup.IBAN</span>
+                                }
+                                else
+                                {
+                                    <span class="iban-badge" style="background:#fef2f2; color:#b91c1c;">⚠️ Firma eşleşmesi bulunamadı</span>
+                                }
+                            </span>
                             <small style="font-weight:400; color:#475569; font-size:12px;">
-                                — açık bakiye: <strong>@grupToplam.ToString("N2") TL</strong>
-                                (@grup.Count() fatura)
+                                — açık bakiye: <strong>@grup.ToplamBakiye.ToString("N2") TL</strong>
+                                (@grup.Faturalar.Count fatura)
                             </small>
                         </legend>
                         <table class="ot-table">
@@ -154,11 +188,12 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach (var f in grup)
+                                @foreach (var f in grup.Faturalar)
                                 {
                                     <tr>
                                         <td>
                                             <input type="checkbox" name="secilenFaturaIdleri" value="@f.Id"
+                 
                                                    class="fatura-cb" checked onchange="updateSecilenAdet()"
                                                    data-tutar="@f.Bakiye.ToString(CultureInfo.InvariantCulture)" />
                                         </td>
@@ -194,12 +229,10 @@
 
 @section Scripts {
 <script>
-    // Sayfa yüklendiğinde hesaplama yap
     document.addEventListener('DOMContentLoaded', function() {
         updateSecilenAdet();
     });
 
-    // Tümünü seç / seçimi kaldır
     function toggleAll(secili) {
         document.querySelectorAll('.fatura-cb').forEach(function(cb) {
             cb.checked = secili;
@@ -207,16 +240,13 @@
         updateSecilenAdet();
     }
 
-    // Seçilen faturaların toplamını hesapla ve güncelle
     function updateSecilenAdet() {
         try {
             var secilen = document.querySelectorAll('.fatura-cb:checked');
             var toplam = 0;
             var adet = secilen.length;
             
-            // Her seçili checkbox için
             secilen.forEach(function(cb) {
-                // 1. Yöntem: data-tutar attribute'ünden al
                 var tutarAttr = cb.getAttribute('data-tutar');
                 if (tutarAttr) {
                     var deger = parseFloat(tutarAttr.replace(',', '.').trim());
@@ -226,15 +256,14 @@
                     }
                 }
                 
-                // 2. Yöntem: Satırdaki tutar sütunundan al
                 var row = cb.closest('tr');
                 if (row) {
                     var tutarTd = row.querySelector('.fatura-tutar');
                     if (tutarTd) {
                         var tutarStr = tutarTd.textContent
-                            .replace(/\./g, '')        // Binlik ayracı kaldır (1.234 → 1234)
-                            .replace(',', '.')          // Ondalık ayracı değiştir (1234,50 → 1234.50)
-                            .replace(' TL', '')         // TL yazısını kaldır
+                            .replace(/\./g, '')
+                            .replace(',', '.')
+                            .replace(' TL', '')
                             .trim();
                         var deger = parseFloat(tutarStr);
                         if (!isNaN(deger) && deger > 0) {
@@ -244,7 +273,6 @@
                 }
             });
             
-            // Sonuçları ekrana yaz
             var secilenAdetSpan = document.getElementById('secilenAdet');
             var toplamTutarSpan = document.getElementById('toplamTutar');
             
@@ -262,7 +290,6 @@
             
         } catch (e) {
             console.error('Hata:', e);
-            // Hata durumunda kullanıcıya bilgi ver
             var toplamTutarSpan = document.getElementById('toplamTutar');
             if (toplamTutarSpan) {
                 toplamTutarSpan.textContent = 'Seçilen toplam: Hesaplanamadı';
@@ -270,7 +297,6 @@
         }
     }
 
-    // Checkbox değiştiğinde tetikle (onchange ile birlikte çalışır)
     document.addEventListener('change', function(e) {
         if (e.target.classList && e.target.classList.contains('fatura-cb')) {
             updateSecilenAdet();

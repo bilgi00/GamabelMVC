@@ -213,6 +213,17 @@
         return integerPart + ',' + decimalPart;
     }
 
+    function decimalHoursToClock(value) {
+        var decimal = parseFloat(value);
+        if (isNaN(decimal) || decimal <= 0) {
+            return '0:00';
+        }
+        var totalMinutes = Math.round(decimal * 60);
+        var hours = Math.floor(totalMinutes / 60);
+        var minutes = totalMinutes % 60;
+        return hours + ':' + String(minutes).padStart(2, '0');
+    }
+
     function showToast(msg, type) {
         var t = document.createElement('div');
         t.className = 'toast-msg';
@@ -255,7 +266,7 @@
                 '<td class="text-end">' + o.sira + '</td>' +
                 '<td class="text-start">' + escapeHtml(o.adSoyad) + '</td>' +
                 '<td class="text-start">' + escapeHtml(o.birimAdi) + '</td>' +
-                '<td class="text-end">' + o.toplamSaat.toFixed(1) + '</td>' +
+                '<td class="text-end">' + decimalHoursToClock(o.toplamSaat) + '</td>' +
                 '<td class="text-end">' + formatTurkishCurrency(o.saatlikBrut) + '</td>' +
                 '<td class="text-end" style="font-weight:600;">' + formatTurkishCurrency(o.odemeTutari) + '</td>';
             tbody.appendChild(tr);
@@ -264,7 +275,7 @@
         var toplamMesaiGosterim = getDisplayedToplamMesai();
 
         document.getElementById('tfPersonel').textContent = ozet.toplamPersonel || 0;
-        document.getElementById('tfMesai').textContent = toplamMesaiGosterim.toFixed(1);
+        document.getElementById('tfMesai').textContent = decimalHoursToClock(toplamMesaiGosterim);
         document.getElementById('tfBrut').textContent = formatTurkishCurrency(ozet.saatlikBrut || 0);
         document.getElementById('tfOdeme').textContent = formatTurkishCurrency(ozet.genelToplamOdeme || 0);
 
@@ -415,11 +426,11 @@
         
         for (var i = 0; i < odemeler.length; i++) {
             var o = odemeler[i];
-            html += '<tr><td>' + o.sira + '</td><td>' + escapeHtml(o.adSoyad) + '</td><td>' + escapeHtml(o.birimAdi) + '</td><td>' + o.toplamSaat.toFixed(1) + '</td><td>' + formatTurkishCurrency(o.saatlikBrut) + '</td><td>' + formatTurkishCurrency(o.odemeTutari) + '</td></tr>';
+            html += '<tr><td>' + o.sira + '</td><td>' + escapeHtml(o.adSoyad) + '</td><td>' + escapeHtml(o.birimAdi) + '</td><td>' + decimalHoursToClock(o.toplamSaat) + '</td><td>' + formatTurkishCurrency(o.saatlikBrut) + '</td><td>' + formatTurkishCurrency(o.odemeTutari) + '</td></tr>';
         }
         
         var toplamMesaiGosterim = getDisplayedToplamMesai();
-        html += '<tr style="font-weight:bold;background:#e9ecef;"><td colspan="2" style="text-align:right;">GENEL TOPLAM</td><td>' + (ozet.toplamPersonel || 0) + ' Kişi</td><td>' + toplamMesaiGosterim.toFixed(1) + '</td><td>' + formatTurkishCurrency(ozet.saatlikBrut || 0) + '</td><td>' + formatTurkishCurrency(ozet.genelToplamOdeme || 0) + '</td></tr>';
+        html += '<tr style="font-weight:bold;background:#e9ecef;"><td colspan="2" style="text-align:right;">GENEL TOPLAM</td><td>' + (ozet.toplamPersonel || 0) + ' Kişi</td><td>' + decimalHoursToClock(toplamMesaiGosterim) + '</td><td>' + formatTurkishCurrency(ozet.saatlikBrut || 0) + '</td><td>' + formatTurkishCurrency(ozet.genelToplamOdeme || 0) + '</td></tr>';
         html += '</tbody></table></body></html>';
 
         var blob = new Blob([html], { type: 'application/vnd.ms-excel' });
@@ -457,7 +468,7 @@
             pdfDiv.innerHTML += '<tr><td style="border:1px solid #ddd;padding:4px;text-align:center;">' + o.sira + '</td>' +
                 '<td style="border:1px solid #ddd;padding:4px;">' + escapeHtml(o.adSoyad) + '</td>' +
                 '<td style="border:1px solid #ddd;padding:4px;">' + escapeHtml(o.birimAdi) + '</td>' +
-                '<td style="border:1px solid #ddd;padding:4px;text-align:right;">' + o.toplamSaat.toFixed(1) + '</td>' +
+                '<td style="border:1px solid #ddd;padding:4px;text-align:right;">' + decimalHoursToClock(o.toplamSaat) + '</td>' +
                 '<td style="border:1px solid #ddd;padding:4px;text-align:right;">' + formatTurkishCurrency(o.saatlikBrut) + '</td>' +
                 '<td style="border:1px solid #ddd;padding:4px;text-align:right;font-weight:bold;">' + formatTurkishCurrency(o.odemeTutari) + '</td></tr>';
         }
@@ -465,7 +476,7 @@
         var toplamMesaiGosterim = getDisplayedToplamMesai();
         pdfDiv.innerHTML += '<tr style="background:#e9ecef;font-weight:bold;"><td colspan="2" style="border:1px solid #333;padding:5px;text-align:right;">GENEL TOPLAM</td>' +
             '<td style="border:1px solid #333;padding:5px;text-align:center;">' + (ozet.toplamPersonel || 0) + ' Kişi</td>' +
-            '<td style="border:1px solid #333;padding:5px;text-align:right;">' + toplamMesaiGosterim.toFixed(1) + '</td>' +
+            '<td style="border:1px solid #333;padding:5px;text-align:right;">' + decimalHoursToClock(toplamMesaiGosterim) + '</td>' +
             '<td style="border:1px solid #333;padding:5px;text-align:right;">' + formatTurkishCurrency(ozet.saatlikBrut || 0) + '</td>' +
             '<td style="border:1px solid #333;padding:5px;text-align:right;">' + formatTurkishCurrency(ozet.genelToplamOdeme || 0) + '</td></tr>' +
             '</tbody></table>';
@@ -525,7 +536,7 @@
                 '<td>' + o.sira + '</td>' +
                 '<td class="text-start">' + escapeHtml(o.adSoyad) + '</td>' +
                 '<td class="text-start">' + escapeHtml(o.birimAdi) + '</td>' +
-                '<td class="text-end">' + o.toplamSaat.toFixed(1) + '</td>' +
+                '<td class="text-end">' + decimalHoursToClock(o.toplamSaat) + '</td>' +
                 '<td class="text-end">' + formatTurkishCurrency(o.saatlikBrut) + '</td>' +
                 '<td class="text-end" style="font-weight:600;">' + formatTurkishCurrency(o.odemeTutari) + '</td>' +
                 '</tr>';
@@ -559,7 +570,7 @@
                     <tr class="total-row">
                         <td colspan="2" style="text-align:right;">GENEL TOPLAM</td>
                         <td style="text-align:center;">${ozet.toplamPersonel || 0} Kişi</td>
-                        <td class="text-end">${toplamMesaiGosterim.toFixed(1)}</td>
+                        <td class="text-end">${decimalHoursToClock(toplamMesaiGosterim)}</td>
                         <td class="text-end">${formatTurkishCurrency(ozet.saatlikBrut || 0)}</td>
                         <td class="text-end" style="font-weight:bold;">${formatTurkishCurrency(ozet.genelToplamOdeme || 0)}</td>
                     </tr>
