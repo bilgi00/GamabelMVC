@@ -292,11 +292,11 @@
                             @foreach (var s in Model.Satirlar)
                             {
                                 <tr>
-                                    <td class="text-center fw-semibold text-secondary">@sira</td>
-                                    <td style="font-size: 0.70rem;">@s.FirmaOdemeIsmi</td>
-                                    <td style="font-size: 0.70rem;">@s.FirmaIBAN</td>
-                                    <td style="font-size: 0.70rem;">@s.Aciklama</td>
-                                    <td class="text-end fw-semibold" style="font-size: 0.70rem;">@s.Tutar.ToString("N2")</td>
+                                    <td class="text-center fw-semibold text-secondary" style="font-size: 0.80rem;">@sira</td>
+                                    <td style="font-size: 0.90rem;">@s.FirmaOdemeIsmi</td>
+                                    <td style="font-size: 0.90rem;">@s.FirmaIBAN</td>
+                                    <td style="font-size: 0.90rem;">@s.Aciklama</td>
+                                    <td class="text-end fw-semibold" style="font-size: 0.90rem;">@s.Tutar.ToString("N2")</td>
                                 </tr>
                                 sira++;
                             }
@@ -310,12 +310,13 @@
             <div class="mt-auto">
 
                 <!-- TOPLAM -->
-                <div class="bg-light border border-1 mb-1 print-color-exact">
-                    <div class="text-center p-2">
+         
+                <div class="bg-light border print-color-exact">
+                    <div class="text-center">
                         <div>
                             @Model.ToplamAdet Adet EFT/Havale yapılmasını ve oluşacak ücret, masraf ve
                             vergilerin <strong>@Model.BankaIBAN</strong> numaralı hesabımızdan tahsili için gereğinin
-                            yapılmasını arz ederiz.
+                            yapılmasını arz ederiz. 
                         </div>
                         <div class="mt-1">
                             <strong>Genel Toplam: @Model.ToplamTutar.ToString("N2") TL</strong>
