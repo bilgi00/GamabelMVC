@@ -37,6 +37,7 @@ Write-Host ""
 Write-Host ">> Adding changes..." -ForegroundColor Green
 git add .
 
+# Değişiklik olan dosyaları göster
 $status = git status --porcelain
 
 if ([string]::IsNullOrWhiteSpace($status)) {
@@ -46,7 +47,69 @@ if ([string]::IsNullOrWhiteSpace($status)) {
     exit
 }
 
-# Commit mesajı al - boş girilirse tekrar sor
+# =============================================
+# DEĞİŞİKLİK OLAN DOSYALARI LİSTELE
+# =============================================
+Write-Host ""
+Write-Host "======================================" -ForegroundColor Cyan
+Write-Host "     CHANGED FILES TO BE COMMITTED     " -ForegroundColor Yellow
+Write-Host "======================================" -ForegroundColor Cyan
+Write-Host ""
+
+# Dosyaları durumlarıyla birlikte listele
+$files = git status --porcelain
+$modifiedCount = 0
+$addedCount = 0
+$deletedCount = 0
+
+foreach ($file in $files) {
+    $statusCode = $file.Substring(0, 2)
+    $fileName = $file.Substring(3)
+    
+    switch ($statusCode) {
+        'M ' { 
+            Write-Host "  📝 MODIFIED:  $fileName" -ForegroundColor Yellow
+            $modifiedCount++
+        }
+        'A ' { 
+            Write-Host "  ➕ ADDED:     $fileName" -ForegroundColor Green
+            $addedCount++
+        }
+        'D ' { 
+            Write-Host "  ❌ DELETED:   $fileName" -ForegroundColor Red
+            $deletedCount++
+        }
+        'R ' { 
+            Write-Host "  🔄 RENAMED:   $fileName" -ForegroundColor Cyan
+            $modifiedCount++
+        }
+        '??' { 
+            Write-Host "  ❓ UNTRACKED: $fileName" -ForegroundColor Gray
+            $addedCount++
+        }
+        default { 
+            Write-Host "  $statusCode  $fileName" -ForegroundColor Gray
+        }
+    }
+}
+
+Write-Host ""
+Write-Host "--------------------------------------------------" -ForegroundColor DarkGray
+Write-Host "  TOTAL: $($files.Count) files changed" -ForegroundColor White
+Write-Host "  + Added: $addedCount  |  ✏️ Modified: $modifiedCount  |  - Deleted: $deletedCount" -ForegroundColor White
+Write-Host "--------------------------------------------------" -ForegroundColor DarkGray
+Write-Host ""
+
+# Değişiklik özetini göster (opsiyonel)
+$showDetails = Read-Host "Show detailed changes? (y/n)"
+if ($showDetails -eq 'y' -or $showDetails -eq 'Y' -or $showDetails -eq 'e' -or $showDetails -eq 'E') {
+    Write-Host ""
+    Write-Host ">> Detailed changes:" -ForegroundColor Cyan
+    git diff --cached --stat
+    Write-Host ""
+}
+
+# Commit mesajı al
 do {
     Write-Host ""
     $mesaj = Read-Host "Enter commit message (cannot be empty)"
@@ -59,7 +122,6 @@ do {
 # Türkçe karakterleri ASCII'ye dönüştür
 $mesajLatin = ConvertTo-LatinChars -text $mesaj
 
-# Dönüştürülmüş mesajı göster
 Write-Host ""
 Write-Host ">> Converted message: $mesajLatin" -ForegroundColor Yellow
 
@@ -71,6 +133,13 @@ git commit -m "$mesajLatin"
 if ($LASTEXITCODE -eq 0) {
     Write-Host ""
     Write-Host ">> Pushing to GitHub..." -ForegroundColor Green
+    
+    # Push öncesi gönderilecek dosyaları göster
+    Write-Host ""
+    Write-Host "Files to be pushed:" -ForegroundColor Cyan
+    git show --stat --oneline HEAD
+    Write-Host ""
+    
     git push
 } else {
     Write-Host ""
