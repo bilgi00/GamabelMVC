@@ -1,13 +1,20 @@
-# PowerShell kodlama ayarları
-[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-$OutputEncoding = [System.Text.Encoding]::UTF8
-chcp 65001 > $null
+# =============================================
+# TÜRKÇE KARAKTER DÖNÜŞTÜRÜCÜ (ASCII)
+# =============================================
+function ConvertTo-LatinChars {
+    param([string]$text)
+    
+    # ASCII'ye dönüştür
+    $bytes = [System.Text.Encoding]::GetEncoding("Cyrillic").GetBytes($text)
+    return [System.Text.Encoding]::ASCII.GetString($bytes)
+}
 
+# =============================================
 Clear-Host
 
 Write-Host ""
 Write-Host "======================================" -ForegroundColor Cyan
-Write-Host "      GAMABEL MVC GIT GUNCELLEME      " -ForegroundColor Yellow
+Write-Host "      GAMABEL MVC GIT UPDATE          " -ForegroundColor Yellow
 Write-Host "======================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -15,70 +22,67 @@ Write-Host ""
 $scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Path
 Set-Location $scriptPath
 
-# Proje dizinini göster
-Write-Host ">> Proje Dizini: $scriptPath" -ForegroundColor Magenta
+Write-Host ">> Project Directory: $scriptPath" -ForegroundColor Magenta
 Write-Host ""
 
 # Önce son değişiklikleri al
-Write-Host ">> GitHub'dan son değişiklikler alınıyor..." -ForegroundColor Green
+Write-Host ">> Pulling latest changes from GitHub..." -ForegroundColor Green
 git pull
 
 Write-Host ""
-Write-Host "Kod düzenlemelerini tamamladıysan Enter'a bas..." -ForegroundColor Yellow
+Write-Host "Press Enter when code changes are complete..." -ForegroundColor Yellow
 Read-Host
 
 Write-Host ""
-Write-Host ">> Değişiklikler ekleniyor..." -ForegroundColor Green
+Write-Host ">> Adding changes..." -ForegroundColor Green
 git add .
 
 $status = git status --porcelain
 
 if ([string]::IsNullOrWhiteSpace($status)) {
     Write-Host ""
-    Write-Host "Değişiklik bulunamadı." -ForegroundColor Yellow
-    Read-Host "Devam etmek için Enter'a bas..."
+    Write-Host "No changes found." -ForegroundColor Yellow
+    Read-Host "Press Enter to continue..."
     exit
 }
 
 # Commit mesajı al - boş girilirse tekrar sor
 do {
     Write-Host ""
-    $mesaj = Read-Host "Commit mesajını yaz (boş bırakılamaz)"
+    $mesaj = Read-Host "Enter commit message (cannot be empty)"
     
     if ([string]::IsNullOrWhiteSpace($mesaj)) {
-        Write-Host "Commit mesajı boş olamaz! Lütfen bir mesaj girin." -ForegroundColor Red
+        Write-Host "Commit message cannot be empty!" -ForegroundColor Red
     }
 } while ([string]::IsNullOrWhiteSpace($mesaj))
 
+# Türkçe karakterleri ASCII'ye dönüştür
+$mesajLatin = ConvertTo-LatinChars -text $mesaj
+
+# Dönüştürülmüş mesajı göster
 Write-Host ""
-Write-Host ">> Commit yapılıyor..." -ForegroundColor Green
+Write-Host ">> Converted message: $mesajLatin" -ForegroundColor Yellow
 
-# Git commit'i UTF-8 olarak gönder
-$env:GIT_AUTHOR_NAME = "bilgi00"
-$env:GIT_AUTHOR_EMAIL = "bilgi00@users.noreply.github.com"
-$env:GIT_COMMITTER_NAME = "bilgi00"
-$env:GIT_COMMITTER_EMAIL = "bilgi00@users.noreply.github.com"
-
-# Commit mesajını UTF-8 olarak encode et ve gönder
-$commitMessage = $mesaj
-git commit -m $commitMessage
+Write-Host ""
+Write-Host ">> Committing..." -ForegroundColor Green
+git commit -m "$mesajLatin"
 
 # Commit başarılı mı kontrol et
 if ($LASTEXITCODE -eq 0) {
     Write-Host ""
-    Write-Host ">> GitHub'a gönderiliyor..." -ForegroundColor Green
+    Write-Host ">> Pushing to GitHub..." -ForegroundColor Green
     git push
 } else {
     Write-Host ""
-    Write-Host "Commit başarısız oldu!" -ForegroundColor Red
-    Read-Host "Devam etmek için Enter'a bas..."
+    Write-Host "Commit failed!" -ForegroundColor Red
+    Read-Host "Press Enter to continue..."
     exit
 }
 
 Write-Host ""
 Write-Host "======================================" -ForegroundColor Cyan
-Write-Host "        ISLEM BASARIYLA BITTI         " -ForegroundColor Green
+Write-Host "         OPERATION COMPLETED          " -ForegroundColor Green
 Write-Host "======================================" -ForegroundColor Cyan
 Write-Host ""
 
-Read-Host "Devam etmek için Enter'a bas..."
+Read-Host "Press Enter to continue..."
