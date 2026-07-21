@@ -1,3 +1,8 @@
+# PowerShell kodlama ayarları
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding = [System.Text.Encoding]::UTF8
+chcp 65001 > $null
+
 Clear-Host
 
 Write-Host ""
@@ -47,7 +52,16 @@ do {
 
 Write-Host ""
 Write-Host ">> Commit yapılıyor..." -ForegroundColor Green
-git commit -m "$mesaj"
+
+# Git commit'i UTF-8 olarak gönder
+$env:GIT_AUTHOR_NAME = "bilgi00"
+$env:GIT_AUTHOR_EMAIL = "bilgi00@users.noreply.github.com"
+$env:GIT_COMMITTER_NAME = "bilgi00"
+$env:GIT_COMMITTER_EMAIL = "bilgi00@users.noreply.github.com"
+
+# Commit mesajını UTF-8 olarak encode et ve gönder
+$commitMessage = $mesaj
+git commit -m $commitMessage
 
 # Commit başarılı mı kontrol et
 if ($LASTEXITCODE -eq 0) {
