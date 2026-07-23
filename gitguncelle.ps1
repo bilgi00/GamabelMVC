@@ -1,157 +1,322 @@
 # =============================================
-# TÜRKÇE KARAKTER DÖNÜŞTÜRÜCÜ (ASCII)
+# GAMABEL MVC GIT GUNCELLEME
 # =============================================
-function ConvertTo-LatinChars {
-    param([string]$text)
-    
-    # ASCII'ye dönüştür
-    $bytes = [System.Text.Encoding]::GetEncoding("Cyrillic").GetBytes($text)
-    return [System.Text.Encoding]::ASCII.GetString($bytes)
+
+# =============================================
+# 1. GIT KURULU MU KONTROL ET
+# =============================================
+if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
+    Write-Host "Git kurulu degil!" -ForegroundColor Red
+    Read-Host "Devam etmek icin Enter'a basin..."
+    exit 1
 }
 
 # =============================================
+# 2. GIT DEPOSU KONTROL ET
+# =============================================
+git rev-parse --git-dir *> $null
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Bu klasor Git deposu degil!" -ForegroundColor Red
+    Read-Host "Devam etmek icin Enter'a basin..."
+    exit 1
+}
+
+# =============================================
+# 3. TURKCE KARAKTER DONUSTURUCU (ASCII)
+# =============================================
+function ConvertTo-LatinChars {
+    param([string]$metin)
+    
+    if ([string]::IsNullOrWhiteSpace($metin)) {
+        return "Guncelleme"
+    }
+    
+    $sonuc = $metin
+    $sonuc = $sonuc -replace 'ç', 'c'
+    $sonuc = $sonuc -replace 'Ç', 'C'
+    $sonuc = $sonuc -replace 'ğ', 'g'
+    $sonuc = $sonuc -replace 'Ğ', 'G'
+    $sonuc = $sonuc -replace 'ı', 'i'
+    $sonuc = $sonuc -replace 'İ', 'I'
+    $sonuc = $sonuc -replace 'ö', 'o'
+    $sonuc = $sonuc -replace 'Ö', 'O'
+    $sonuc = $sonuc -replace 'ş', 's'
+    $sonuc = $sonuc -replace 'Ş', 'S'
+    $sonuc = $sonuc -replace 'ü', 'u'
+    $sonuc = $sonuc -replace 'Ü', 'U'
+    
+    $sonuc = $sonuc -replace '[^a-zA-Z0-9\s\.\-_]', ''
+    $sonuc = $sonuc -replace '\s+', ' '
+    $sonuc = $sonuc.Trim()
+    
+    if ([string]::IsNullOrWhiteSpace($sonuc)) {
+        return "Guncelleme"
+    }
+    
+    return $sonuc
+}
+
+# =============================================
+# 4. INTERNET BAGLANTI KONTROL (HTTP)
+# =============================================
+function Test-InternetConnection {
+    try {
+        Invoke-WebRequest https://github.com -UseBasicParsing -TimeoutSec 10 | Out-Null
+        return $true
+    } catch {
+        return $false
+    }
+}
+
+# =============================================
+# 5. ANA MENU
+# =============================================
 Clear-Host
-
 Write-Host ""
 Write-Host "======================================" -ForegroundColor Cyan
-Write-Host "      GAMABEL MVC GIT UPDATE          " -ForegroundColor Yellow
+Write-Host "      GAMABEL MVC GIT GUNCELLEME      " -ForegroundColor Yellow
 Write-Host "======================================" -ForegroundColor Cyan
 Write-Host ""
 
-# Proje klasörü - Script'in bulunduğu dizini al
+$baslangicZamani = Get-Date
+
 $scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Path
 Set-Location $scriptPath
 
-Write-Host ">> Project Directory: $scriptPath" -ForegroundColor Magenta
+Write-Host ">> Proje Dizini: $scriptPath" -ForegroundColor Magenta
 Write-Host ""
 
-# Önce son değişiklikleri al
-Write-Host ">> Pulling latest changes from GitHub..." -ForegroundColor Green
-git pull
-
-Write-Host ""
-Write-Host "Press Enter when code changes are complete..." -ForegroundColor Yellow
-Read-Host
-
-Write-Host ""
-Write-Host ">> Adding changes..." -ForegroundColor Green
-git add .
-
-# Değişiklik olan dosyaları göster
-$status = git status --porcelain
-
-if ([string]::IsNullOrWhiteSpace($status)) {
-    Write-Host ""
-    Write-Host "No changes found." -ForegroundColor Yellow
-    Read-Host "Press Enter to continue..."
-    exit
+# =============================================
+# 6. BRANCH BILGISI
+# =============================================
+$currentBranch = git branch --show-current
+if ([string]::IsNullOrWhiteSpace($currentBranch)) {
+    $currentBranch = "(Detached HEAD)"
 }
 
+try {
+    $lastCommit = git log -1 --oneline
+} catch {
+    $lastCommit = "Henuz commit yok"
+}
+
+Write-Host "Guncel Dal: $currentBranch" -ForegroundColor Yellow
+Write-Host "Son Kayit: $lastCommit" -ForegroundColor Yellow
+Write-Host ""
+
 # =============================================
-# DEĞİŞİKLİK OLAN DOSYALARI LİSTELE
+# 7. INTERNET BAGLANTI KONTROL
+# =============================================
+Write-Host ">> Internet baglantisi kontrol ediliyor..." -ForegroundColor Yellow
+if (-not (Test-InternetConnection)) {
+    Write-Host "Internet baglantisi yok! Gonderme islemi iptal edildi." -ForegroundColor Red
+    Read-Host "Devam etmek icin Enter'a basin..."
+    exit 1
+}
+Write-Host "Internet baglantisi var" -ForegroundColor Green
+Write-Host ""
+
+# =============================================
+# 8. GIT PULL
+# =============================================
+Write-Host ">> GitHub'dan son degisiklikler aliniyor..." -ForegroundColor Green
+git pull
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Host ""
+    Write-Host "Git Pull basarisiz!" -ForegroundColor Red
+    Read-Host "Devam etmek icin Enter'a basin..."
+    exit 1
+}
+Write-Host "Git Pull tamamlandi" -ForegroundColor Green
+Write-Host ""
+
+Write-Host "Kod duzenlemelerini tamamladiysan Enter'a bas..." -ForegroundColor Yellow
+Read-Host
+
+# =============================================
+# 9. DEGISIKLIKLERI EKLE
 # =============================================
 Write-Host ""
+Write-Host ">> Degisiklikler ekleniyor..." -ForegroundColor Green
+git add .
+
+# =============================================
+# 10. DEGISIKLIKLERI LISTELE
+# =============================================
+$dosyalar = git status --porcelain
+
+if ([string]::IsNullOrWhiteSpace($dosyalar)) {
+    Write-Host ""
+    Write-Host "Degisiklik bulunamadi." -ForegroundColor Yellow
+    Read-Host "Devam etmek icin Enter'a basin..."
+    exit 0
+}
+
+Write-Host ""
 Write-Host "======================================" -ForegroundColor Cyan
-Write-Host "     CHANGED FILES TO BE COMMITTED     " -ForegroundColor Yellow
+Write-Host "     KAYDEDILECEK DEGISIKLIKLER        " -ForegroundColor Yellow
 Write-Host "======================================" -ForegroundColor Cyan
 Write-Host ""
 
-# Dosyaları durumlarıyla birlikte listele
-$files = git status --porcelain
-$modifiedCount = 0
-$addedCount = 0
-$deletedCount = 0
+$dosyaListesi = @($dosyalar)
+$degisenSayisi = 0
+$eklenenSayisi = 0
+$silinenSayisi = 0
 
-foreach ($file in $files) {
-    $statusCode = $file.Substring(0, 2)
-    $fileName = $file.Substring(3)
+foreach ($dosya in $dosyaListesi) {
+    $durumKodu = $dosya.Substring(0, 2)
+    $dosyaAdi = $dosya.Substring(3)
     
-    switch ($statusCode) {
-        'M ' { 
-            Write-Host "  📝 MODIFIED:  $fileName" -ForegroundColor Yellow
-            $modifiedCount++
-        }
-        'A ' { 
-            Write-Host "  ➕ ADDED:     $fileName" -ForegroundColor Green
-            $addedCount++
-        }
-        'D ' { 
-            Write-Host "  ❌ DELETED:   $fileName" -ForegroundColor Red
-            $deletedCount++
-        }
-        'R ' { 
-            Write-Host "  🔄 RENAMED:   $fileName" -ForegroundColor Cyan
-            $modifiedCount++
-        }
-        '??' { 
-            Write-Host "  ❓ UNTRACKED: $fileName" -ForegroundColor Gray
-            $addedCount++
-        }
-        default { 
-            Write-Host "  $statusCode  $fileName" -ForegroundColor Gray
-        }
+    if ($durumKodu.Contains('M')) { 
+        Write-Host "  DEGISTI:    $dosyaAdi" -ForegroundColor Yellow
+        $degisenSayisi++
+    }
+    elseif ($durumKodu.Contains('A') -or $durumKodu.StartsWith('?')) { 
+        Write-Host "  EKLENDI:   $dosyaAdi" -ForegroundColor Green
+        $eklenenSayisi++
+    }
+    elseif ($durumKodu.Contains('D')) { 
+        Write-Host "  SILINDI:   $dosyaAdi" -ForegroundColor Red
+        $silinenSayisi++
+    }
+    elseif ($durumKodu.StartsWith('R')) { 
+        Write-Host "  YENIDEN ADLANDIRILDI: $dosyaAdi" -ForegroundColor Cyan
+        $degisenSayisi++
+    }
+    else { 
+        Write-Host "  $durumKodu  $dosyaAdi" -ForegroundColor Gray
     }
 }
 
 Write-Host ""
 Write-Host "--------------------------------------------------" -ForegroundColor DarkGray
-Write-Host "  TOTAL: $($files.Count) files changed" -ForegroundColor White
-Write-Host "  + Added: $addedCount  |  ✏️ Modified: $modifiedCount  |  - Deleted: $deletedCount" -ForegroundColor White
+Write-Host "  TOPLAM: $($dosyaListesi.Count) dosya degisti" -ForegroundColor White
+Write-Host "  + Eklenen: $eklenenSayisi  |  Degistirilen: $degisenSayisi  |  - Silinen: $silinenSayisi" -ForegroundColor White
 Write-Host "--------------------------------------------------" -ForegroundColor DarkGray
 Write-Host ""
 
-# Değişiklik özetini göster (opsiyonel)
-$showDetails = Read-Host "Show detailed changes? (y/n)"
-if ($showDetails -eq 'y' -or $showDetails -eq 'Y' -or $showDetails -eq 'e' -or $showDetails -eq 'E') {
+# =============================================
+# 11. TEST CALISTIR
+# =============================================
+$testCalistir = Read-Host "Kayit oncesi testleri calistirmak ister misiniz? (e/h)"
+if ($testCalistir -eq 'e' -or $testCalistir -eq 'E') {
     Write-Host ""
-    Write-Host ">> Detailed changes:" -ForegroundColor Cyan
-    git diff --cached --stat
-    Write-Host ""
+    Write-Host ">> Testler calistiriliyor..." -ForegroundColor Yellow
+    
+    $testProjeleri = Get-ChildItem -Recurse *.csproj | Where-Object { $_.Name -match "Test" }
+    if ($testProjeleri.Count -gt 0) {
+        dotnet test
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "Testler basarisiz! Kayit islemi iptal edildi." -ForegroundColor Red
+            Read-Host "Devam etmek icin Enter'a basin..."
+            exit 1
+        }
+        Write-Host "Testler basariyla gecti!" -ForegroundColor Green
+    } else {
+        Write-Host "Test projesi bulunamadi, atlaniyor..." -ForegroundColor Yellow
+    }
 }
 
-# Commit mesajı al
+# =============================================
+# 12. DEGISIKLIK DETAYLARI
+# =============================================
+$detayGoster = Read-Host "Degisiklik detaylarini goster? (e/h)"
+if ($detayGoster -eq 'e' -or $detayGoster -eq 'E') {
+    Write-Host ""
+    Write-Host ">> Degisiklik detaylari:" -ForegroundColor Cyan
+    git --no-pager diff --cached --stat
+    Write-Host ""
+    
+    $detayliGoster = Read-Host "Tam degisiklikleri goster? (e/h)"
+    if ($detayliGoster -eq 'e' -or $detayliGoster -eq 'E') {
+        Write-Host ""
+        Write-Host ">> Tam degisiklikler:" -ForegroundColor Cyan
+        git --no-pager diff --cached
+        Write-Host ""
+    }
+}
+
+# =============================================
+# 13. COMMIT MESAJI AL
+# =============================================
 do {
     Write-Host ""
-    $mesaj = Read-Host "Enter commit message (cannot be empty)"
+    $mesaj = Read-Host "Commit mesajini yaz (bos olamaz)"
     
     if ([string]::IsNullOrWhiteSpace($mesaj)) {
-        Write-Host "Commit message cannot be empty!" -ForegroundColor Red
+        Write-Host "Commit mesaji bos olamaz!" -ForegroundColor Red
     }
 } while ([string]::IsNullOrWhiteSpace($mesaj))
 
-# Türkçe karakterleri ASCII'ye dönüştür
-$mesajLatin = ConvertTo-LatinChars -text $mesaj
+$mesajLatin = ConvertTo-LatinChars -metin $mesaj
+$mesajLatin = $mesajLatin.Trim()
+$mesajLatin = $mesajLatin -replace '\s+', ' '
 
 Write-Host ""
-Write-Host ">> Converted message: $mesajLatin" -ForegroundColor Yellow
+Write-Host ">> Donusturulen mesaj: $mesajLatin" -ForegroundColor Yellow
 
+# =============================================
+# 14. GIT COMMIT
+# =============================================
 Write-Host ""
-Write-Host ">> Committing..." -ForegroundColor Green
+Write-Host ">> Kaydediliyor..." -ForegroundColor Green
 git commit -m "$mesajLatin"
 
-# Commit başarılı mı kontrol et
-if ($LASTEXITCODE -eq 0) {
+if ($LASTEXITCODE -ne 0) {
     Write-Host ""
-    Write-Host ">> Pushing to GitHub..." -ForegroundColor Green
-    
-    # Push öncesi gönderilecek dosyaları göster
-    Write-Host ""
-    Write-Host "Files to be pushed:" -ForegroundColor Cyan
-    git show --stat --oneline HEAD
-    Write-Host ""
-    
-    git push
-} else {
-    Write-Host ""
-    Write-Host "Commit failed!" -ForegroundColor Red
-    Read-Host "Press Enter to continue..."
-    exit
+    Write-Host "Kaydetme basarisiz!" -ForegroundColor Red
+    Read-Host "Devam etmek icin Enter'a basin..."
+    exit 1
 }
+Write-Host "Kaydetme basarili" -ForegroundColor Green
+
+# =============================================
+# 15. GIT PUSH
+# =============================================
+Write-Host ""
+Write-Host ">> GitHub'a gonderiliyor..." -ForegroundColor Green
 
 Write-Host ""
-Write-Host "======================================" -ForegroundColor Cyan
-Write-Host "         OPERATION COMPLETED          " -ForegroundColor Green
-Write-Host "======================================" -ForegroundColor Cyan
+Write-Host "Gonderilecek dosyalar:" -ForegroundColor Cyan
+git --no-pager show --stat --oneline HEAD
 Write-Host ""
 
-Read-Host "Press Enter to continue..."
+git push
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Host ""
+    Write-Host "GitHub'a gonderilemedi!" -ForegroundColor Red
+    Write-Host "Degisiklikler yerel olarak kaydedildi (commit)." -ForegroundColor Yellow
+    Write-Host "Manuel push yapabilirsiniz: git push" -ForegroundColor Yellow
+    Read-Host "Devam etmek icin Enter'a basin..."
+    exit 1
+}
+Write-Host "GitHub'a gonderildi" -ForegroundColor Green
+
+# =============================================
+# 16. LOG KAYDET
+# =============================================
+$logDosyasi = "$scriptPath\git_guncelleme_log.txt"
+$bitisZamani = Get-Date
+$gecenSure = ($bitisZamani - $baslangicZamani).TotalSeconds
+$logKaydi = "[$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] KAYIT: $mesajLatin | Dosya: $($dosyaListesi.Count) | Dal: $currentBranch | Sure: $([math]::Round($gecenSure, 2)) sn"
+Add-Content -Path $logDosyasi -Value $logKaydi
+
+# =============================================
+# 17. OZET EKRANI
+# =============================================
+Write-Host ""
+Write-Host "======================================" -ForegroundColor Cyan
+Write-Host "         ISLEM BASARIYLA TAMAMLANDI   " -ForegroundColor Green
+Write-Host "======================================" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "OZET" -ForegroundColor Yellow
+Write-Host "  Dal: $currentBranch" -ForegroundColor White
+Write-Host "  Dosya: $($dosyaListesi.Count) degisti" -ForegroundColor White
+Write-Host "  Commit: $mesajLatin" -ForegroundColor White
+Write-Host "  Sure: $([math]::Round($gecenSure, 2)) saniye" -ForegroundColor White
+Write-Host "  Log: $logDosyasi" -ForegroundColor Gray
+Write-Host ""
+
+Read-Host "Devam etmek icin Enter'a basin..."

@@ -1,7 +1,18 @@
 @model gamabelmvc.Models.PRS.OtTalimat
 
 @{
-    ViewData["Title"] = "Talimat Detayı - " + Model.TalimatNo;
+    ViewData["Title"] = "Talimat Detayı - " + (Model?.TalimatNo ?? "Geçici Talimat");
+    
+    // ✅ Model null kontrolü
+    if (Model == null)
+    {
+        <div class="alert alert-danger">
+            <h4>❌ Talimat verisi bulunamadı!</h4>
+            <p>Lütfen tekrar talimat oluşturun.</p>
+            <a href="/OdemeTalimat" class="btn btn-primary">Ana Sayfaya Dön</a>
+        </div>
+        return;
+    }
 
     // Durum kontrolü - null veya boş ise "beklemede" kabul et
     string durum = string.IsNullOrEmpty(Model.Durum) ? "beklemede" : Model.Durum;
@@ -23,6 +34,9 @@
     };
 
     bool kayitliMi = durum == "onaylandi";
+    
+    // ✅ DEBUG: Kaç satır olduğunu göster
+    var satirSayisi = Model.Satirlar?.Count ?? 0;
 }
 
 <!DOCTYPE html>
@@ -208,7 +222,16 @@
             </button>
 
             <!-- Talimatı Kaydet Butonu -->
-            @if (!kayitliMi)
+            @if (!kayitliMi && Model.Id == 0)
+            {
+                <form method="post" asp-action="TalimatKaydet" asp-route-id="0" style="display:inline;">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="ot-btn ot-btn-success rounded-pill shadow px-4 py-2">
+                        <i class="fas fa-save me-2"></i> Talimatı Kaydet
+                    </button>
+                </form>
+            }
+            else if (!kayitliMi && Model.Id > 0)
             {
                 <form method="post" asp-action="TalimatKaydet" asp-route-id="@Model.Id" style="display:inline;">
                     @Html.AntiForgeryToken()
@@ -265,6 +288,15 @@
                     hesabımızdan aşağıda bilgileri yazılı alıcılara EFT/Havale yapılmasını talep ederiz.
                 </p>
 
+                <!-- ⚠️ DEBUG: Eğer satır yoksa uyarı göster -->
+                @if (satirSayisi == 0)
+                {
+                    <div class="alert alert-warning">
+                        <strong>⚠️ Uyarı:</strong> Bu talimata ait fatura satırı bulunamadı. 
+                        Lütfen tekrar talimat oluşturun.
+                    </div>
+                }
+
                 <!-- TABLO -->
                 <div class="table-responsive mb-4">
                     <table class="table table-bordered table-striped table-sm align-middle table-print">
@@ -286,19 +318,28 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @{
+                            @if (Model.Satirlar != null && Model.Satirlar.Any())
+                            {
                                 int sira = 1;
+                                @foreach (var s in Model.Satirlar)
+                                {
+                                    <tr>
+                                        <td class="text-center fw-semibold text-secondary" style="font-size: 0.80rem;">@sira</td>
+                                        <td style="font-size: 0.80rem;">@s.FirmaOdemeIsmi</td>
+                                        <td style="font-size: 0.80rem;">@s.FirmaIBAN</td>
+                                        <td style="font-size: 0.80rem;">@s.Aciklama</td>
+                                        <td class="text-end fw-semibold" style="font-size: 0.80rem;">@s.Tutar.ToString("N2")</td>
+                                    </tr>
+                                    sira++;
+                                }
                             }
-                            @foreach (var s in Model.Satirlar)
+                            else
                             {
                                 <tr>
-                                    <td class="text-center fw-semibold text-secondary" style="font-size: 0.80rem;">@sira</td>
-                                    <td style="font-size: 0.90rem;">@s.FirmaOdemeIsmi</td>
-                                    <td style="font-size: 0.90rem;">@s.FirmaIBAN</td>
-                                    <td style="font-size: 0.90rem;">@s.Aciklama</td>
-                                    <td class="text-end fw-semibold" style="font-size: 0.90rem;">@s.Tutar.ToString("N2")</td>
+                                    <td colspan="5" class="text-center text-muted py-3">
+                                        <i class="fas fa-info-circle me-2"></i> Bu talimata ait fatura bulunmamaktadır.
+                                    </td>
                                 </tr>
-                                sira++;
                             }
                         </tbody>
                     </table>
@@ -310,9 +351,8 @@
             <div class="mt-auto">
 
                 <!-- TOPLAM -->
-         
                 <div class="bg-light border print-color-exact">
-                    <div class="text-center">
+                    <div class="text-center p-2">
                         <div>
                             @Model.ToplamAdet Adet EFT/Havale yapılmasını ve oluşacak ücret, masraf ve
                             vergilerin <strong>@Model.BankaIBAN</strong> numaralı hesabımızdan tahsili için gereğinin
@@ -343,7 +383,7 @@
                 <!-- ALT BİLGİ -->
                 <div class="row small text-muted border-top pt-1">
                     <div class="col-4">
-                        <span class="fw-semibold text-primary">FRM.01 v2</span>
+                        <span class="fw-semibold text-primary">FRM.01 v3</span>
                     </div>
                     <div class="col-4 text-center">
                         @DateTime.Now.ToString("dd.MM.yyyy HH:mm")

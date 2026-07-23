@@ -15,7 +15,10 @@ public class OdemeFaturaImportService
             ?? throw new InvalidOperationException("MyConnection tanimli degil.");
     }
 
-    public async Task<OtImportBatch> ImportAsync(Stream excelStream, string dosyaAdi)
+    // ================================================================
+    // ✅ YENİ: Excel'deki mevcut faturaları filtrele ve kaydet
+    // ================================================================
+    public async Task<(OtImportBatch? batch, int eklenen, int atlanan, List<string> atlananFaturalar)> ImportAsyncWithFilter(Stream excelStream, string dosyaAdi)
     {
         ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
         using var package = new ExcelPackage(excelStream);
@@ -26,7 +29,9 @@ public class OdemeFaturaImportService
         var lastRow = sheet.Dimension?.End.Row ?? 1;
         var faturalar = new List<(string cariKart, string faturaNo, decimal bakiye)>();
 
-        // Excel'den verileri oku
+        // ============================================================
+        // 1. Excel'den verileri oku
+        // ============================================================
         for (var row = 2; row <= lastRow; row++)
         {
             var cariKart = sheet.Cells[row, 3].Text.Trim();
@@ -46,18 +51,19 @@ public class OdemeFaturaImportService
         if (faturalar.Count == 0)
             throw new InvalidOperationException("Excel dosyasinda ice aktarilacak fatura bulunamadi.");
 
-        // Excel içinde aynı fatura numarası kontrolü
-        var excelFaturaNoList = faturalar.Select(f => f.faturaNo).ToList();
-        var excelDuplicateFaturalar = excelFaturaNoList
-            .GroupBy(f => f)
+        // ============================================================
+        // 2. Excel içinde aynı (CariKart + FaturaNo) kontrolü
+        // ============================================================
+        var excelDuplicateFaturalar = faturalar
+            .GroupBy(f => new { f.cariKart, f.faturaNo })
             .Where(g => g.Count() > 1)
-            .Select(g => g.Key)
+            .Select(g => $"{g.Key.cariKart} - {g.Key.faturaNo}")
             .ToList();
 
         if (excelDuplicateFaturalar.Any())
         {
             throw new InvalidOperationException(
-                $"Excel dosyasinda ayni fatura numarasi birden fazla kez bulunuyor: {string.Join(", ", excelDuplicateFaturalar)}");
+                $"Excel dosyasinda ayni cari kart ve fatura numarasi birden fazla kez bulunuyor: {string.Join("; ", excelDuplicateFaturalar)}");
         }
 
         await using var connection = new MySqlConnection(_connectionString);
@@ -66,43 +72,74 @@ public class OdemeFaturaImportService
 
         try
         {
-            // Veritabanında aynı fatura numarası kontrolü (tüm batch'lerde)
-            var inClause = string.Join(",", faturalar.Select((_, i) => $"@fatura{i}"));
+            // ============================================================
+            // 3. ✅ Veritabanında mevcut olanları bul
+            // ============================================================
+            var inClause = string.Join(",", faturalar.Select((_, i) => $"(@cari{i}, @fatura{i})"));
             var kontrolCmd = new MySqlCommand(
-                $"SELECT fatura_no FROM prs_ot_acik_faturalar WHERE fatura_no IN ({inClause}) AND odeme_durumu != 'odendi'",
+                $@"SELECT cari_kart, fatura_no FROM prs_ot_acik_faturalar 
+                  WHERE (cari_kart, fatura_no) IN ({inClause})",
                 connection, tx);
-            
+
             for (int i = 0; i < faturalar.Count; i++)
             {
+                kontrolCmd.Parameters.AddWithValue($"@cari{i}", faturalar[i].cariKart);
                 kontrolCmd.Parameters.AddWithValue($"@fatura{i}", faturalar[i].faturaNo);
             }
 
-            var mevcutFaturalar = new List<string>();
+            var mevcutSet = new HashSet<(string cariKart, string faturaNo)>();
             await using (var r = await kontrolCmd.ExecuteReaderAsync())
             {
                 while (await r.ReadAsync())
                 {
-                    mevcutFaturalar.Add(r.GetString(0));
+                    mevcutSet.Add((r.GetString(0), r.GetString(1)));
                 }
             }
 
-            if (mevcutFaturalar.Any())
+            // ============================================================
+            // 4. ✅ Filtrele: Sadece mevcut OLMAYANları kaydet
+            // ============================================================
+            var eklenecekFaturalar = new List<(string cariKart, string faturaNo, decimal bakiye)>();
+            var atlananFaturalar = new List<string>();
+
+            foreach (var f in faturalar)
             {
-                throw new InvalidOperationException(
-                    $"Bu fatura numaralari zaten sistemde mevcut ve henuz odeme yapilmamis: {string.Join(", ", mevcutFaturalar)}");
+                if (mevcutSet.Contains((f.cariKart, f.faturaNo)))
+                {
+                    atlananFaturalar.Add($"{f.cariKart} - {f.faturaNo}");
+                }
+                else
+                {
+                    eklenecekFaturalar.Add(f);
+                }
             }
 
-            // Batch kaydı oluştur
+            // ============================================================
+            // 5. ✅ Eğer eklenecek fatura yoksa uyarı ver
+            // ============================================================
+            if (eklenecekFaturalar.Count == 0)
+            {
+                await tx.RollbackAsync();
+                throw new InvalidOperationException(
+                    $"Excel'deki tüm faturalar zaten sistemde mevcut.\n" +
+                    $"Toplam: {faturalar.Count} fatura, tamamı atlandı.");
+            }
+
+            // ============================================================
+            // 6. Batch kaydı oluştur
+            // ============================================================
             var insertBatch = new MySqlCommand(
                 "INSERT INTO prs_ot_import_batchlari (dosya_adi, yukleme_tarihi, satir_sayisi) VALUES (@dosya, NOW(), @sayi)",
                 connection, tx);
             insertBatch.Parameters.AddWithValue("@dosya", dosyaAdi);
-            insertBatch.Parameters.AddWithValue("@sayi", faturalar.Count);
+            insertBatch.Parameters.AddWithValue("@sayi", eklenecekFaturalar.Count);
             await insertBatch.ExecuteNonQueryAsync();
             var batchId = (int)insertBatch.LastInsertedId;
 
-            // Faturaları ekle
-            foreach (var (cariKart, faturaNo, bakiye) in faturalar)
+            // ============================================================
+            // 7. Sadece eklenecek faturaları kaydet
+            // ============================================================
+            foreach (var (cariKart, faturaNo, bakiye) in eklenecekFaturalar)
             {
                 var insertFatura = new MySqlCommand(
                     "INSERT INTO prs_ot_acik_faturalar (cari_kart, fatura_no, bakiye, odemeye_dahil_edildi, odeme_durumu, import_batch_id) VALUES (@cari, @fatura, @bakiye, 0, 'bekliyor', @batch)",
@@ -115,13 +152,33 @@ public class OdemeFaturaImportService
             }
 
             await tx.CommitAsync();
-            return new OtImportBatch { Id = batchId, DosyaAdi = dosyaAdi, YuklemeTarihi = DateTime.Now, SatirSayisi = faturalar.Count };
+
+            var batch = new OtImportBatch 
+            { 
+                Id = batchId, 
+                DosyaAdi = dosyaAdi, 
+                YuklemeTarihi = DateTime.Now, 
+                SatirSayisi = eklenecekFaturalar.Count 
+            };
+
+            return (batch, eklenecekFaturalar.Count, atlananFaturalar.Count, atlananFaturalar);
         }
         catch
         {
             await tx.RollbackAsync();
             throw;
         }
+    }
+
+    // ================================================================
+    // ESKİ METOT (Geriye Dönük Uyumluluk)
+    // ================================================================
+    public async Task<OtImportBatch> ImportAsync(Stream excelStream, string dosyaAdi)
+    {
+        var result = await ImportAsyncWithFilter(excelStream, dosyaAdi);
+        if (result.batch == null)
+            throw new InvalidOperationException("Kaydedilecek fatura bulunamadı.");
+        return result.batch;
     }
 
     private static bool TryParseBakiye(string value, out decimal bakiye)

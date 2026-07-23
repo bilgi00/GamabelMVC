@@ -79,6 +79,9 @@ public class OdemeTalimatController : Controller
         {
             await using var stream = excelDosyasi.OpenReadStream();
             var batch = await _importService.ImportAsync(stream, excelDosyasi.FileName);
+            
+            TempData["Basarili"] = $"✅ Excel dosyası başarıyla yüklendi! {batch.SatirSayisi} fatura kaydedildi.";
+            
             return RedirectToAction("FaturaSecim", new { batchId = batch.Id });
         }
         catch (Exception ex)
@@ -91,85 +94,64 @@ public class OdemeTalimatController : Controller
     // -----------------------------------------------------------------------
     // FATURA SEÇİM
     // -----------------------------------------------------------------------
-    // Controllers/PRS/OdemeTalimatController.cs
-// Controllers/PRS/OdemeTalimatController.cs
-// Controllers/PRS/OdemeTalimatController.cs
-// Controllers/PRS/OdemeTalimatController.cs
-[HttpGet]
-public async Task<IActionResult> FaturaSecim(int? batchId = null)
-{
-    if (!IsLoggedIn()) return RedirectToAction("Login", "Account");
-    if (!IsAdmin()) return Forbid();
-
-    try
+    [HttpGet]
+    public async Task<IActionResult> FaturaSecim(int? batchId = null)
     {
-        List<OtAcikFatura> faturalar;
-        
-        if (batchId.HasValue && batchId.Value > 0)
-        {
-            faturalar = await _talimatService.GetBatchFaturalariAsync(batchId.Value);
-            ViewBag.BatchId = batchId.Value;
-            ViewBag.Baslik = $"Batch #{batchId} - Fatura Seçimi";
-        }
-        else
-        {
-            faturalar = await _talimatService.GetTumAcikFaturalarAsync();
-            ViewBag.BatchId = 0;
-            ViewBag.Baslik = "Tüm Açık Faturalar";
-        }
-        
-        // 🔍 DEBUG: Fatura sayısını logla
-        Console.WriteLine($"Fatura sayısı: {faturalar.Count}");
-        ViewBag.FaturaSayisi = faturalar.Count;
-        ViewBag.IlkFaturalar = faturalar.Take(5).ToList();
-        
-        var bankalar = await _talimatService.GetBankalarAsync();
-        
-        // ✅ Firma bilgilerini Dictionary olarak al (IBAN ve ödeme ismi için)
-        var firmalar = await _talimatService.GetFirmalarAsync();
-        var firmaDict = firmalar
-            .Where(f => !string.IsNullOrWhiteSpace(f.CariIsmi))
-            .ToDictionary(f => f.CariIsmi.Trim(), f => f, StringComparer.OrdinalIgnoreCase);
+        if (!IsLoggedIn()) return RedirectToAction("Login", "Account");
+        if (!IsAdmin()) return Forbid();
 
-        // ✅ Firma gruplarını oluştur
-        var firmaGruplari = faturalar
-            .GroupBy(f => f.CariKart)
-            .Select(g =>
+        try
+        {
+            List<OtFaturaViewModel> faturalar;
+            
+            if (batchId.HasValue && batchId.Value > 0)
             {
-                var cariAnahtar = (g.Key ?? "").Trim();
-                var firma = firmaDict.TryGetValue(cariAnahtar, out var firmaBilgisi) ? firmaBilgisi : null;
+                faturalar = await _talimatService.GetBatchFaturalariWithFirmaAsync(batchId.Value);
+                ViewBag.BatchId = batchId.Value;
+                ViewBag.Baslik = $"Batch #{batchId} - Fatura Seçimi";
+            }
+            else
+            {
+                faturalar = await _talimatService.GetTumAcikFaturalarWithFirmaAsync();
+                ViewBag.BatchId = 0;
+                ViewBag.Baslik = "Tüm Açık Faturalar";
+            }
+            
+            var bankalar = await _talimatService.GetBankalarAsync();
 
-                return new
-                {
+            var firmaGruplari = faturalar
+                .GroupBy(f => f.CariKart)
+                .Select(g => new 
+                { 
                     FirmaAdi = g.Key,
-                    OdemeIsmi = firma?.OdemeIsmi ?? g.Key,
-                    IBAN = firma?.IBAN ?? string.Empty,
+                    OdemeIsmi = g.First().OdemeIsmi ?? "Ödeme adı bulunamadı",
+                    IBAN = g.First().IBAN ?? "IBAN bulunamadı",
                     ToplamBakiye = g.Sum(f => f.Bakiye),
                     Faturalar = g.ToList()
-                };
-            })
-            .ToList();
+                })
+                .ToList();
 
-        ViewBag.FirmaDict = firmaDict;
-        ViewBag.FirmaGruplari = firmaGruplari;
-        ViewBag.Bankalar = bankalar;
-        ViewBag.KullaniciAdi = KullaniciAdi();
+            ViewBag.FirmaGruplari = firmaGruplari;
+            ViewBag.Bankalar = bankalar;
+            ViewBag.KullaniciAdi = KullaniciAdi();
 
-        if (!faturalar.Any())
-        {
-            TempData["Bilgi"] = batchId.HasValue 
-                ? "Bu yüklemede ödemeye dahil edilmemiş fatura kalmadı." 
-                : "Sistemde ödemeye hazır açık fatura bulunmuyor.";
+            if (!faturalar.Any())
+            {
+                if (batchId.HasValue && batchId.Value > 0)
+                    TempData["Bilgi"] = "Bu yüklemede ödemeye dahil edilmemiş fatura kalmadı.";
+                else
+                    TempData["Bilgi"] = "Sistemde ödemeye hazır açık fatura bulunmuyor.";
+            }
         }
-    }
-    catch (Exception ex)
-    {
-        TempData["Hata"] = "Veri yükleme hatası: " + ex.Message;
-        return RedirectToAction("Index");
+        catch (Exception ex)
+        {
+            TempData["Hata"] = "Veri yükleme hatası: " + ex.Message;
+            return RedirectToAction("Index");
+        }
+
+        return View();
     }
 
-    return View();
-}
     // -----------------------------------------------------------------------
     // TALİMAT OLUŞTUR - SADECE GEÇİCİ OLUŞTUR (KAYIT YOK)
     // -----------------------------------------------------------------------
@@ -191,14 +173,12 @@ public async Task<IActionResult> FaturaSecim(int? batchId = null)
 
         try
         {
-            // Geçici talimat oluştur (veritabanına kayıt yok)
             var geciciTalimat = _talimatService.TalimatOlusturGecici(
                 secilenFaturaIdleri, 
                 bankaId, 
                 KullaniciAdi(), 
                 batchId);
 
-            // Null kontrolü
             if (geciciTalimat == null)
             {
                 TempData["Hata"] = "Talimat oluşturulamadı.";
@@ -208,17 +188,24 @@ public async Task<IActionResult> FaturaSecim(int? batchId = null)
                     return RedirectToAction("FaturaSecim");
             }
 
-            // System.Text.Json ile Session'a kaydet
             var options = new JsonSerializerOptions 
             { 
                 WriteIndented = false,
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                PropertyNameCaseInsensitive = true
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
             };
             
-            HttpContext.Session.SetString("GeciciTalimat", JsonSerializer.Serialize(geciciTalimat, options));
-            HttpContext.Session.SetString("GeciciFaturaIdleri", JsonSerializer.Serialize(secilenFaturaIdleri, options));
+            var talimatJson = JsonSerializer.Serialize(geciciTalimat, options);
+            var faturaIdJson = JsonSerializer.Serialize(secilenFaturaIdleri, options);
+            
+            // Session'a kaydet
+            HttpContext.Session.SetString("GeciciTalimat", talimatJson);
+            HttpContext.Session.SetString("GeciciFaturaIdleri", faturaIdJson);
             HttpContext.Session.SetInt32("GeciciBatchId", batchId);
+
+            // TempData'ya da kaydet (yedek)
+            TempData["GeciciTalimat"] = talimatJson;
+            TempData["GeciciFaturaIdleri"] = faturaIdJson;
+            TempData["GeciciBatchId"] = batchId;
 
             TempData["Bilgi"] = "Talimat oluşturuldu. Kaydetmek için 'Talimatı Kaydet' butonuna tıklayın.";
             return RedirectToAction("Detay", new { id = 0 });
@@ -236,44 +223,83 @@ public async Task<IActionResult> FaturaSecim(int? batchId = null)
     // -----------------------------------------------------------------------
     // TALİMAT DETAY
     // -----------------------------------------------------------------------
-    [HttpGet]
-    public async Task<IActionResult> Detay(int id)
+   [HttpGet]
+public async Task<IActionResult> Detay(int id)
+{
+    if (!IsLoggedIn()) return RedirectToAction("Login", "Account");
+    if (!IsAdmin()) return Forbid();
+
+    if (id == 0)
     {
-        if (!IsLoggedIn()) return RedirectToAction("Login", "Account");
-        if (!IsAdmin()) return Forbid();
+        // 1. Session'dan al
+        var geciciTalimatJson = HttpContext.Session.GetString("GeciciTalimat");
+        var geciciFaturaIdleriJson = HttpContext.Session.GetString("GeciciFaturaIdleri");
+        var geciciBatchId = HttpContext.Session.GetInt32("GeciciBatchId") ?? 0;
 
-        if (id == 0)
+        // 2. Session boşsa TempData'dan al
+        if (string.IsNullOrEmpty(geciciTalimatJson))
         {
-            // Geçici talimatı Session'dan al
-            var geciciTalimatJson = HttpContext.Session.GetString("GeciciTalimat");
-            if (string.IsNullOrEmpty(geciciTalimatJson))
-            {
-                TempData["Hata"] = "Geçici talimat bulunamadı.";
-                return RedirectToAction("Index");
-            }
+            geciciTalimatJson = TempData["GeciciTalimat"] as string;
+            geciciFaturaIdleriJson = TempData["GeciciFaturaIdleri"] as string;
+            geciciBatchId = TempData["GeciciBatchId"] as int? ?? 0;
+        }
 
-            var geciciTalimat = JsonSerializer.Deserialize<OtTalimat>(geciciTalimatJson, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            });
+        if (string.IsNullOrEmpty(geciciTalimatJson))
+        {
+            TempData["Hata"] = "Geçici talimat bulunamadı. Lütfen tekrar talimat oluşturun.";
+            return RedirectToAction("Index");
+        }
+
+        try
+        {
+            // 🔧 JSON'u deserialize et - ÖZEL AYARLARLA
+            var options = new JsonSerializerOptions 
+            { 
+                WriteIndented = false,
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                // ⭐ EKSTRA: Null değerleri yoksay
+                DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+            };
             
-            // Null kontrolü
+            var geciciTalimat = JsonSerializer.Deserialize<OtTalimat>(geciciTalimatJson, options);
+            
             if (geciciTalimat == null)
             {
                 TempData["Hata"] = "Geçici talimat verisi bozuk.";
                 return RedirectToAction("Index");
             }
 
+            // ⭐ DEBUG: Satır sayısını kontrol et
+            System.Diagnostics.Debug.WriteLine($"Detay - Satır Sayısı: {geciciTalimat.Satirlar?.Count ?? 0}");
+            
+            // Eğer satırlar boşsa, hata mesajı göster
+            if (geciciTalimat.Satirlar == null || geciciTalimat.Satirlar.Count == 0)
+            {
+                // TempData ile uyarı göster
+                TempData["Uyari"] = "Talimat oluşturuldu ancak fatura satırları bulunamadı. Lütfen tekrar deneyin.";
+                // Yine de talimatı göster
+            }
+
+            // Session'ı güncelle
+            HttpContext.Session.SetString("GeciciTalimat", JsonSerializer.Serialize(geciciTalimat, options));
+            HttpContext.Session.SetString("GeciciFaturaIdleri", geciciFaturaIdleriJson ?? "[]");
+            HttpContext.Session.SetInt32("GeciciBatchId", geciciBatchId);
+
             return View(geciciTalimat);
         }
-
-        var talimat = await _talimatService.GetTalimatDetayAsync(id);
-        
-        // Null kontrolü
-        if (talimat == null) return NotFound();
-
-        return View(talimat);
+        catch (Exception ex)
+        {
+            TempData["Hata"] = "Talimat verisi okunamadı: " + ex.Message;
+            return RedirectToAction("Index");
+        }
     }
+
+    // ID > 0 ise veritabanından getir
+    var talimat = await _talimatService.GetTalimatDetayAsync(id);
+    if (talimat == null) return NotFound();
+
+    return View(talimat);
+}
 
     // -----------------------------------------------------------------------
     // TALİMAT KAYDET (VERİTABANINA KAYIT)
@@ -287,10 +313,18 @@ public async Task<IActionResult> FaturaSecim(int? batchId = null)
 
         try
         {
-            // Geçici talimatı Session'dan al
+            // Önce Session'dan dene
             var geciciTalimatJson = HttpContext.Session.GetString("GeciciTalimat");
             var geciciFaturaIdleriJson = HttpContext.Session.GetString("GeciciFaturaIdleri");
             var geciciBatchId = HttpContext.Session.GetInt32("GeciciBatchId") ?? 0;
+
+            // Session boşsa TempData'dan al
+            if (string.IsNullOrEmpty(geciciTalimatJson))
+            {
+                geciciTalimatJson = TempData["GeciciTalimat"] as string;
+                geciciFaturaIdleriJson = TempData["GeciciFaturaIdleri"] as string;
+                geciciBatchId = TempData["GeciciBatchId"] as int? ?? 0;
+            }
 
             if (string.IsNullOrEmpty(geciciTalimatJson) || string.IsNullOrEmpty(geciciFaturaIdleriJson))
             {
@@ -298,43 +332,33 @@ public async Task<IActionResult> FaturaSecim(int? batchId = null)
                 return RedirectToAction("Index");
             }
 
-            var geciciTalimat = JsonSerializer.Deserialize<OtTalimat>(geciciTalimatJson, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            });
+            var geciciTalimat = JsonSerializer.Deserialize<OtTalimat>(geciciTalimatJson);
             var secilenFaturaIdleri = JsonSerializer.Deserialize<List<int>>(geciciFaturaIdleriJson);
 
-            // Null kontrolü
-            if (geciciTalimat == null)
+            if (geciciTalimat == null || secilenFaturaIdleri == null)
             {
                 TempData["Hata"] = "Geçici talimat verisi bozuk.";
                 return RedirectToAction("Index");
             }
 
-            // Null kontrolü
-            if (secilenFaturaIdleri == null || secilenFaturaIdleri.Count == 0)
-            {
-                TempData["Hata"] = "Seçili fatura bilgisi bulunamadı.";
-                return RedirectToAction("Index");
-            }
-
-            // Talimatı veritabanına kaydet
             var kaydedilenTalimat = await _talimatService.TalimatKaydetAsync(
                 geciciTalimat,
                 secilenFaturaIdleri,
                 geciciBatchId);
 
-            // Null kontrolü
             if (kaydedilenTalimat == null)
             {
                 TempData["Hata"] = "Talimat kaydedilemedi.";
                 return RedirectToAction("Detay", new { id = 0 });
             }
 
-            // Session'ı temizle
+            // Session ve TempData temizle
             HttpContext.Session.Remove("GeciciTalimat");
             HttpContext.Session.Remove("GeciciFaturaIdleri");
             HttpContext.Session.Remove("GeciciBatchId");
+            TempData.Remove("GeciciTalimat");
+            TempData.Remove("GeciciFaturaIdleri");
+            TempData.Remove("GeciciBatchId");
 
             TempData["Basarili"] = $"Talimat #{kaydedilenTalimat.TalimatNo} başarıyla kaydedildi!";
             return RedirectToAction("Detay", new { id = kaydedilenTalimat.Id });

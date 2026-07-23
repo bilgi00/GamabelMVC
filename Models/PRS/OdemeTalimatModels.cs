@@ -52,22 +52,25 @@ public class OtAcikFatura
     public int ImportBatchId { get; set; }
 }
 
+
+
 public class OtTalimat
 {
     public int Id { get; set; }
-    public string TalimatNo { get; set; } = string.Empty;
+    public string TalimatNo { get; set; } = "";
     public DateTime Tarih { get; set; }
     public int BankaId { get; set; }
-    public string BankaSubeAdi { get; set; } = string.Empty;
-    public string BankaIBAN { get; set; } = string.Empty;
+    public string BankaSubeAdi { get; set; } = "";
+    public string BankaIBAN { get; set; } = "";
     public decimal ToplamTutar { get; set; }
     public int ToplamAdet { get; set; }
-    public string HazirlayanKullanici { get; set; } = string.Empty;
+    public string HazirlayanKullanici { get; set; } = "";
     public string? OnaylayanKullanici { get; set; }
     public DateTime? OnayTarihi { get; set; }
-    public string Durum { get; set; } = "beklemede";  // ✅ EKLENDİ
-    public List<OtTalimatSatiri> Satirlar { get; set; } = new();
+    public string Durum { get; set; } = "beklemede";
     
+    // ⚠️ BURASI ÖNEMLİ - Property get/set kontrol et
+    public List<OtTalimatSatiri> Satirlar { get; set; } = new List<OtTalimatSatiri>();
 }
 
 

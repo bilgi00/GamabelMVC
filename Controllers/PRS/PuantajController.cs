@@ -144,7 +144,9 @@ public class PuantajController : Controller
         return Json(izinler);
     }
 
-    // İzin kaydet (tek veya toplu)
+    // ================================================================
+    // ✅ İzin kaydet (tek veya toplu) - DÜZELTİLDİ
+    // ================================================================
     [HttpPost]
     public async Task<IActionResult> KaydetIzin([FromBody] List<PuantajIzinModel> izinler)
     {
@@ -160,15 +162,25 @@ public class PuantajController : Controller
         {
             await using var kilitConn = new MySqlConnection(_connectionString);
             await kilitConn.OpenAsync();
+
+            // ✅ kilitli sütununu kontrol et
             await using var kilitCmd = new MySqlCommand(
-                "SELECT COUNT(*) FROM ay_kilitleri WHERE yil = @yil AND ay = @ay", kilitConn);
+                "SELECT kilitli FROM ay_kilitleri WHERE yil = @yil AND ay = @ay", kilitConn);
             kilitCmd.Parameters.AddWithValue("@yil", ilkIzin.Yil);
             kilitCmd.Parameters.AddWithValue("@ay", ilkIzin.Ay);
-            var kilitSayisi = Convert.ToInt32(await kilitCmd.ExecuteScalarAsync());
-            if (kilitSayisi > 0)
+
+            var result = await kilitCmd.ExecuteScalarAsync();
+
+            // ✅ Kayıt varsa ve kilitli = 1 ise kilitli
+            if (result != null && Convert.ToInt32(result) == 1)
+            {
                 return Json(new { basarili = false, mesaj = "Bu ay kilitlenmiştir. Kayıt yapılamaz." });
+            }
         }
-        catch { }
+        catch
+        {
+            // Tablo veya sütun yoksa kilit yok say
+        }
 
         int eklenen = 0, silinen = 0;
         try
