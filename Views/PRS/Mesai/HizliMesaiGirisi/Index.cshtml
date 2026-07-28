@@ -8,8 +8,9 @@
     var secilenBirim = (string?)ViewBag.SecilenBirim ?? "";
     var gunSayisi = (int)ViewBag.GunSayisi;
     var rol = ViewBag.Rol ?? "";
-    
-    var ayAdlari = new[] { "", "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", 
+    var aylikLimitSaat = 88m; // Aylık uyarı eşiği (kurumsal kural)
+
+    var ayAdlari = new[] { "", "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
                            "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık" };
 }
 
@@ -17,44 +18,100 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
 
 <style>
+    /* ============================================================
+       RENK / TASARIM TOKEN'LARI
+       (mesai-* önekiyle sayfa dışına sızmayı engelliyoruz)
+       ============================================================ */
+    :root {
+        --mesai-primary: #0f766e;       /* teal - birincil aksiyon rengi */
+        --mesai-primary-dark: #0b5a54;
+        --mesai-header-bg: #1e293b;     /* koyu slate - tablo başlığı */
+        --mesai-header-text: #f1f5f9;
+        --mesai-surface: #ffffff;
+        --mesai-border: #dde3ea;
+        --mesai-text: #0f172a;
+        --mesai-muted: #64748b;
+        --mesai-weekend-bg: #f1f5f9;
+        --mesai-warn-bg: #fef3c7;       /* günlük aşım (amber) */
+        --mesai-warn-text: #92400e;
+        --mesai-danger-bg: #fee2e2;     /* aylık aşım (kırmızı) */
+        --mesai-danger-text: #b91c1c;
+        --mesai-empty-hover: #ecfdf5;
+    }
+
     .mesai-container { padding: 1rem; }
     .header-section { margin-bottom: 1rem; }
-    .controls-row { box-shadow: 0 0 0 1px rgba(15,23,42,.08); }
+    .header-section h1 { font-size: 1.4rem; font-weight: 700; color: var(--mesai-text); display:flex; align-items:center; gap:.5rem; }
+
+    .controls-row { box-shadow: 0 0 0 1px rgba(15,23,42,.08); border-radius: .75rem; }
     .control-group label { letter-spacing: .02em; }
-    .nav-buttons button { min-width: 48px; }
+    .nav-buttons button { min-width: 44px; }
+    .nav-buttons .btn-primary { background-color: var(--mesai-primary); border-color: var(--mesai-primary); }
+    .nav-buttons .btn-primary:hover { background-color: var(--mesai-primary-dark); border-color: var(--mesai-primary-dark); }
 
-    .mesai-table-wrapper { overflow-x: auto; background: #fff; border: 1px solid #dee2e6; border-radius: .75rem; }
+    .mesai-table-wrapper { overflow-x: auto; background: var(--mesai-surface); border: 1px solid var(--mesai-border); border-radius: .75rem; }
     .mesai-table { width: 100%; min-width: 980px; border-collapse: collapse; }
-    .mesai-table th, .mesai-table td { border: 1px solid #dee2e6; padding: .55rem .45rem; text-align: center; vertical-align: middle; }
-    .mesai-table th { background: #f8fafc; color: #0f172a; font-weight: 700; position: sticky; top: 0; z-index: 3; }
-    .mesai-table th.personel-name-cell, .mesai-table td.personel-name-cell { position: sticky; left: 0; z-index: 4; background: #f8fafc; text-align: left; min-width: 220px; }
-    .mesai-table th.total-column-cell, .mesai-table td.total-column-cell { min-width: 84px; background: #f8fafc; }
-    .mesai-table th.day-weekend, .mesai-table td.day-weekend-col { background: #eef2ff; }
+    .mesai-table th, .mesai-table td { border: 1px solid var(--mesai-border); padding: .55rem .45rem; text-align: center; vertical-align: middle; }
+    .mesai-table th { background: var(--mesai-header-bg); color: var(--mesai-header-text); font-weight: 600; position: sticky; top: 0; z-index: 3; cursor: pointer; }
+    .mesai-table th:focus-visible,
+    .mesai-cell:focus-visible { outline: 2px solid var(--mesai-primary); outline-offset: 2px; }
 
-    .mesai-cell { min-height: 44px; display:flex; align-items:center; justify-content:center; cursor:pointer; border-radius: .45rem; transition: background .18s ease, color .18s ease; }
-    .mesai-cell.empty { color: transparent; }
-    .mesai-cell.empty:hover { background: #f8fafc; color: #94a3b8; }
-    .mesai-cell.warning { background: #fef3c7; color: #92400e; }
+    .mesai-table th.personel-name-cell, .mesai-table td.personel-name-cell {
+        position: sticky; left: 0; z-index: 4; background: #f8fafc; text-align: left; min-width: 220px;
+        box-shadow: 2px 0 4px rgba(15,23,42,.06); /* sticky kolonu görsel olarak ayırır */
+    }
+    .mesai-table th.personel-name-cell { background: var(--mesai-header-bg); color: var(--mesai-header-text); }
+
+    .mesai-table th.total-column-cell, .mesai-table td.total-column-cell { min-width: 96px; background: #f8fafc; }
+    .mesai-table th.day-weekend, .mesai-table td.day-weekend-col { background: var(--mesai-weekend-bg); }
+    .mesai-table th.day-weekend { font-style: italic; color: #cbd5e1; }
+
+    .mesai-cell { min-height: 44px; display:flex; align-items:center; justify-content:center; cursor:pointer; border-radius: .45rem; transition: background .18s ease, color .18s ease; font-weight: 600; }
+    .mesai-cell.empty { color: transparent; position: relative; }
+    .mesai-cell.empty::after {
+        content: "+"; color: transparent; font-weight: 300; font-size: 1.1rem; transition: color .18s ease;
+    }
+    .mesai-cell.empty:hover { background: var(--mesai-empty-hover); }
+    .mesai-cell.empty:hover::after,
+    .mesai-cell.empty:focus-visible::after { color: #94a3b8; }
+
+    /* Günlük aşım (tek hücre, 8 saatin üzeri) */
+    .mesai-cell.gunluk-asim { background: var(--mesai-warn-bg); color: var(--mesai-warn-text); }
+
+    /* Aylık aşım (satır toplamı, 88 saatin üzeri) — günlük uyarıdan renk olarak ayrıştırıldı */
+    .total-column-cell.aylik-asim .toplam-metin { color: var(--mesai-danger-text); font-weight: 700; }
+
     .selected-column { background: #e0f2fe !important; }
-    .month-title { min-width: 180px; display: inline-flex; justify-content: center; font-weight: 700; }
+    .month-title { min-width: 180px; display: inline-flex; justify-content: center; font-weight: 700; color: var(--mesai-text); }
 
-    .takvim-msg { margin-top: .75rem; min-height: 1.4rem; font-size: .95rem; color: #334155; }
+    .toplam-wrap { display: flex; flex-direction: column; align-items: center; gap: .25rem; }
+    .toplam-metin { font-weight: 700; color: var(--mesai-text); }
+    .toplam-bar { width: 100%; height: 4px; background: #e2e8f0; border-radius: 999px; overflow: hidden; }
+    .toplam-bar-fill { height: 100%; width: 0%; background: var(--mesai-primary); transition: width .25s ease, background-color .25s ease; }
+    .toplam-bar-fill.aylik-asim-fill { background: var(--mesai-danger-text); }
+
+    .takvim-msg { margin-top: .75rem; min-height: 1.4rem; font-size: .95rem; color: var(--mesai-muted); display:flex; align-items:center; gap:.4rem; }
     .takvim-msg.success { color: #166534; }
-    .takvim-msg.error { color: #b91c1c; }
+    .takvim-msg.error { color: var(--mesai-danger-text); }
 
     .mesai-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); z-index: 1050; align-items: center; justify-content: center; padding: 1rem; }
     .mesai-modal { width: min(520px, 100%); background: #fff; border-radius: 1rem; box-shadow: 0 25px 60px rgba(15,23,42,.18); padding: 1.3rem; }
+    .mesai-modal h3 { font-size: 1.1rem; color: var(--mesai-text); margin-bottom: 1rem; }
     .mesai-modal-grid { display: grid; gap: 1rem; grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .mesai-modal-field.full-width { grid-column: span 2; }
     .mesai-modal-actions { display: flex; justify-content: flex-end; gap: .75rem; margin-top: 1rem; }
+    .mesai-modal-actions .btn-primary { background-color: var(--mesai-primary); border-color: var(--mesai-primary); }
+    .mesai-modal-actions .btn-primary:hover { background-color: var(--mesai-primary-dark); border-color: var(--mesai-primary-dark); }
     .mesai-modal-msg { min-height: 1.2rem; margin-top: .75rem; font-size: .95rem; }
+    .mesai-sure-bilgi { font-size: .9rem; color: var(--mesai-muted); background: #f8fafc; border: 1px solid var(--mesai-border); border-radius: .5rem; padding: .5rem .75rem; }
+    .mesai-sure-bilgi.negatif { color: var(--mesai-danger-text); background: var(--mesai-danger-bg); border-color: transparent; }
 </style>
 
 <div class="mesai-container">
     <div class="header-section">
-        <h1 class="mb-3">⚡ Hızlı Mesai Girişi</h1>
-        
-        <div class="controls-row d-flex flex-wrap gap-3 align-items-end bg-light p-3 rounded">
+        <h1>⚡ Hızlı Mesai Girişi</h1>
+
+        <div class="controls-row d-flex flex-wrap gap-3 align-items-end bg-light p-3">
             <div class="control-group d-flex flex-column gap-1">
                 <label for="subeSelect" class="fw-semibold text-secondary small">Birim Seçiniz</label>
                 <select id="subeSelect" class="form-select" style="min-width:200px;" onchange="birimDegistir()">
@@ -67,16 +124,16 @@
             </div>
 
             <div class="control-group d-flex flex-column gap-1">
-                <label class="fw-semibold text-secondary small">Ay & Yıl</label>
+                <label class="fw-semibold text-secondary small">Ay &amp; Yıl</label>
                 <div class="nav-buttons d-flex gap-2 align-items-center">
-                    <button class="btn btn-primary" onclick="ayDegistir(-1)">←</button>
+                    <button class="btn btn-primary" onclick="ayDegistir(-1)" aria-label="Önceki ay">←</button>
                     <span class="month-title" id="monthTitle">@ayAdlari[secilenAy] @secilenYil</span>
-                    <button class="btn btn-primary" onclick="ayDegistir(1)">→</button>
+                    <button class="btn btn-primary" onclick="ayDegistir(1)" aria-label="Sonraki ay">→</button>
                 </div>
             </div>
         </div>
 
-        <div id="takvimActionMsg" class="takvim-msg"></div>
+        <div id="takvimActionMsg" class="takvim-msg" role="status" aria-live="polite"></div>
     </div>
 
     @if (!string.IsNullOrEmpty(secilenBirim) && personeller.Count > 0)
@@ -85,14 +142,15 @@
             <table class="mesai-table" id="mesaiTable">
                 <thead>
                     <tr>
-                        <th class="personel-name-cell">Personel</th>
+                        <th class="personel-name-cell" tabindex="-1">Personel</th>
                         @for (int gun = 1; gun <= gunSayisi; gun++)
                         {
                             var gunTarihi = new DateTime(secilenYil, secilenAy, gun);
                             var haftaSonu = gunTarihi.DayOfWeek == DayOfWeek.Saturday || gunTarihi.DayOfWeek == DayOfWeek.Sunday;
-                            <th class="@(haftaSonu ? "day-weekend" : "")" data-gun="@gun" onclick="gunBaslikSec(@gun)">@gun</th>
+                            <th class="@(haftaSonu ? "day-weekend" : "")" data-gun="@gun" tabindex="0" role="button"
+                                aria-label="@gun. günü seç" onclick="gunBaslikSec(@gun)" onkeydown="gunBaslikSecKey(event, @gun)">@gun</th>
                         }
-                        <th class="total-column-cell">Toplam</th>
+                        <th class="total-column-cell" tabindex="-1">Toplam</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -106,44 +164,57 @@
                                 var haftaSonu = gunTarihi.DayOfWeek == DayOfWeek.Saturday || gunTarihi.DayOfWeek == DayOfWeek.Sunday;
                                 var haftaSonuClass = haftaSonu ? "day-weekend-col" : "";
 
-                                if (personelMesaiVerileri.ContainsKey(personel.Id) && 
+                                if (personelMesaiVerileri.ContainsKey(personel.Id) &&
                                     personelMesaiVerileri[personel.Id].ContainsKey(gun.ToString()))
                                 {
                                     var mesai = personelMesaiVerileri[personel.Id][gun.ToString()];
-                                    
-                                    var saatStr = mesai.ToplamSaat.ToString();
-                                    
-                                    // ✅ DÜZELTİLDİ: out decimal s kullanıldı
+
+                                    // Null-güvenli okuma: ToplamSaat null gelirse eskiden NullReferenceException fırlatıyordu
+                                    var saatStr = mesai?.ToplamSaat?.ToString() ?? "0";
+
                                     decimal saat = 0m;
-                                    if (decimal.TryParse(saatStr, System.Globalization.NumberStyles.Any, 
+                                    if (decimal.TryParse(saatStr, System.Globalization.NumberStyles.Any,
                                         System.Globalization.CultureInfo.InvariantCulture, out decimal s))
                                     {
                                         saat = s;
                                     }
-                                    
-                                    // Formatla
+
                                     int saatInt = (int)Math.Floor(saat);
                                     int dakika = (int)Math.Round((saat - saatInt) * 60);
                                     if (dakika >= 60) { saatInt++; dakika = 0; }
                                     var kod = $"{saatInt:D2}:{dakika:D2}";
-                                    var uyariSinifi = saat > 8 ? "warning" : "";
-                                    
+
+                                    // Günlük aşım uyarısı, aylık aşımdan (satır toplamı) ayrı bir sınıf ile gösteriliyor
+                                    var uyariSinifi = saat > 8 ? "gunluk-asim" : "";
+
                                     var dataSaat = saat.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                                    var kayitId = mesai?.Id ?? 0;
 
                                     <td class="@haftaSonuClass" data-gun="@gun" data-saat="@dataSaat">
-                                        <div class="mesai-cell @uyariSinifi" onclick="modalAc(@personel.Id, @gun, @mesai.Id, 'edit')">
+                                        <div class="mesai-cell @uyariSinifi" tabindex="0" role="button"
+                                             aria-label="@personel.AdSoyad - @gun. gün mesai kaydını düzenle, mevcut süre @kod"
+                                             onclick="modalAc(@personel.Id, @gun, @kayitId, 'edit')"
+                                             onkeydown="hucreKey(event, @personel.Id, @gun, @kayitId, 'edit')">
                                             @kod
                                         </div>
                                     </td>
                                 }
                                 else
                                 {
-                                    <td class="@haftaSonuClass" data-gun="@gun" data-saat="0" onclick="modalAc(@personel.Id, @gun, 0, 'new')">
-                                        <div class="mesai-cell empty"></div>
+                                    <td class="@haftaSonuClass" data-gun="@gun" data-saat="0">
+                                        <div class="mesai-cell empty" tabindex="0" role="button"
+                                             aria-label="@personel.AdSoyad - @gun. gün için yeni mesai ekle"
+                                             onclick="modalAc(@personel.Id, @gun, 0, 'new')"
+                                             onkeydown="hucreKey(event, @personel.Id, @gun, 0, 'new')"></div>
                                     </td>
                                 }
                             }
-                            <td class="total-column-cell" data-personel-id="@personel.Id">00:00</td>
+                            <td class="total-column-cell" data-personel-id="@personel.Id">
+                                <div class="toplam-wrap">
+                                    <span class="toplam-metin">00:00</span>
+                                    <div class="toplam-bar"><div class="toplam-bar-fill"></div></div>
+                                </div>
+                            </td>
                         </tr>
                     }
                 </tbody>
@@ -166,23 +237,26 @@
 
 <!-- Modal -->
 <div id="mesaiModalOverlay" class="mesai-modal-overlay" onclick="modalKapat(event)">
-    <div class="mesai-modal" onclick="event.stopPropagation()">
+    <div class="mesai-modal" onclick="event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="mesaiModalTitle">
         <h3 id="mesaiModalTitle">Mesai Kaydı</h3>
         <div class="mesai-modal-grid">
             <div class="mesai-modal-field full-width">
-                <label>Tarih</label>
+                <label for="mesaiTarih">Tarih</label>
                 <input id="mesaiTarih" type="text" class="form-control" readonly />
             </div>
             <div class="mesai-modal-field">
-                <label>Başlangıç</label>
-                <input id="mesaiBaslangic" type="time" class="form-control" value="08:00" />
+                <label for="mesaiBaslangic">Başlangıç</label>
+                <input id="mesaiBaslangic" type="time" class="form-control" value="08:00" onchange="hesaplaSure()" oninput="hesaplaSure()" />
             </div>
             <div class="mesai-modal-field">
-                <label>Bitiş</label>
-                <input id="mesaiBitis" type="time" class="form-control" value="17:00" />
+                <label for="mesaiBitis">Bitiş</label>
+                <input id="mesaiBitis" type="time" class="form-control" value="17:00" onchange="hesaplaSure()" oninput="hesaplaSure()" />
             </div>
             <div class="mesai-modal-field full-width">
-                <label>Açıklama</label>
+                <div id="mesaiSureBilgi" class="mesai-sure-bilgi">Süre: —</div>
+            </div>
+            <div class="mesai-modal-field full-width">
+                <label for="mesaiAciklama">Açıklama</label>
                 <textarea id="mesaiAciklama" class="form-control" rows="2" placeholder="İsteğe bağlı açıklama..."></textarea>
             </div>
         </div>
@@ -190,7 +264,7 @@
             <button type="button" class="btn btn-secondary" onclick="modalKapat()">Vazgeç</button>
             <button type="button" class="btn btn-primary" onclick="kaydet()">Kaydet</button>
         </div>
-        <div id="mesaiModalMsg" class="mesai-modal-msg"></div>
+        <div id="mesaiModalMsg" class="mesai-modal-msg" role="alert"></div>
     </div>
 </div>
 
@@ -201,11 +275,12 @@
 // ============================================================
 // SABİTLER
 // ============================================================
-var AY_ADLARI = ['', 'Ocak', 'Subat', 'Mart', 'Nisan', 'Mayis', 'Haziran', 
+var AY_ADLARI = ['', 'Ocak', 'Subat', 'Mart', 'Nisan', 'Mayis', 'Haziran',
                    'Temmuz', 'Agustos', 'Eylul', 'Ekim', 'Kasim', 'Aralik'];
 
 var SECILEN_AY = @secilenAy;
 var SECILEN_YIL = @secilenYil;
+var AYLIK_LIMIT_SAAT = @aylikLimitSaat.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
 // ============================================================
 // STATE
@@ -217,18 +292,32 @@ var state = {
     mode: 'new'
 };
 
+var mesajTimeoutId = null;
+
 // ============================================================
-// MESAJ
+// MESAJ (otomatik kaybolan toast tarzı bildirim)
 // ============================================================
 function mesajGoster(text, type) {
     type = type || 'info';
     var el = document.getElementById('takvimActionMsg');
     if (!el) return;
+
     el.textContent = text;
     el.className = 'takvim-msg';
     if (type === 'error') el.classList.add('error');
     if (type === 'success') el.classList.add('success');
-    if (type === 'info') el.style.color = '#334155';
+
+    if (mesajTimeoutId) {
+        clearTimeout(mesajTimeoutId);
+        mesajTimeoutId = null;
+    }
+
+    // Hata mesajları biraz daha uzun süre ekranda kalsın
+    var sure = type === 'error' ? 6000 : 4000;
+    mesajTimeoutId = setTimeout(function () {
+        el.textContent = '';
+        el.className = 'takvim-msg';
+    }, sure);
 }
 
 // ============================================================
@@ -250,54 +339,76 @@ function hesaplaToplamlar() {
     if (!table) return;
 
     var rows = table.querySelectorAll('tbody tr.personel-row');
-    
-    rows.forEach(function(row) {
+
+    rows.forEach(function (row) {
         var toplamDakika = 0;
         var hucreler = row.querySelectorAll('td[data-saat]');
-        
-        hucreler.forEach(function(h) {
+
+        hucreler.forEach(function (h) {
             var saatStr = h.getAttribute('data-saat') || '0';
-            var saat = parseFloat(saatStr.replace(',', '.'));
+            var saat = parseFloat(saatStr);
             if (!isNaN(saat) && saat > 0) {
                 toplamDakika += Math.round(saat * 60);
             }
         });
 
-        var toplam = row.querySelector('.total-column-cell');
-        if (toplam) {
-            toplam.textContent = formatDakikaJS(toplamDakika);
-            toplam.classList.remove('warning');
-            
-            var toplamSaat = toplamDakika / 60;
-            if (toplamSaat > 88) {
-                toplam.classList.add('warning');
-                toplam.title = 'Aylık 88 saat aşıldı!';
-            }
+        var toplamHucre = row.querySelector('.total-column-cell');
+        var metinEl = row.querySelector('.toplam-metin');
+        var barFillEl = row.querySelector('.toplam-bar-fill');
+        if (!toplamHucre || !metinEl) return;
+
+        metinEl.textContent = formatDakikaJS(toplamDakika);
+
+        var toplamSaat = toplamDakika / 60;
+        var yuzde = Math.min(100, Math.round((toplamSaat / AYLIK_LIMIT_SAAT) * 100));
+
+        toplamHucre.classList.remove('aylik-asim');
+        if (barFillEl) barFillEl.classList.remove('aylik-asim-fill');
+
+        if (toplamSaat > AYLIK_LIMIT_SAAT) {
+            toplamHucre.classList.add('aylik-asim');
+            if (barFillEl) barFillEl.classList.add('aylik-asim-fill');
+            toplamHucre.title = 'Aylık ' + AYLIK_LIMIT_SAAT + ' saat aşıldı!';
+        } else {
+            toplamHucre.removeAttribute('title');
         }
+
+        if (barFillEl) barFillEl.style.width = yuzde + '%';
     });
 }
 
 // ============================================================
 // NAVIGASYON
 // ============================================================
+function birimSeciliMi() {
+    var birim = document.getElementById('subeSelect').value;
+    if (!birim) {
+        mesajGoster('Lütfen önce bir birim seçiniz.', 'error');
+        return null;
+    }
+    return birim;
+}
+
 function birimDegistir() {
     var birim = document.getElementById('subeSelect').value;
     if (birim) {
         window.location.href = '/HizliMesaiGirisi/Index?birim=' + encodeURIComponent(birim) + '&yil=' + SECILEN_YIL + '&ay=' + SECILEN_AY;
+    } else {
+        mesajGoster('Lütfen bir birim seçiniz.', 'error');
     }
 }
 
 function ayDegistir(miktar) {
+    var birim = birimSeciliMi();
+    if (!birim) return;
+
     var ay = SECILEN_AY + miktar;
     var yil = SECILEN_YIL;
-    
+
     if (ay > 12) { ay = 1; yil++; }
     else if (ay < 1) { ay = 12; yil--; }
-    
-    var birim = document.getElementById('subeSelect').value;
-    if (birim) {
-        window.location.href = '/HizliMesaiGirisi/Index?birim=' + encodeURIComponent(birim) + '&yil=' + yil + '&ay=' + ay;
-    }
+
+    window.location.href = '/HizliMesaiGirisi/Index?birim=' + encodeURIComponent(birim) + '&yil=' + yil + '&ay=' + ay;
 }
 
 function gunBaslikSec(gun) {
@@ -305,9 +416,16 @@ function gunBaslikSec(gun) {
     mesajGoster('Seçili gün: ' + gun + '. Herhangi bir personel hücresine tıklayın.');
 }
 
+function gunBaslikSecKey(event, gun) {
+    if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        gunBaslikSec(gun);
+    }
+}
+
 function markSelectedGun(gun) {
     var gunlar = document.querySelectorAll('[data-gun]');
-    gunlar.forEach(function(el) {
+    gunlar.forEach(function (el) {
         var deger = parseInt(el.getAttribute('data-gun'), 10);
         if (deger === gun) {
             el.classList.add('selected-column');
@@ -333,12 +451,63 @@ function modalAc(personelId, gun, kayitId, mode) {
     document.getElementById('mesaiModalTitle').textContent = mode === 'edit' ? '✏️ Mesai Düzenle' : '➕ Yeni Mesai';
     document.getElementById('mesaiModalMsg').textContent = '';
     document.getElementById('mesaiModalMsg').className = 'mesai-modal-msg';
+
+    // Modal her açıldığında süre bilgisini güncel tut
+    hesaplaSure();
+
     document.getElementById('mesaiModalOverlay').style.display = 'flex';
+}
+
+function hucreKey(event, personelId, gun, kayitId, mode) {
+    if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        modalAc(personelId, gun, kayitId, mode);
+    }
 }
 
 function modalKapat(evt) {
     if (evt && evt.target && evt.target.id !== 'mesaiModalOverlay') return;
     document.getElementById('mesaiModalOverlay').style.display = 'none';
+}
+
+// ============================================================
+// SÜRE HESABI (başlangıç/bitiş girildikçe canlı önizleme)
+// ============================================================
+function saatiDakikayaCevir(saatStr) {
+    var parcalar = (saatStr || '').split(':');
+    if (parcalar.length !== 2) return null;
+    var s = parseInt(parcalar[0], 10);
+    var d = parseInt(parcalar[1], 10);
+    if (isNaN(s) || isNaN(d)) return null;
+    return s * 60 + d;
+}
+
+function hesaplaSure() {
+    var baslangic = document.getElementById('mesaiBaslangic').value;
+    var bitis = document.getElementById('mesaiBitis').value;
+    var bilgiEl = document.getElementById('mesaiSureBilgi');
+    if (!bilgiEl) return null;
+
+    var basDk = saatiDakikayaCevir(baslangic);
+    var bitDk = saatiDakikayaCevir(bitis);
+
+    if (basDk === null || bitDk === null) {
+        bilgiEl.textContent = 'Süre: —';
+        bilgiEl.classList.remove('negatif');
+        return null;
+    }
+
+    var farkDk = bitDk - basDk;
+
+    if (farkDk <= 0) {
+        bilgiEl.textContent = 'Bitiş saati başlangıçtan sonra olmalıdır.';
+        bilgiEl.classList.add('negatif');
+        return null;
+    }
+
+    bilgiEl.classList.remove('negatif');
+    bilgiEl.textContent = 'Süre: ' + formatDakikaJS(farkDk).replace(':', ' saat ') + ' dk';
+    return farkDk;
 }
 
 // ============================================================
@@ -364,7 +533,17 @@ async function kaydet() {
         return;
     }
 
-    var payload = {
+    // Bitiş, başlangıçtan önce/eşit olamaz (eskiden hiç kontrol edilmiyordu)
+    var farkDk = hesaplaSure();
+    if (farkDk === null) {
+        msg.textContent = 'Bitiş saati başlangıç saatinden sonra olmalıdır.';
+        msg.className = 'mesai-modal-msg error';
+        return;
+    }
+
+    // new/edit modları artık aynı, tutarlı gövde şeklini paylaşıyor
+    var body = {
+        id: state.mode === 'edit' ? state.kayitId : 0,
         personelId: state.personelId,
         tarih: document.getElementById('mesaiTarih').value,
         baslangicSaati: baslangic,
@@ -372,15 +551,12 @@ async function kaydet() {
         notlar: aciklama
     };
 
-    try {
-        var endpoint = state.mode === 'edit' 
-            ? '/HizliMesaiGirisi/Guncelle' 
-            : '/HizliMesaiGirisi/KayitEkle';
-            
-        var body = state.mode === 'edit'
-            ? { id: state.kayitId, baslangicSaati: baslangic, bitisSaati: bitis, notlar: aciklama }
-            : payload;
+    var endpoint = state.mode === 'edit'
+        ? '/HizliMesaiGirisi/Guncelle'
+        : '/HizliMesaiGirisi/KayitEkle';
 
+    try {
+        // NOT: CSRF doğrulaması kullanıcı talebiyle bu sürümde eklenmedi.
         var response = await fetch(endpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -396,7 +572,7 @@ async function kaydet() {
 
         modalKapat();
         mesajGoster('✅ Kayıt başarılı, sayfa yenileniyor...', 'success');
-        setTimeout(function() { window.location.reload(); }, 500);
+        setTimeout(function () { window.location.reload(); }, 500);
     } catch (err) {
         msg.textContent = 'Sunucu bağlantı hatası: ' + err.message;
         msg.className = 'mesai-modal-msg error';
@@ -406,7 +582,7 @@ async function kaydet() {
 // ============================================================
 // BAŞLAT
 // ============================================================
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     hesaplaToplamlar();
 });
 </script>
