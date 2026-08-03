@@ -13,19 +13,32 @@
 
 <link rel="stylesheet" href="~/css/dashboard.css" asp-append-version="true" />
 
-<div class="container-fluid mt-4">
-    <div class="row mb-4 sts-mobile-title-row align-items-center">
-        <div class="col-md-8">
-            <h1>📦 Sevk Bekleyen Eksikler</h1>
-            <p class="text-muted">Sevk Işlemini Gerçekleştir ve Eksik Kayıtlarını Yönet</p>
-        </div>
-        <div class="col-md-4 text-end">
-            <a href="/Sevkiyat/Gecmis" class="btn btn-outline-primary">
-                📋 Sevkiyat Geçmişi
-            </a>
-        </div>
-    </div>
+<style>
+    .sts-mobile-title-row { margin-bottom: 1rem; }
+    .sts-mobile-title-row h1 { font-size: 1.5rem; font-weight: 700; color: #1e293b; margin: 0; }
+    .alert-info-custom { background: #eff6ff; border: 1px solid #93c5fd; color: #1e40af; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 14px; }
+    .sts-mobile-actions { white-space: nowrap; }
+    .sts-mobile-table { font-size: 13px; }
+    .sts-mobile-table thead th { background: #1e293b; color: white; padding: 10px 12px; }
+    .sts-mobile-table tbody td { padding: 8px 12px; vertical-align: middle; }
+    .sts-mobile-table .badge { font-weight: 500; }
+    
+    @@media (max-width: 768px) {
+        .sts-mobile-table thead { display: none; }
+        .sts-mobile-table tbody tr { display: block; border: 1px solid #dee2e6; margin-bottom: 12px; border-radius: 6px; padding: 12px; }
+        .sts-mobile-table tbody td { display: flex; justify-content: space-between; padding: 4px 0; border: none; }
+        .sts-mobile-table tbody td:before { content: attr(data-label); font-weight: 600; color: #1e293b; margin-right: 12px; }
+        .sts-mobile-table tbody td:last-child { border-bottom: none; }
+        .sts-mobile-actions .d-flex { flex-wrap: wrap; gap: 4px; }
+        .sts-mobile-actions .btn { font-size: 11px; padding: 4px 8px; }
+        .alert-info-custom { font-size: 12px; padding: 10px 12px; }
+    }
+</style>
 
+<div class="container-fluid mt-4">
+
+
+    <!-- Başarı Mesajları -->
     @if (TempData["Basari"] != null)
     {
         <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -34,6 +47,7 @@
         </div>
     }
 
+    <!-- Hata Mesajları -->
     @if (TempData["Hata"] != null)
     {
         <div class="alert alert-danger alert-dismissible fade show" role="alert">
@@ -42,105 +56,102 @@
         </div>
     }
 
-    <div class="alert alert-info-custom mb-4">
-        <strong>ℹ️ Gecikti Uyarısı:</strong> Eksik kaydının haftanın teslim günü olan Pazartesi 17:00 sonrasında girildiğini gösterir.
-        Bugün yeni girilmiş olsa bile Pazartesi 17:00 sonrası ise gecikmiş kabul edilir.
-    </div>
 
+
+    <!-- Filtreleme Kartı -->
     <div class="card mb-4">
         <div class="card-header bg-primary text-white fw-bold">🔍 Sevk Bekleyen Eksikler - Filtreleme</div>
         <div class="card-body">
-            <form method="get" action="/Sevkiyat/SevkBekleyenEksikler" id="filterForm" class="row g-3">
-                <div class="col-md-3">
-                    <label for="subeAdi" class="form-label">Bölüm Seçin</label>
-                    <select name="subeAdi" id="subeAdi" class="form-select">
-                        @if (string.IsNullOrWhiteSpace(seciiliSube))
-                        {
-                            <option value="" selected>Tüm Bölümler</option>
-                        }
-                        else
-                        {
-                            <option value="">Tüm Bölümler</option>
-                        }
-                        @foreach (var sube in subeler)
-                        {
-                            @if (seciiliSube == sube.Ad)
+            <form method="get" action="/Sevkiyat/SevkBekleyenEksikler" id="filterForm">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label for="subeAdi" class="form-label">Bölüm Seçin</label>
+                        <select name="subeAdi" id="subeAdi" class="form-select">
+                            @if (string.IsNullOrWhiteSpace(seciiliSube))
                             {
-                                <option value="@sube.Ad" selected>@sube.Ad</option>
+                                <option value="" selected>Tüm Bölümler</option>
                             }
                             else
                             {
-                                <option value="@sube.Ad">@sube.Ad</option>
+                                <option value="">Tüm Bölümler</option>
                             }
-                        }
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label for="firma" class="form-label">Firma Seçin</label>
-                    <select name="firma" id="firma" class="form-select">
-                        @if (string.IsNullOrWhiteSpace(seciliFirma))
-                        {
-                            <option value="" selected>Tüm Firmalar</option>
-                        }
-                        else
-                        {
-                            <option value="">Tüm Firmalar</option>
-                        }
-                        @foreach (var f in firmalar)
-                        {
-                            @if (seciliFirma == f.Firma)
+                            @foreach (var sube in subeler)
                             {
-                                <option value="@f.Firma" selected>@f.Firma</option>
+                                @if (seciiliSube == sube.Ad)
+                                {
+                                    <option value="@sube.Ad" selected>@sube.Ad</option>
+                                }
+                                else
+                                {
+                                    <option value="@sube.Ad">@sube.Ad</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="firma" class="form-label">Firma Seçin</label>
+                        <select name="firma" id="firma" class="form-select">
+                            @if (string.IsNullOrWhiteSpace(seciliFirma))
+                            {
+                                <option value="" selected>Tüm Firmalar</option>
                             }
                             else
                             {
-                                <option value="@f.Firma">@f.Firma</option>
+                                <option value="">Tüm Firmalar</option>
                             }
-                        }
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label for="grup" class="form-label">Grup Seçin</label>
-                    <select name="grup" id="grup" class="form-select">
-                        @if (string.IsNullOrWhiteSpace(seciliGrup))
-                        {
-                            <option value="" selected>Tüm Gruplar</option>
-                        }
-                        else
-                        {
-                            <option value="">Tüm Gruplar</option>
-                        }
-                        @foreach (var g in gruplar)
-                        {
-                            @if (seciliGrup == g.Grup)
+                            @foreach (var f in firmalar)
                             {
-                                <option value="@g.Grup" selected>@g.Grup</option>
+                                @if (seciliFirma == f.Firma)
+                                {
+                                    <option value="@f.Firma" selected>@f.Firma</option>
+                                }
+                                else
+                                {
+                                    <option value="@f.Firma">@f.Firma</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="grup" class="form-label">Grup Seçin</label>
+                        <select name="grup" id="grup" class="form-select">
+                            @if (string.IsNullOrWhiteSpace(seciliGrup))
+                            {
+                                <option value="" selected>Tüm Gruplar</option>
                             }
                             else
                             {
-                                <option value="@g.Grup">@g.Grup</option>
+                                <option value="">Tüm Gruplar</option>
                             }
-                        }
-                    </select>
-                </div>
-                <div class="col-md-3 d-flex align-items-end gap-2">
-                    <input type="hidden" name="forceRefresh" value="true" />
-                    <button type="submit" class="btn btn-primary w-100">
-                        📋 Listele
-                    </button>
+                            @foreach (var g in gruplar)
+                            {
+                                @if (seciliGrup == g.Grup)
+                                {
+                                    <option value="@g.Grup" selected>@g.Grup</option>
+                                }
+                                else
+                                {
+                                    <option value="@g.Grup">@g.Grup</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end gap-2">
+                        <input type="hidden" name="forceRefresh" value="true" />
+                        <button type="submit" class="btn btn-primary" style="flex:2;">
+                            📋 Listele
+                        </button>
+                        <a asp-controller="Sevkiyat"
+                           asp-action="ExportBekleyenEksikler"
+                           asp-route-subeAdi="@seciiliSube"
+                           asp-route-firma="@seciliFirma"
+                           asp-route-grup="@seciliGrup"
+                           class="btn btn-success" style="flex:1;">
+                            📊 Excel
+                        </a>
+                    </div>
                 </div>
             </form>
-
-            <div class="mt-3 d-flex justify-content-end">
-                <a asp-controller="Sevkiyat"
-                   asp-action="ExportBekleyenEksikler"
-                   asp-route-subeAdi="@seciiliSube"
-                   asp-route-firma="@seciliFirma"
-                   asp-route-grup="@seciliGrup"
-                   class="btn btn-success">
-                    Excel'e Aktar
-                </a>
-            </div>
 
             <!-- Seçili Filtreler Badges -->
             <div class="mt-3">
@@ -160,6 +171,7 @@
         </div>
     </div>
 
+    <!-- Liste Tablosu -->
     @if (bekleyenEksikler.Any())
     {
         <div class="card">
@@ -280,7 +292,11 @@
         </div>
     </div>
 </div>
-
+    <!-- Gecikti Uyarısı -->
+    <div class="alert alert-info-custom">
+        <strong>ℹ️ Gecikti Uyarısı:</strong> Eksik kaydının haftanın teslim günü olan Pazartesi 17:00 sonrasında girildiğini gösterir.
+        Bugün yeni girilmiş olsa bile Pazartesi 17:00 sonrası ise gecikmiş kabul edilir.
+    </div>
 <script>
 function setSilEksikId(id, urunAdi) {
     document.getElementById('eksikKaydiId').value = id;

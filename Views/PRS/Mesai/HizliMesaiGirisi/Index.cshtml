@@ -1,704 +1,1370 @@
 @{
-    ViewData["Title"] = "Mesai Ödeme";
-    Layout = "_Layout";
+    ViewData["Title"] = "Hızlı Mesai Girişi";
+    
+    // TÜM değişkenleri burada tanımla
+    var birimler = (ViewBag.Birimler as List<string>) ?? new List<string>();
+    var personeller = (ViewBag.Personeller as List<dynamic>) ?? new List<dynamic>();
+    var personelMesaiVerileri = (ViewBag.PersonelMesaiVerileri as Dictionary<int, Dictionary<string, dynamic>>) ?? new Dictionary<int, Dictionary<string, dynamic>>();
+    var secilenYil = (int?)ViewBag.SecilenYil ?? DateTime.Now.Year;
+    var secilenAy = (int?)ViewBag.SecilenAy ?? DateTime.Now.Month;
+    var secilenBirim = (string?)ViewBag.SecilenBirim ?? "";
+    var gunSayisi = (int)ViewBag.GunSayisi;
+    var rol = ViewBag.Rol ?? "";
+    
+    // Ay adlarını tanımla
+    var ayAdlari = new[] { "", "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", 
+                           "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık" };
+    
+    // Hafta sonu sayısını hesapla
+    int haftaSonuSayisi = 0;
+    for (int gun = 1; gun <= gunSayisi; gun++)
+    {
+        var tarih = new DateTime(secilenYil, secilenAy, gun);
+        if (tarih.DayOfWeek == DayOfWeek.Saturday || tarih.DayOfWeek == DayOfWeek.Sunday)
+        {
+            haftaSonuSayisi++;
+        }
+    }
 }
 
-<style>
-    .odemeler-container { max-width: 1200px; margin: 0 auto; }
-    .odemeler-header { background: linear-gradient(135deg, #1e3c72, #2a5298); color: white; padding: 15px 20px; border-radius: 8px 8px 0 0; }
-    .odemeler-header h4 { margin: 0 0 3px 0; }
-    .odemeler-header p { margin: 0; font-size: 13px; opacity: 0.9; }
-    .odemeler-controls { padding: 12px 20px; background: #f8f9fa; border: 1px solid #dee2e6; border-top: none; display: flex !important; flex-wrap: wrap; gap: 10px; justify-content: flex-start; align-items: center; }
-    .odemeler-controls .btn { white-space: nowrap; }
-    .odemeler-table-wrap { overflow-x: auto; border: 1px solid #dee2e6; border-top: none; }
-    .odemeler-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    .odemeler-table th, .odemeler-table td { border: 1px solid #dee2e6; padding: 8px 10px; text-align: center; vertical-align: middle; }
-    .odemeler-table th { background: #e8e8e8; color: #000 !important; font-weight: 600; }
-    .odemeler-table .text-start { text-align: left !important; }
-    .odemeler-table .text-end { text-align: right !important; }
-    .odemeler-table tr:hover { background: #f5f5f5; }
-    
-    .total-row { background: #e9ecef !important; font-weight: bold; }
-    .total-row td { font-weight: bold; font-size: 13px; }
-    
-    .odemeler-footer { padding: 10px 15px; background: #f8f9fa; border: 1px solid #dee2e6; border-top: none; border-radius: 0 0 8px 8px; font-size: 12px; color: #6c757d; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; line-height: 1.4; }
-    
-    .form-label { color: #333 !important; font-weight: 600; }
-    .form-control, .form-select { color: #000 !important; background-color: #fff !important; }
-    .form-control::placeholder { color: #999 !important; opacity: 1; }
-    
-    .toast-msg { position: fixed; bottom: 20px; right: 20px; background: #28a745; color: white; padding: 10px 20px; border-radius: 8px; z-index: 2000; animation: slideIn 0.3s ease; }
-    @@keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-    
-    .empty-message { text-align: center; color: #999; padding: 30px; font-size: 14px; }
-    
-    @@media (max-width: 768px) {
-        .odemeler-container { margin: 0; }
-        .odemeler-header { padding: 10px 15px; }
-        .odemeler-controls { padding: 8px 10px; gap: 5px; }
-        .odemeler-controls .btn { padding: 0.25rem 0.5rem; font-size: 11px; }
-        .odemeler-table { font-size: 11px; }
-        .odemeler-table th, .odemeler-table td { padding: 5px 6px; }
-    }
-    
-    @@media print {
-        .no-print { display: none !important; }
-        .navbar, footer { display: none !important; }
-        .odemeler-container { max-width: 100% !important; margin: 0 !important; }
-        .odemeler-header { background: #1e3c72 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-        .odemeler-table th { background: #1e3c72 !important; color: white !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-        .total-row { background: #e9ecef !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-    }
-</style>
-
-<div class="odemeler-container mt-3">
-    <div class="odemeler-header">
-        <h4>MESAİ ÖDEME LİSTESİ</h4>
-        <p>Personellerin ek mesai ödemelerini yıl ve ay seçerek görüntüleyin</p>
-    </div>
-
-    <div class="odemeler-controls no-print">
-        <div class="d-flex flex-wrap gap-2 align-items-center">
-            <select id="birimSelect" class="form-select form-select-sm" style="width:auto;" @(ViewBag.Rol != "admin" ? "disabled" : "")>
-                @if (ViewBag.Rol == "admin")
+@functions {
+    // Decimal saat değerini "Saat:Dakika" formatına dönüştür
+    private string FormatSaatDakika(object saatDegeri)
+    {
+        if (saatDegeri == null) return "0:00";
+        
+        decimal saat = 0;
+        try
+        {
+            if (saatDegeri is string strDeger)
+            {
+                strDeger = strDeger.Trim();
+                
+                if (strDeger.Contains(":"))
                 {
-                    <option value="">-- Birim --</option>
-                    <option value="all">Tüm Personeller</option>
-                }
-                @if (ViewBag.Birimler != null)
-                {
-                    @foreach (string birim in ViewBag.Birimler)
+                    var parts = strDeger.Split(':');
+                    if (parts.Length == 2 && int.TryParse(parts[0], out var saatInt2) && int.TryParse(parts[1], out var dakika2))
                     {
-                        if (ViewBag.Rol != "admin")
+                        if (dakika2 >= 60)
                         {
-                            @:<option value="@birim" selected>@birim</option>
+                            saatInt2 += dakika2 / 60;
+                            dakika2 %= 60;
                         }
-                        else
-                        {
-                            @:<option value="@birim">@birim</option>
-                        }
+                        return $"{saatInt2}:{dakika2:D2}";
                     }
                 }
-            </select>
-            <select id="yearSelect" class="form-select form-select-sm" style="width:auto;"></select>
-            <select id="monthSelect" class="form-select form-select-sm" style="width:auto;">
-                <option value="1">Ocak</option><option value="2">Şubat</option><option value="3">Mart</option>
-                <option value="4">Nisan</option><option value="5">Mayıs</option><option value="6">Haziran</option>
-                <option value="7">Temmuz</option><option value="8">Ağustos</option><option value="9">Eylül</option>
-                <option value="10">Ekim</option><option value="11">Kasım</option><option value="12">Aralık</option>
-            </select>
-            <button class="btn btn-sm btn-primary" id="btnYukle">Yükle</button>
-            <button class="btn btn-sm btn-success" id="btnHesapla" disabled>Hesapla</button>
-        </div>
-        <div class="d-flex flex-wrap gap-2">
-            <button class="btn btn-sm btn-info text-white" id="btnExcel" disabled>Excel</button>
-            <button class="btn btn-sm btn-danger" id="btnPdf" disabled>PDF Personel</button>
-            <button class="btn btn-sm btn-success" id="btnPdfBirim" disabled>📄 PDF Birim</button>
-            <button class="btn btn-sm btn-secondary" id="btnYazdir" disabled>Yazdır</button>
-        </div>
-    </div>
 
-    <div class="odemeler-table-wrap">
-        <table class="odemeler-table" id="odemelerTable">
-            <thead>
-                <tr>
-                    <th style="width:40px;">#</th>
-                    <th style="width:200px;">Adı Soyadı</th>
-                    <th style="width:150px;">Bölüm</th>
-                    <th style="width:120px;">Toplam Mesai (Saat)</th>
-                    <th style="width:120px;">Saatlik Brüt (TL)</th>
-                    <th style="width:140px;">Ödeme Tutarı (TL)</th>
-                </tr>
-            </thead>
-            <tbody id="tableBody"></tbody>
-            <tfoot>
-                <tr class="total-row">
-                    <td colspan="2" class="text-end">GENEL TOPLAM</td>
-                    <td id="tfPersonel" style="width:150px">0</td>
-                    <td id="tfMesai" style="width:120px">0</td>
-                    <td id="tfBrut" style="width:120px">0</td>
-                    <td id="tfOdeme" style="width:140px">0</td>
-                </tr>
-            </tfoot>
-        </table>
-    </div>
-
-    <div id="bosTable" class="empty-message" style="display:none;">
-        Seçilen dönem için ek mesai kaydı bulunmamaktadır.
-    </div>
-
-    <div class="odemeler-footer">
-        <span>Seçili Dönem: <strong id="footerDonem">-</strong></span>
-        <span>Toplam Personel: <strong id="footerPersonel">0</strong></span>
-    </div>
-</div>
-
-<!-- ============================================================
-     YAZDIRMA STİLLERİ
-     ============================================================ -->
-<style media="print">
-    body * { visibility: hidden; }
-    .print-container, .print-container * { visibility: visible; }
-    .print-container { 
-        position: absolute; 
-        left: 0; 
-        top: 0; 
-        width: 100%; 
-        padding: 15mm 20mm; 
-        background: white; 
-        font-family: Arial, Helvetica, sans-serif;
-        visibility: visible !important;
-    }
-    .personel-sayfa { page-break-after: always; }
-    .personel-sayfa:last-child { page-break-after: auto; }
-    .no-print, .no-print * { display: none !important; }
-    .print-container .imza-alani { text-align: center; flex: 1; margin-top: 15px; }
-    .print-container .imza-alani .label { font-size: 10px; font-weight: 600; color: #6c757d; margin-bottom: 20px; display: block; }
-    .print-container .imza-alani .cizgi { border-top: 1px solid #333; width: 60%; margin: 0 auto; padding-top: 4px; }
-    .print-container .imza-alani .cizgi small { font-size: 9px; color: #999; }
-    .print-container .page-footer { display: flex; justify-content: space-between; margin-top: 20px; padding-top: 12px; border-top: 1px solid #dee2e6; }
-    .print-container .footer-text { text-align: center; margin-top: 10px; font-size: 8px; color: #999; border-top: 1px solid #ddd; padding-top: 8px; }
-</style>
-
-@section Scripts {
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-<script>
-(function() {
-    var odemeler = [];
-    var ozet = {};
-    var currentBirim = '';
-    var currentYil = 0;
-    var currentAy = 0;
-
-    var ayAdlari = ['','Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
-
-    // ============================================================
-    // DATE SELECTS
-    // ============================================================
-    function initDateSelects() {
-        var yearSel = document.getElementById('yearSelect');
-        var monthSel = document.getElementById('monthSelect');
-        if (!yearSel || !monthSel) return;
-
-        var urlParams = new URLSearchParams(window.location.search);
-        var urlYear = urlParams.get('year');
-        var urlMonth = urlParams.get('month');
-
-        yearSel.innerHTML = '';
-        var now = new Date();
-        var currentYear = now.getFullYear();
-        
-        for (var y = currentYear - 2; y <= currentYear + 1; y++) {
-            var opt = document.createElement('option');
-            opt.value = y;
-            opt.textContent = y;
-            if (urlYear && parseInt(urlYear) === y) {
-                opt.selected = true;
-            } else if (!urlYear && y === currentYear) {
-                opt.selected = true;
+                strDeger = strDeger.Replace(',', '.');
+                if (!decimal.TryParse(strDeger, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out saat))
+                {
+                    decimal.TryParse(strDeger, System.Globalization.NumberStyles.Any, new System.Globalization.CultureInfo("tr-TR"), out saat);
+                }
             }
-            yearSel.appendChild(opt);
+            else
+            {
+                saat = Convert.ToDecimal(saatDegeri);
+            }
+        }
+        catch
+        {
+            return "0:00";
         }
         
-        if (urlMonth && urlMonth >= 1 && urlMonth <= 12) {
-            monthSel.value = parseInt(urlMonth);
-        } else {
-            monthSel.value = now.getMonth() + 1;
+        int saatInt = (int)Math.Floor(saat);
+        int dakika = (int)Math.Round((saat - saatInt) * 60);
+        
+        if (dakika >= 60)
+        {
+            saatInt++;
+            dakika = 0;
         }
+        
+        return $"{saatInt}:{dakika:D2}";
     }
+}
 
-    document.getElementById('yearSelect')?.addEventListener('change', function() {
-        var url = new URL(window.location.href);
-        url.searchParams.set('year', this.value);
-        window.location.href = url.toString();
-    });
-
-    document.getElementById('monthSelect')?.addEventListener('change', function() {
-        var url = new URL(window.location.href);
-        url.searchParams.set('month', this.value);
-        window.location.href = url.toString();
-    });
-
-    // ============================================================
-    // YARDIMCI FONKSİYONLAR
-    // ============================================================
-    function escapeHtml(text) {
-        var div = document.createElement('div');
-        div.appendChild(document.createTextNode(text || ''));
-        return div.innerHTML;
-    }
-
-    function formatTurkishCurrency(value) {
-        var parts = parseFloat(value).toFixed(2).split('.');
-        var integerPart = parts[0];
-        var decimalPart = parts[1];
-        integerPart = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-        return integerPart + ',' + decimalPart;
-    }
-
-    function decimalHoursToClock(value) {
-        var decimal = parseFloat(value);
-        if (isNaN(decimal) || decimal <= 0) return '0:00';
-        var totalMinutes = Math.round(decimal * 60);
-        var hours = Math.floor(totalMinutes / 60);
-        var minutes = totalMinutes % 60;
-        return hours + ':' + String(minutes).padStart(2, '0');
-    }
-
-    function showToast(msg, type) {
-        var t = document.createElement('div');
-        t.className = 'toast-msg';
-        if (type === 'error') t.style.background = '#dc3545';
-        else if (type === 'warning') t.style.background = '#fd7e14';
-        t.textContent = msg;
-        document.body.appendChild(t);
-        setTimeout(function() { t.remove(); }, 2500);
-    }
-
-    function getDisplayedToplamMesai() {
-        return (odemeler || []).reduce(function(sum, o) {
-            return sum + (parseFloat(o.toplamSaat) || 0);
-        }, 0);
-    }
-
-    // ============================================================
-    // TABLO RENDER
-    // ============================================================
-    function renderTable() {
-        var tbody = document.getElementById('tableBody');
-        tbody.innerHTML = '';
-
-        if (odemeler.length === 0) {
-            document.getElementById('bosTable').style.display = 'block';
-            document.getElementById('odemelerTable').style.display = 'none';
-            document.getElementById('btnExcel').disabled = true;
-            document.getElementById('btnPdf').disabled = true;
-            document.getElementById('btnPdfBirim').disabled = true;
-            document.getElementById('btnYazdir').disabled = true;
-            return;
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Hızlı Mesai Girişi</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <style>
+        :root {
+            --primary-deep: #1E3A8A;
+            --primary-blue: #2563EB;
+            --bg-soft: #EFF6FF;
+            --bg-light: #F8FAFC;
+            --weekend-sat: #FDE2E4;
+            --weekend-sun: #FCCCD1;
+            --border-light: #E2E8F0;
+            --shadow-card: 0 12px 40px rgba(30, 58, 138, 0.08);
         }
 
-        document.getElementById('bosTable').style.display = 'none';
-        document.getElementById('odemelerTable').style.display = 'table';
-        document.getElementById('btnExcel').disabled = false;
-        document.getElementById('btnPdf').disabled = false;
-        document.getElementById('btnPdfBirim').disabled = false;
-        document.getElementById('btnYazdir').disabled = false;
-
-        for (var i = 0; i < odemeler.length; i++) {
-            var o = odemeler[i];
-            var tr = document.createElement('tr');
-            tr.innerHTML =
-                '<td class="text-end">' + o.sira + '</td>' +
-                '<td class="text-start">' + escapeHtml(o.adSoyad) + '</td>' +
-                '<td class="text-start">' + escapeHtml(o.birimAdi) + '</td>' +
-                '<td class="text-end">' + decimalHoursToClock(o.toplamSaat) + '</td>' +
-                '<td class="text-end">' + formatTurkishCurrency(o.saatlikBrut) + '</td>' +
-                '<td class="text-end" style="font-weight:600;">' + formatTurkishCurrency(o.odemeTutari) + '</td>';
-            tbody.appendChild(tr);
+        body {
+            background: #F1F5F9;
+            font-family: 'Inter', sans-serif;
+            padding: 16px;
         }
 
-        var toplamMesaiGosterim = getDisplayedToplamMesai();
+        .dashboard-card {
+            background: white;
+            border-radius: 24px;
+            box-shadow: var(--shadow-card);
+            padding: 24px 20px;
+            transition: all 0.2s;
+        }
 
-        document.getElementById('tfPersonel').textContent = ozet.toplamPersonel || 0;
-        document.getElementById('tfMesai').textContent = decimalHoursToClock(toplamMesaiGosterim);
-        document.getElementById('tfBrut').textContent = formatTurkishCurrency(ozet.saatlikBrut || 0);
-        document.getElementById('tfOdeme').textContent = formatTurkishCurrency(ozet.genelToplamOdeme || 0);
+        .page-headline {
+            font-weight: 700;
+            font-size: 26px;
+            color: var(--primary-deep);
+            letter-spacing: -0.01em;
+        }
 
-        var donem = ayAdlari[currentAy] + ' ' + currentYil;
-        document.getElementById('footerDonem').textContent = donem;
-        document.getElementById('footerPersonel').textContent = ozet.toplamPersonel || 0;
-    }
+        .page-sub {
+            color: #475569;
+            font-weight: 400;
+            font-size: 14px;
+        }
 
-    // ============================================================
-    // VERİ YÜKLEME
-    // ============================================================
-    function loadOdemeler() {
-        var birimSel = document.getElementById('birimSelect');
-        var yearSel = document.getElementById('yearSelect');
-        var monthSel = document.getElementById('monthSelect');
+        .btn-soft-primary {
+            background: var(--bg-soft);
+            border: 1px solid #DBEAFE;
+            color: var(--primary-blue);
+            font-weight: 600;
+            padding: 8px 14px;
+            border-radius: 40px;
+            transition: 0.2s;
+            font-size: 13px;
+        }
 
-        var birim = birimSel ? birimSel.value : '';
-        var yil = yearSel ? parseInt(yearSel.value, 10) : new Date().getFullYear();
-        var ay = monthSel ? parseInt(monthSel.value, 10) : new Date().getMonth() + 1;
+        .btn-soft-primary:hover {
+            background: #DBEAFE;
+            border-color: var(--primary-blue);
+            color: var(--primary-deep);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(37, 99, 235, 0.12);
+        }
 
-        if (!birim) { showToast('Birim seçin', 'warning'); return; }
+        .btn-group-icon {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
 
-        currentBirim = birim;
-        currentYil = yil;
-        currentAy = ay;
+        .month-badge {
+            font-weight: 600;
+            font-size: 16px;
+            color: #0F172A;
+            background: var(--bg-light);
+            padding: 4px 16px;
+            border-radius: 40px;
+            display: inline-block;
+            border: 1px solid var(--border-light);
+        }
 
-        var yukleBtn = document.getElementById('btnYukle');
-        if (yukleBtn) yukleBtn.disabled = true;
+        .alert-info-custom {
+            background: #EFF6FF;
+            border-left: 6px solid var(--primary-blue);
+            border-radius: 14px;
+            padding: 10px 18px;
+            color: #1E293B;
+            font-weight: 450;
+            font-size: 14px;
+        }
 
-        var url = '/Mesai/GetMesaiOdemeleri?yil=' + yil + '&ay=' + ay + '&birim=' + encodeURIComponent(birim) + '&hesapla=false';
-        fetch(url)
-            .then(function(r) { return r.json(); })
-            .then(function(data) {
-                if (!data.basarili) {
-                    showToast('Hata: ' + (data.hata || 'Bilinmeyen hata'), 'error');
+        .table-wrap {
+            border-radius: 16px;
+            overflow: auto;
+            border: 1px solid var(--border-light);
+            background: white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+        }
+
+        .mesai-table {
+            width: max-content;
+            min-width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+
+        .mesai-table thead th {
+            background: #F8FAFC;
+            color: #0F172A;
+            font-weight: 600;
+            padding: 6px 3px;
+            border-bottom: 2px solid var(--border-light);
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+            text-align: center;
+            vertical-align: middle;
+            min-width: 38px;
+            font-size: 11px;
+        }
+
+        .mesai-table thead th .day-num {
+            display: block;
+            font-size: 13px;
+            font-weight: 700;
+            line-height: 1.1;
+        }
+
+        .mesai-table thead th .day-name {
+            display: block;
+            font-size: 8px;
+            font-weight: 500;
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: 0.2px;
+        }
+
+        .sticky-personel {
+            background: #F8FAFC !important;
+            position: sticky;
+            left: 0;
+            z-index: 30;
+            min-width: 130px;
+            max-width: 130px;
+            padding: 4px 8px;
+            font-weight: 600;
+            color: var(--primary-deep);
+            border-right: 2px solid var(--border-light);
+            text-align: left;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-size: 11px;
+        }
+
+        .sticky-personel i {
+            margin-right: 6px;
+            font-size: 13px;
+            color: var(--primary-blue);
+        }
+
+        .sticky-personel:hover {
+            background: #EFF6FF !important;
+        }
+
+        .weekend-sat-col {
+            background: var(--weekend-sat);
+        }
+
+        .weekend-sun-col {
+            background: var(--weekend-sun);
+        }
+
+        .cell-today {
+            outline: 2px solid #22C55E;
+            outline-offset: -2px;
+            border-radius: 4px;
+            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
+            background: white !important;
+        }
+
+        .mesai-cell {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            min-height: 30px;
+            padding: 1px 2px;
+            font-weight: 600;
+            transition: all 0.15s ease;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 11px;
+        }
+
+        .mesai-cell .badge-pill {
+            background: var(--primary-blue);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 40px;
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.2px;
+            box-shadow: 0 2px 4px rgba(37, 99, 235, 0.15);
+        }
+
+        .mesai-cell .empty-plus {
+            color: #94A3B8;
+            font-size: 16px;
+            font-weight: 300;
+            transition: 0.2s;
+        }
+
+        .mesai-cell:hover .empty-plus {
+            color: var(--primary-blue);
+            transform: scale(1.15);
+        }
+
+        .mesai-cell:hover {
+            background: #EFF6FF;
+            transform: scale(1.02);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.08);
+            border-radius: 6px;
+        }
+
+        .stats-mini-card {
+            background: white;
+            padding: 12px 10px;
+            border-radius: 14px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+            border: 1px solid var(--border-light);
+            transition: 0.2s;
+            text-align: center;
+        }
+
+        .stats-mini-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(30, 58, 138, 0.06);
+        }
+
+        .stats-mini-card .stat-icon {
+            font-size: 16px;
+            margin-right: 4px;
+        }
+
+        .stats-mini-card .stat-number {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--primary-deep);
+            line-height: 1.2;
+        }
+
+        .stats-mini-card .stat-label {
+            color: #64748B;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .modal-custom .modal-content {
+            border-radius: 20px;
+            border: none;
+            padding: 6px 2px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.12);
+        }
+
+        .modal-custom .modal-header {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .modal-custom .modal-title {
+            font-weight: 700;
+            color: var(--primary-deep);
+            font-size: 17px;
+        }
+
+        .modal-custom .form-control,
+        .modal-custom .form-select {
+            border-radius: 12px;
+            border: 1px solid #E2E8F0;
+            padding: 8px 12px;
+            font-size: 13px;
+        }
+
+        .modal-custom .btn-primary-custom {
+            background: var(--primary-blue);
+            border: none;
+            border-radius: 40px;
+            padding: 6px 20px;
+            font-weight: 600;
+            color: white;
+            font-size: 13px;
+        }
+
+        .modal-custom .btn-primary-custom:hover {
+            background: #1D4ED8;
+        }
+
+        .modal-custom .btn-soft-cancel {
+            background: #F1F5F9;
+            border: none;
+            border-radius: 40px;
+            padding: 6px 20px;
+            font-weight: 500;
+            color: #475569;
+            font-size: 13px;
+        }
+
+        .modal-custom .btn-soft-cancel:hover {
+            background: #E2E8F0;
+        }
+
+        /* Toplam hücresi - 88 saat uyarısı */
+        .personel-toplam {
+            min-width: 50px;
+            position: sticky;
+            right: 0;
+            background: #F8FAFC;
+            border-left: 2px solid #E2E8F0;
+            font-weight: 700;
+            font-size: 11px;
+            text-align: center;
+            padding: 3px 4px;
+        }
+
+        .personel-toplam.uyari-aylik {
+            background: #FECACA !important;
+            color: #DC2626;
+        }
+
+        /* Toplu Mesai Girişi Butonu */
+        .btn-batch {
+            background: linear-gradient(135deg, #667EEA 0%, #764BA2 100%);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 13px;
+            transition: 0.3s;
+        }
+
+        .btn-batch:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+            color: white;
+        }
+
+        /* Batch Modal */
+        .batch-day-item {
+            padding: 6px 10px;
+            border: 1px solid #E2E8F0;
+            border-radius: 8px;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+        }
+
+        .batch-day-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .batch-day-item .day-info {
+            flex: 1;
+        }
+
+        .batch-day-item .time-inputs {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .batch-day-item .time-inputs input[type="time"] {
+            width: 100px;
+            padding: 4px 8px;
+            border: 1px solid #E2E8F0;
+            border-radius: 6px;
+            font-size: 12px;
+        }
+
+        @@media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            .dashboard-card {
+                padding: 16px 12px;
+            }
+            
+            .page-headline {
+                font-size: 20px;
+            }
+            
+            .btn-group-icon {
+                justify-content: flex-start;
+                margin-top: 6px;
+            }
+            
+            .btn-soft-primary {
+                padding: 6px 12px;
+                font-size: 12px;
+            }
+
+            .month-badge {
+                font-size: 14px;
+                padding: 4px 12px;
+            }
+
+            .mesai-table thead th {
+                min-width: 30px;
+                padding: 4px 2px;
+                font-size: 10px;
+            }
+            
+            .mesai-table thead th .day-num {
+                font-size: 11px;
+            }
+            
+            .mesai-table thead th .day-name {
+                font-size: 7px;
+            }
+
+            .sticky-personel {
+                min-width: 90px;
+                max-width: 90px;
+                font-size: 10px;
+                padding: 3px 6px;
+            }
+
+            .mesai-cell {
+                min-height: 28px;
+                font-size: 10px;
+            }
+
+            .mesai-cell .badge-pill {
+                font-size: 9px;
+                padding: 2px 6px;
+            }
+            
+            .mesai-cell .empty-plus {
+                font-size: 14px;
+            }
+            
+            .stats-mini-card .stat-number {
+                font-size: 18px;
+            }
+
+            .batch-day-item {
+                flex-wrap: wrap;
+            }
+
+            .batch-day-item .time-inputs {
+                width: 100%;
+                justify-content: flex-start;
+            }
+
+            .batch-day-item .time-inputs input[type="time"] {
+                width: 80px;
+                font-size: 11px;
+            }
+        }
+
+        /* print */
+        @@media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            .dashboard-card {
+                box-shadow: none;
+                padding: 10px;
+                border-radius: 0;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .mesai-table thead th {
+                background: #f1f5f9 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .weekend-sat-col {
+                background: #fde2e4 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .weekend-sun-col {
+                background: #fcccd1 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .cell-today {
+                outline: 2px solid #22c55e !important;
+                outline-offset: -1px;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .mesai-cell .badge-pill {
+                background: #2563eb !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .sticky-personel {
+                background: #f8fafc !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .stats-mini-card {
+                border: 1px solid #e2e8f0;
+                box-shadow: none;
+            }
+            .personel-toplam.uyari-aylik {
+                background: #fecaca !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container-fluid px-0">
+
+        <!-- MAIN CARD -->
+        <div class="dashboard-card">
+
+            <!-- HEADER -->
+            <div class="row align-items-center g-2 mb-2">
+                <div class="col-md-6">
+                    <div class="page-headline">
+                        <i class="bi bi-lightning-charge-fill text-primary me-2"></i> Hızlı Mesai Girişi
+                    </div>
+                    <div class="page-sub">Personel mesai saatlerini hızlıca giriniz.</div>
+                </div>
+                <div class="col-md-6">
+                    <div class="btn-group-icon no-print">
+                        <button class="btn btn-batch" onclick="acBatchModal()">
+                            <i class="bi bi-grid-3x3-gap-fill me-1"></i> Toplu Giriş
+                        </button>
+                        <button class="btn btn-success btn-soft-primary" onclick="takvimKaydet()"><i class="bi bi-check-lg me-1"></i> Kaydet</button>
+                        <button class="btn btn-soft-primary" onclick="takvimExcelAktar()"><i class="bi bi-file-earmark-excel me-1"></i> Excel</button>
+                        <button class="btn btn-soft-primary" onclick="takvimPdfIndir()"><i class="bi bi-file-earmark-pdf me-1"></i> PDF</button>
+                        <button class="btn btn-soft-primary" onclick="takvimYazdir()"><i class="bi bi-printer me-1"></i> Yazdır</button>
+                        <button class="btn btn-soft-primary" onclick="acReportModal()"><i class="bi bi-bar-chart-fill me-1"></i> Rapor</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FILTER ROW -->
+            <div class="row g-2 align-items-end mb-2">
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold text-secondary" style="font-size:13px;">Birim</label>
+                    <select id="subeSelect" class="form-select form-select-sm rounded-3 border-0 bg-light" style="font-size:13px; padding:6px 12px;" onchange="birimSecildi()">
+                        <option value="">-- Birim Seçiniz --</option>
+                        @foreach (var birim in birimler)
+                        {
+                            if (birim == secilenBirim)
+                            {
+                                <option value="@birim" selected>@birim</option>
+                            }
+                            else
+                            {
+                                <option value="@birim">@birim</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold text-secondary" style="font-size:13px;">Ay &amp; Yıl</label>
+                    <div class="d-flex align-items-center gap-2">
+                        <button class="btn btn-outline-primary rounded-3 px-3 no-print" style="font-size:13px; padding:4px 12px;" onclick="ayDegistir(-1)">←</button>
+                        <span class="month-badge" id="monthTitle">@ayAdlari[secilenAy] @secilenYil</span>
+                        <button class="btn btn-outline-primary rounded-3 px-3 no-print" style="font-size:13px; padding:4px 12px;" onclick="ayDegistir(1)">→</button>
+                    </div>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <div id="takvimActionMsg" class="text-muted small fst-italic" style="font-size:12px;"></div>
+                </div>
+            </div>
+
+            <!-- INFO ALERT -->
+            <div class="alert alert-info-custom d-flex align-items-center gap-3 no-print" style="padding:8px 16px; font-size:13px;">
+                <i class="bi bi-info-circle-fill fs-5 text-primary"></i>
+                <div>
+                    <strong>Çift tıklayarak mesai girebilirsiniz.</strong> Kaydedilen kayıtlar otomatik saklanır.
+                    Hafta sonları <span class="badge bg-danger bg-opacity-10 text-danger">kırmızı</span> renkle gösterilir.
+                </div>
+            </div>
+
+            <!-- CALENDAR TABLE -->
+            @if (!string.IsNullOrEmpty(secilenBirim) && personeller.Count > 0)
+            {
+                <div class="table-wrap">
+                    <table class="mesai-table" id="mesaiTable">
+                        <thead>
+                            <tr>
+                                <th class="sticky-personel" style="min-width:130px; font-size:11px;">
+                                    <i class="bi bi-people-fill"></i> PERSONEL
+                                </th>
+                                @for (int gun = 1; gun <= gunSayisi; gun++)
+                                {
+                                    var tarih = new DateTime(secilenYil, secilenAy, gun);
+                                    var isWeekend = tarih.DayOfWeek == DayOfWeek.Saturday || tarih.DayOfWeek == DayOfWeek.Sunday;
+                                    var haftaSinif = isWeekend ? (tarih.DayOfWeek == DayOfWeek.Saturday ? "weekend-sat-col" : "weekend-sun-col") : "";
+                                    var bugunMu = tarih.Date == DateTime.Now.Date;
+                                    <th class="@haftaSinif @(bugunMu ? "cell-today" : "")" style="position:sticky;top:0;z-index:15;min-width:38px; font-size:11px; padding:4px 2px;">
+                                        <span class="day-num" style="font-size:13px;">@gun</span>
+                                        <span class="day-name" style="font-size:8px;">@tarih.ToString("ddd", new System.Globalization.CultureInfo("tr-TR")).ToUpper()</span>
+                                    </th>
+                                }
+                                <th class="bg-light" style="position:sticky;top:0;z-index:15;min-width:50px;font-weight:700;color:var(--primary-deep); font-size:11px; padding:4px 3px;">TOPLAM</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var personel in personeller)
+                            {
+                                <tr>
+                                    <td class="sticky-personel" style="font-size:11px; padding:3px 8px;">
+                                        <i class="bi bi-person-circle" style="font-size:13px;"></i> @personel.AdSoyad
+                                    </td>
+                                    @for (int gun = 1; gun <= gunSayisi; gun++)
+                                    {
+                                        var tarih = new DateTime(secilenYil, secilenAy, gun);
+                                        var isWeekend = tarih.DayOfWeek == DayOfWeek.Saturday || tarih.DayOfWeek == DayOfWeek.Sunday;
+                                        var haftaSinif = isWeekend ? (tarih.DayOfWeek == DayOfWeek.Saturday ? "weekend-sat-col" : "weekend-sun-col") : "";
+                                        var bugunMu = tarih.Date == DateTime.Now.Date;
+
+                                        if (personelMesaiVerileri.ContainsKey(personel.Id) &&
+                                            personelMesaiVerileri[personel.Id].ContainsKey(gun.ToString()))
+                                        {
+                                            var mesai = personelMesaiVerileri[personel.Id][gun.ToString()];
+                                            // DOĞRUDAN FormatSaatDakika fonksiyonuna gönder
+                                            var saatStr = FormatSaatDakika(mesai.ToplamSaat);
+                                            <td class="@haftaSinif @(bugunMu ? "cell-today" : "")" data-gun="@gun" data-saat="@mesai.ToplamSaat.ToString(System.Globalization.CultureInfo.InvariantCulture)" style="padding:1px;">
+                                                <div class="mesai-cell" onclick="mesaiDetay(@personel.Id, @gun, @mesai.Id)" title="Düzenlemek için tıklayın" data-bs-toggle="tooltip" style="min-height:30px; font-size:11px;">
+                                                    <span class="badge-pill" style="font-size:10px; padding:2px 8px;">@saatStr</span>
+                                                </div>
+                                            </td>
+                                        }
+                                        else
+                                        {
+                                            <td class="@haftaSinif @(bugunMu ? "cell-today" : "")" data-gun="@gun" data-saat="0" style="padding:1px;">
+                                                <div class="mesai-cell" onclick="yeniMesaiEkle(@personel.Id, @gun)" title="Mesai Gir" data-bs-toggle="tooltip" style="min-height:30px;">
+                                                    <span class="empty-plus" style="font-size:16px;">+</span>
+                                                </div>
+                                            </td>
+                                        }
+                                    }
+                                    <td class="personel-toplam" data-personel-id="@personel.Id" style="font-size:11px; padding:3px 4px;">
+                                        <span id="toplam-@personel.Id">00:00</span>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- STATS CARDS -->
+                <div class="row g-2 mt-3">
+                    <div class="col-6 col-md-3">
+                        <div class="stats-mini-card" style="padding:10px 8px;">
+                            <div><span class="stat-icon" style="font-size:16px;">📅</span><span class="stat-label" style="font-size:11px;">Toplam Gün</span></div>
+                            <div class="stat-number" style="font-size:20px;">@gunSayisi</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="stats-mini-card" style="padding:10px 8px;">
+                            <div><span class="stat-icon" style="font-size:16px;">👤</span><span class="stat-label" style="font-size:11px;">Personel</span></div>
+                            <div class="stat-number" style="font-size:20px;">@personeller.Count</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="stats-mini-card" style="padding:10px 8px;">
+                            <div><span class="stat-icon" style="font-size:16px;">📆</span><span class="stat-label" style="font-size:11px;">Hafta Sonu</span></div>
+                            <div class="stat-number" style="font-size:20px;">@haftaSonuSayisi</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="stats-mini-card" style="padding:10px 8px;">
+                            <div><span class="stat-icon" style="font-size:16px;">⏱</span><span class="stat-label" style="font-size:11px;">Girilen Mesai</span></div>
+                            <div class="stat-number" id="toplamMesaiSaat" style="font-size:20px;">0</div>
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-4 text-secondary">
+                    <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                    <p class="fw-semibold" style="font-size:14px;">@(string.IsNullOrEmpty(secilenBirim) ? "Lütfen birim seçiniz." : "Seçilen birimde aktif personel bulunmamaktadır.")</p>
+                </div>
+            }
+
+        </div><!-- /.dashboard-card -->
+    </div><!-- /.container-fluid -->
+
+    <!-- TEKİL MESAI MODAL -->
+    <div class="modal fade modal-custom" id="mesaiModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius:20px; padding:6px 2px;">
+                <div class="modal-header" style="padding:12px 16px 0 16px;">
+                    <h5 class="modal-title" id="mesaiModalTitle" style="font-size:17px;">Mesai Girişi</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" style="padding:16px;">
+                    <div class="mb-2">
+                        <label class="form-label fw-semibold" style="font-size:13px;"><i class="bi bi-calendar3 me-2"></i>Tarih</label>
+                        <input id="mesaiTarih" type="text" class="form-control" readonly style="font-size:13px; padding:8px 12px;" />
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <label class="form-label fw-semibold" style="font-size:13px;"><i class="bi bi-clock me-2"></i>Başlangıç</label>
+                            <input id="mesaiBaslangic" type="time" class="form-control" value="08:00" style="font-size:13px; padding:8px 12px;" />
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold" style="font-size:13px;"><i class="bi bi-clock me-2"></i>Bitiş</label>
+                            <input id="mesaiBitis" type="time" class="form-control" value="17:00" style="font-size:13px; padding:8px 12px;" />
+                        </div>
+                    </div>
+                    <div class="mb-2 mt-2">
+                        <label class="form-label fw-semibold" style="font-size:13px;"><i class="bi bi-pencil me-2"></i>Açıklama</label>
+                        <textarea id="mesaiAciklama" rows="2" class="form-control" placeholder="Opsiyonel not" style="font-size:13px; padding:8px 12px;"></textarea>
+                    </div>
+                    <div id="mesaiModalMsg" class="text-danger small mt-1" style="font-size:12px;"></div>
+                </div>
+                <div class="modal-footer border-0" style="padding:0 16px 16px 16px;">
+                    <button type="button" class="btn-soft-cancel" data-bs-dismiss="modal" style="font-size:13px; padding:6px 20px;">Vazgeç</button>
+                    <button type="button" class="btn-primary-custom" onclick="kaydetMesai()" style="font-size:13px; padding:6px 20px;">Kaydet</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOPLU MESAI GİRİŞİ MODAL -->
+    <div class="modal fade modal-custom" id="batchModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content" style="border-radius:20px; padding:6px 2px;">
+                <div class="modal-header" style="padding:16px 20px 0 20px;">
+                    <h5 class="modal-title" style="font-size:18px;">
+                        <i class="bi bi-grid-3x3-gap-fill me-2"></i>Toplu Mesai Girişi
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" style="padding:20px;">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold" style="font-size:14px;">Personel Seçiniz</label>
+                        <select id="batchPersonel" class="form-select" style="font-size:14px; padding:8px 12px; border-radius:12px;">
+                            <option value="">-- Personel Seçiniz --</option>
+                            @foreach (var personel in personeller)
+                            {
+                                <option value="@personel.Id">@personel.AdSoyad</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold" style="font-size:14px;">Gün Seçiniz</label>
+                        <div id="batchDaysContainer" style="max-height:300px; overflow-y:auto; border:1px solid #E2E8F0; border-radius:12px; padding:10px;">
+                            @for (int gun = 1; gun <= gunSayisi; gun++)
+                            {
+                                var tarih = new DateTime(secilenYil, secilenAy, gun);
+                                var isWeekend = tarih.DayOfWeek == DayOfWeek.Saturday || tarih.DayOfWeek == DayOfWeek.Sunday;
+                                var gunAdi = tarih.ToString("ddd", new System.Globalization.CultureInfo("tr-TR"));
+                                <div class="batch-day-item" style="padding:6px 10px; border:1px solid #E2E8F0; border-radius:8px; margin-bottom:6px; display:flex; align-items:center; gap:10px; font-size:13px; @(isWeekend ? "background:#FDE2E4;" : "")">
+                                    <input type="checkbox" class="batch-day-check" value="@gun" @(isWeekend ? "disabled" : "") />
+                                    <div class="day-info" style="flex:1;">
+                                        <strong>@gun</strong> - @gunAdi
+                                        @if (isWeekend)
+                                        {
+                                            <span class="badge bg-danger bg-opacity-10 text-danger" style="font-size:10px;">Hafta Sonu</span>
+                                        }
+                                    </div>
+                                    <div class="time-inputs" style="display:flex; gap:8px; align-items:center;">
+                                        <input type="time" class="batch-start" value="08:00" style="width:100px; padding:4px 8px; border:1px solid #E2E8F0; border-radius:6px; font-size:12px;" @(isWeekend ? "disabled" : "") />
+                                        <span style="font-size:12px; color:#94A3B8;">-</span>
+                                        <input type="time" class="batch-end" value="17:00" style="width:100px; padding:4px 8px; border:1px solid #E2E8F0; border-radius:6px; font-size:12px;" @(isWeekend ? "disabled" : "") />
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label fw-semibold" style="font-size:14px;"><i class="bi bi-pencil me-2"></i>Açıklama (Ortak)</label>
+                        <input id="batchAciklama" type="text" class="form-control" placeholder="Tüm kayıtlar için ortak açıklama" style="font-size:13px; padding:8px 12px; border-radius:12px;" />
+                    </div>
+                    <div id="batchModalMsg" class="text-danger small mt-1" style="font-size:12px;"></div>
+                </div>
+                <div class="modal-footer border-0" style="padding:0 20px 20px 20px;">
+                    <button type="button" class="btn-soft-cancel" data-bs-dismiss="modal" style="font-size:13px; padding:6px 20px;">Vazgeç</button>
+                    <button type="button" class="btn-primary-custom" onclick="kaydetTopluMesai()" style="font-size:13px; padding:6px 20px;">
+                        <i class="bi bi-check-lg me-1"></i>Tümünü Kaydet
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MESAI RAPOR MODAL -->
+    <div class="modal fade modal-custom" id="reportModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-xl">
+            <div class="modal-content" style="border-radius:20px; padding:6px 2px;">
+                <div class="modal-header" style="padding:16px 20px 0 20px;">
+                    <h5 class="modal-title" style="font-size:18px;">
+                        <i class="bi bi-bar-chart-fill me-2"></i>Mesai Raporu
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" style="padding:20px;">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <div class="stats-mini-card" style="padding:16px;">
+                                <div><span class="stat-icon">👤</span><span class="stat-label">En Çok Mesai Yapan</span></div>
+                                <div class="stat-number" id="reportTopPersonel" style="font-size:18px;">-</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="stats-mini-card" style="padding:16px;">
+                                <div><span class="stat-icon">📊</span><span class="stat-label">Aylık Toplam Mesai</span></div>
+                                <div class="stat-number" id="reportToplamMesai" style="font-size:18px;">-</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="stats-mini-card" style="padding:16px;">
+                                <div><span class="stat-icon">📈</span><span class="stat-label">Ortalama Günlük Mesai</span></div>
+                                <div class="stat-number" id="reportOrtalama" style="font-size:18px;">-</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-3" style="max-height:400px; overflow-y:auto;">
+                        <table class="table table-bordered table-striped" style="font-size:13px;">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Personel</th>
+                                    <th>Toplam Mesai</th>
+                                    <th>Günlük Ortalama</th>
+                                    <th>Gün Sayısı</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reportTableBody">
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted">Veri bulunmuyor</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer border-0" style="padding:0 20px 20px 20px;">
+                    <button type="button" class="btn-soft-cancel" data-bs-dismiss="modal" style="font-size:13px; padding:6px 20px;">Kapat</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPTS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <script>
+        // ----- GLOBAL STATE -----
+        let seciliHucre = { personelId: 0, gun: 0, mode: 'new' };
+        let seciliKayitId = 0;
+        let modalInstance = null;
+        let batchModalInstance = null;
+        let reportModalInstance = null;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Bootstrap modal init
+            const modalEl = document.getElementById('mesaiModal');
+            modalInstance = new bootstrap.Modal(modalEl);
+            
+            const batchModalEl = document.getElementById('batchModal');
+            batchModalInstance = new bootstrap.Modal(batchModalEl);
+            
+            const reportModalEl = document.getElementById('reportModal');
+            reportModalInstance = new bootstrap.Modal(reportModalEl);
+
+            hesaplaToplamlar();
+            istatistikleriGuncelle();
+            kontrol8SaatUyarisi();
+            kontrol88SaatUyarisi();
+
+            // tooltipleri aktif et
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(el => new bootstrap.Tooltip(el));
+        });
+
+        // ----- TOPLAM HESAPLAMA (saat toplamları) -----
+        function hesaplaToplamlar() {
+            const rows = document.querySelectorAll('tbody tr');
+            rows.forEach(row => {
+                let toplam = 0;
+                const cells = row.querySelectorAll('td[data-saat]');
+                cells.forEach(cell => {
+                    const val = parseFloat(cell.getAttribute('data-saat')) || 0;
+                    toplam += val;
+                });
+                const toplamCell = row.querySelector('.personel-toplam span');
+                if (toplamCell) {
+                    toplamCell.textContent = formatSaatDakika(toplam);
+                }
+            });
+        }
+
+        function formatSaatDakika(saat) {
+            if (saat === null || saat === undefined || saat === '') {
+                return '0:00';
+            }
+
+            if (typeof saat === 'string') {
+                const raw = saat.trim();
+                if (raw.includes(':')) {
+                    const parts = raw.split(':');
+                    if (parts.length === 2) {
+                        let h = parseInt(parts[0], 10) || 0;
+                        let m = parseInt(parts[1], 10) || 0;
+                        if (m >= 60) {
+                            h += Math.floor(m / 60);
+                            m = m % 60;
+                        }
+                        return h + ':' + String(m).padStart(2, '0');
+                    }
+                }
+                saat = parseFloat(raw.replace(',', '.'));
+            }
+
+            const num = Number(saat);
+            if (Number.isNaN(num)) {
+                return '0:00';
+            }
+
+            const s = Math.floor(num);
+            let d = Math.round((num - s) * 60);
+            if (d >= 60) {
+                d = 0;
+            }
+            return s + ':' + String(d).padStart(2, '0');
+        }
+
+        // ----- İSTATİSTİK KARTLARI -----
+        function istatistikleriGuncelle() {
+            let toplamSaat = 0;
+            document.querySelectorAll('.personel-toplam span').forEach(el => {
+                const txt = el.textContent.trim();
+                const parts = txt.split(':');
+                if (parts.length === 2) {
+                    const s = parseInt(parts[0]) || 0;
+                    const d = parseInt(parts[1]) || 0;
+                    toplamSaat += s + (d / 60);
+                }
+            });
+            const toplamSaatEl = document.getElementById('toplamMesaiSaat');
+            if (toplamSaatEl) {
+                toplamSaatEl.textContent = Math.round(toplamSaat) + ' Saat';
+            }
+        }
+
+        // ----- NAVIGATION -----
+        function birimSecildi() {
+            const birim = document.getElementById('subeSelect').value;
+            if (birim) {
+                window.location.href = `/HizliMesaiGirisi/Index?birim=${encodeURIComponent(birim)}&yil=@secilenYil&ay=@secilenAy`;
+            }
+        }
+
+        function ayDegistir(miktar) {
+            let ay = @secilenAy + miktar;
+            let yil = @secilenYil;
+            if (ay > 12) { ay = 1; yil++; }
+            else if (ay < 1) { ay = 12; yil--; }
+            const birim = document.getElementById('subeSelect').value;
+            if (birim) {
+                window.location.href = `/HizliMesaiGirisi/Index?birim=${encodeURIComponent(birim)}&yil=${yil}&ay=${ay}`;
+            }
+        }
+
+        // ----- TEKİL MODAL OPERATIONS -----
+        function yeniMesaiEkle(personelId, gun) {
+            seciliHucre = { personelId, gun, mode: 'new' };
+            seciliKayitId = 0;
+            const tarih = `${@secilenYil}-${String(@secilenAy).padStart(2, '0')}-${String(gun).padStart(2, '0')}`;
+            document.getElementById('mesaiTarih').value = tarih;
+            document.getElementById('mesaiModalTitle').textContent = 'Mesai Girişi';
+            document.getElementById('mesaiModalMsg').textContent = '';
+            document.getElementById('mesaiBaslangic').value = '08:00';
+            document.getElementById('mesaiBitis').value = '17:00';
+            document.getElementById('mesaiAciklama').value = '';
+            modalInstance.show();
+        }
+
+        function mesaiDetay(personelId, gun, kayitId) {
+            seciliHucre = { personelId, gun, mode: 'edit' };
+            seciliKayitId = kayitId || 0;
+            const tarih = `${@secilenYil}-${String(@secilenAy).padStart(2, '0')}-${String(gun).padStart(2, '0')}`;
+            document.getElementById('mesaiTarih').value = tarih;
+            document.getElementById('mesaiModalTitle').textContent = 'Mesai Güncelle';
+            document.getElementById('mesaiModalMsg').textContent = '';
+            const cell = document.querySelector(`td[data-gun="${gun}"] .badge-pill`);
+            if (cell) {
+                const val = cell.textContent.trim();
+                const parts = val.split(':');
+                if (parts.length === 2) {
+                    document.getElementById('mesaiBaslangic').value = parts[0] + ':' + parts[1];
+                    document.getElementById('mesaiBitis').value = parts[0] + ':' + parts[1];
+                }
+            }
+            modalInstance.show();
+        }
+
+        async function kaydetMesai() {
+            const baslangic = document.getElementById('mesaiBaslangic').value;
+            const bitis = document.getElementById('mesaiBitis').value;
+            const aciklama = document.getElementById('mesaiAciklama').value.trim();
+            const msg = document.getElementById('mesaiModalMsg');
+
+            if (!baslangic || !bitis) {
+                msg.textContent = 'Başlangıç ve bitiş saati zorunludur.';
+                return;
+            }
+
+            const payload = {
+                personelId: seciliHucre.personelId,
+                tarih: document.getElementById('mesaiTarih').value,
+                baslangicSaati: baslangic,
+                bitisSaati: bitis,
+                notlar: aciklama
+            };
+
+            try {
+                const endpoint = seciliHucre.mode === 'edit' ? '/HizliMesaiGirisi/Guncelle' : '/HizliMesaiGirisi/KayitEkle';
+                const body = seciliHucre.mode === 'edit'
+                    ? { id: seciliKayitId, baslangicSaati: baslangic, bitisSaati: bitis, notlar: aciklama }
+                    : payload;
+
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+
+                if (!response.ok) {
+                    const text = await response.text();
+                    msg.textContent = text || 'Kayıt sırasında hata oluştu.';
                     return;
                 }
-                odemeler = data.odemeler || [];
-                ozet = data.ozet || {};
-                renderTable();
-                var hesaplaBtn = document.getElementById('btnHesapla');
-                if (hesaplaBtn) hesaplaBtn.disabled = false;
-                showToast(ayAdlari[ay] + ' ' + yil + ' - Personel listesi yüklendi. Hesaplamak için "Hesapla" tuşuna basınız.');
-            })
-            .catch(function() { showToast('Veri yüklenemedi', 'error'); })
-            .finally(function() {
-                if (yukleBtn) yukleBtn.disabled = false;
-            });
-    }
 
-    function calculateOdemeler() {
-        var birimSel = document.getElementById('birimSelect');
-        var yearSel = document.getElementById('yearSelect');
-        var monthSel = document.getElementById('monthSelect');
-
-        var birim = birimSel ? birimSel.value : '';
-        var yil = yearSel ? parseInt(yearSel.value, 10) : new Date().getFullYear();
-        var ay = monthSel ? parseInt(monthSel.value, 10) : new Date().getMonth() + 1;
-
-        if (!birim) { showToast('Birim seçin', 'warning'); return; }
-
-        currentBirim = birim;
-        currentYil = yil;
-        currentAy = ay;
-
-        var hesaplaBtn = document.getElementById('btnHesapla');
-        if (hesaplaBtn) hesaplaBtn.disabled = true;
-
-        var url = '/Mesai/GetMesaiOdemeleri?yil=' + yil + '&ay=' + ay + '&birim=' + encodeURIComponent(birim) + '&hesapla=true';
-        fetch(url)
-            .then(function(r) { return r.json(); })
-            .then(function(data) {
-                if (!data.basarili) { showToast('Hata: ' + (data.hata || 'Bilinmeyen hata'), 'error'); return; }
-                odemeler = data.odemeler || [];
-                ozet = data.ozet || {};
-                renderTable();
-                showToast(ayAdlari[ay] + ' ' + yil + ' - Ödeme hesaplamaları tamamlandı.');
-            })
-            .catch(function() { showToast('Hesaplama yapılamadı', 'error'); })
-            .finally(function() {
-                if (hesaplaBtn) hesaplaBtn.disabled = false;
-            });
-    }
-
-    // ============================================================
-    // OLAY BAĞLAMALARI
-    // ============================================================
-    function bindEvents() {
-        var yukleBtn = document.getElementById('btnYukle');
-        var hesaplaBtn = document.getElementById('btnHesapla');
-        var birimSel = document.getElementById('birimSelect');
-
-        if (yukleBtn) yukleBtn.addEventListener('click', loadOdemeler);
-        if (hesaplaBtn) hesaplaBtn.addEventListener('click', calculateOdemeler);
-        if (birimSel) {
-            birimSel.addEventListener('change', function() {
-                if (birimSel.value) loadOdemeler();
-            });
-        }
-    }
-
-    // ============================================================
-    // SAYFA BAŞLAT
-    // ============================================================
-    function initPage() {
-        initDateSelects();
-        bindEvents();
-
-        var sel = document.getElementById('birimSelect');
-        if (sel && sel.options.length > 0 && sel.value) {
-            loadOdemeler();
-        }
-    }
-
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initPage);
-    } else {
-        initPage();
-    }
-
-    // ============================================================
-    // EXCEL
-    // ============================================================
-    document.getElementById('btnExcel').addEventListener('click', function() {
-        if (odemeler.length === 0) return;
-
-        var html = '<html><head><meta charset="UTF-8"><style>th,td{border:1px solid #000;padding:5px;text-align:center;}th{background:#f0f0f0;font-weight:bold;}</style></head><body>';
-        html += '<h2 style="text-align:center">GAMABEL YATIRIM LTD</h2>';
-        html += '<h3 style="text-align:center">MESAİ ÖDEME LİSTESİ</h3>';
-        html += '<h4 style="text-align:center">' + ayAdlari[currentAy].toUpperCase() + ' ' + currentYil + '</h4>';
-        html += '<p style="text-align:center;font-size:12px;color:#666;">Birim: ' + escapeHtml(currentBirim) + '</p>';
-        
-        html += '<table style="width:100%;"><thead><tr><th>#</th><th>Adı Soyadı</th><th>Bölüm</th><th>Toplam Mesai (Saat)</th><th>Saatlik Brüt (TL)</th><th>Ödeme Tutarı (TL)</th></tr></thead><tbody>';
-        
-        for (var i = 0; i < odemeler.length; i++) {
-            var o = odemeler[i];
-            html += '<tr><td>' + o.sira + '</td><td>' + escapeHtml(o.adSoyad) + '</td><td>' + escapeHtml(o.birimAdi) + '</td><td>' + decimalHoursToClock(o.toplamSaat) + '</td><td>' + formatTurkishCurrency(o.saatlikBrut) + '</td><td>' + formatTurkishCurrency(o.odemeTutari) + '</td></tr>';
-        }
-
-        var toplamMesaiGosterim = getDisplayedToplamMesai();
-        html += '<tr style="font-weight:bold;background:#e9ecef;"><td colspan="2" style="text-align:right;">GENEL TOPLAM</td><td>' + (ozet.toplamPersonel || 0) + ' Kişi</td><td>' + decimalHoursToClock(toplamMesaiGosterim) + '</td><td>' + formatTurkishCurrency(ozet.saatlikBrut || 0) + '</td><td>' + formatTurkishCurrency(ozet.genelToplamOdeme || 0) + '</td></tr>';
-        html += '</tbody></table>';
-        html += '<p style="text-align:center;font-size:10px;color:#999;margin-top:15px;">Oluşturulma: ' + new Date().toLocaleDateString('tr-TR') + ' - GAMABEL YATIRIM LTD</p>';
-        html += '</body></html>';
-
-        var blob = new Blob([html], { type: 'application/vnd.ms-excel' });
-        var link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = 'Mesai_Odemesi_' + ayAdlari[currentAy] + '_' + currentYil + '.xls';
-        link.click();
-        URL.revokeObjectURL(link.href);
-        showToast('Excel indiriliyor');
-    });
-
-    // ============================================================
-    // PDF BİRİM (Tüm Personel Tek Sayfada)
-    // ============================================================
-    document.getElementById('btnPdfBirim').addEventListener('click', function() {
-        if (odemeler.length === 0) return;
-
-        var birim = document.getElementById('birimSelect').value;
-        var yil = parseInt(document.getElementById('yearSelect').value);
-        var ay = parseInt(document.getElementById('monthSelect').value);
-
-        if (!birim) {
-            showToast('Lütfen bir birim seçin', 'warning');
-            return;
-        }
-
-        var url = '/Mesai/PdfBirim?yil=' + yil + '&ay=' + ay + '&birim=' + encodeURIComponent(birim);
-        window.open(url, '_blank');
-        showToast('PDF hazırlanıyor...', 'info');
-    });
-
-    // ============================================================
-    // PDF PERSONEL (Her Personel Ayrı Sayfada)
-    // ============================================================
-    document.getElementById('btnPdf').addEventListener('click', function() {
-        if (odemeler.length === 0) return;
-
-        var toplamMesaiGosterim = getDisplayedToplamMesai();
-
-        var pdfContainer = document.createElement('div');
-        pdfContainer.style.cssText = 'position: absolute; left: -9999px; top: 0; width: 1100px; padding: 30px 40px; background: white; font-family: Arial, Helvetica, sans-serif;';
-
-        var allPagesHtml = '';
-        for (var i = 0; i < odemeler.length; i++) {
-            var o = odemeler[i];
-            allPagesHtml += `
-                <div class="personel-sayfa" style="page-break-after: always; padding: 20px; border-bottom: 1px solid #ddd; margin-bottom: 15px;">
-                    <div style="text-align:center;margin-bottom:15px;border-bottom:2px solid #1e3c72;padding-bottom:10px;">
-                        <h1 style="font-size:20px;margin:0;color:#000;font-weight:700;">GAMABEL YATIRIM LTD</h1>
-                        <h2 style="font-size:16px;margin:3px 0;color:#000;font-weight:600;">MESAİ ÖDEME LİSTESİ</h2>
-                        <p style="margin:2px 0;font-size:12px;color:#000;font-weight:500;">${ayAdlari[currentAy].toUpperCase()} ${currentYil}</p>
-                        <p style="margin:1px 0;font-size:10px;color:#666;">Birim: ${escapeHtml(currentBirim)}</p>
-                    </div>
-
-                    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:8px 14px;margin:10px 0;display:flex;justify-content:space-between;align-items:center;">
-                        <span style="font-weight:700;font-size:13px;color:#1e3c72;">👤 ${escapeHtml(o.adSoyad)}</span>
-                        <span style="font-size:11px;color:#475569;">Bölüm: ${escapeHtml(o.birimAdi)} | Toplam Mesai: ${decimalHoursToClock(o.toplamSaat)} saat</span>
-                    </div>
-
-                    <table style="width:100%;border-collapse:collapse;font-size:10px;margin-bottom:10px;">
-                        <thead>
-                            <tr>
-                                <th style="background:#1e3c72;color:white;border:1px solid #1e3c72;padding:4px 8px;text-align:center;font-weight:bold;font-size:9px;">#</th>
-                                <th style="background:#1e3c72;color:white;border:1px solid #1e3c72;padding:4px 8px;text-align:center;font-weight:bold;font-size:9px;">Tarih</th>
-                                <th style="background:#1e3c72;color:white;border:1px solid #1e3c72;padding:4px 8px;text-align:center;font-weight:bold;font-size:9px;">Başlangıç</th>
-                                <th style="background:#1e3c72;color:white;border:1px solid #1e3c72;padding:4px 8px;text-align:center;font-weight:bold;font-size:9px;">Bitiş</th>
-                                <th style="background:#1e3c72;color:white;border:1px solid #1e3c72;padding:4px 8px;text-align:center;font-weight:bold;font-size:9px;">Toplam Saat</th>
-                                <th style="background:#1e3c72;color:white;border:1px solid #1e3c72;padding:4px 8px;text-align:center;font-weight:bold;font-size:9px;">Açıklama</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${(o.detaylar || []).map(function(d, idx) {
-                                return '<tr>' +
-                                    '<td style="border:1px solid #333;padding:3px 6px;text-align:center;font-size:9px;">' + (idx + 1) + '</td>' +
-                                    '<td style="border:1px solid #333;padding:3px 6px;text-align:center;font-size:9px;">' + (d.tarih || '') + '</td>' +
-                                    '<td style="border:1px solid #333;padding:3px 6px;text-align:center;font-size:9px;">' + (d.baslangic || '') + '</td>' +
-                                    '<td style="border:1px solid #333;padding:3px 6px;text-align:center;font-size:9px;">' + (d.bitis || '') + '</td>' +
-                                    '<td style="border:1px solid #333;padding:3px 6px;text-align:right;font-size:9px;">' + (d.toplamSaat ? d.toplamSaat.toFixed(2) : '0.00') + '</td>' +
-                                    '<td style="border:1px solid #333;padding:3px 6px;text-align:left;font-size:9px;">' + (d.aciklama || '') + '</td>' +
-                                '</tr>';
-                            }).join('')}
-                        </tbody>
-                        <tfoot>
-                            <tr style="background:#e9ecef;font-weight:bold;">
-                                <td colspan="4" style="border:1px solid #333;padding:4px 8px;text-align:right;font-size:10px;">TOPLAM</td>
-                                <td style="border:1px solid #333;padding:4px 8px;text-align:right;font-size:10px;">${o.toplamSaat ? o.toplamSaat.toFixed(2) : '0.00'}</td>
-                                <td style="border:1px solid #333;padding:4px 8px;"></td>
-                            </tr>
-                        </tfoot>
-                    </table>
-
-                    <div style="display:flex;justify-content:space-between;margin-top:15px;padding-top:10px;border-top:1px solid #dee2e6;">
-                        <div style="text-align:center;flex:1;">
-                            <div style="font-size:9px;font-weight:600;color:#6c757d;margin-bottom:20px;">HAZIRLAYAN</div>
-                            <div style="border-top:1px solid #333;width:60%;margin:0 auto;padding-top:4px;">
-                                <small style="font-size:8px;color:#999;">&nbsp;</small>
-                            </div>
-                        </div>
-                        <div style="text-align:center;flex:1;">
-                            <div style="font-size:9px;font-weight:600;color:#6c757d;margin-bottom:20px;">ONAYLAYAN</div>
-                            <div style="border-top:1px solid #333;width:60%;margin:0 auto;padding-top:4px;">
-                                <small style="font-size:8px;color:#999;">&nbsp;</small>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div style="text-align:center;margin-top:10px;font-size:7px;color:#999;border-top:1px solid #ddd;padding-top:6px;">
-                        Oluşturulma Tarihi: ${new Date().toLocaleDateString('tr-TR')} - GAMABEL YATIRIM LTD &nbsp;|&nbsp; Sayfa ${i+1} / ${odemeler.length}
-                    </div>
-                </div>
-            `;
-        }
-
-        pdfContainer.innerHTML = allPagesHtml;
-        document.body.appendChild(pdfContainer);
-
-        var dosyaAdi = 'Mesai_Odemesi_Personel_' + ayAdlari[currentAy] + '_' + currentYil + '.pdf';
-        html2pdf().set({
-            margin: [8, 8, 8, 8],
-            filename: dosyaAdi,
-            image: { type: 'jpeg', quality: 1.0 },
-            html2canvas: { scale: 3, useCORS: true, letterRendering: true, backgroundColor: '#ffffff' },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
-        }).from(pdfContainer).save().then(function() {
-            pdfContainer.remove();
-            showToast('PDF Personel indiriliyor', 'info');
-        });
-    });
-
-    // ============================================================
-    // YAZDIR
-    // ============================================================
-    document.getElementById('btnYazdir').addEventListener('click', function() {
-        if (odemeler.length === 0) {
-            showToast('Yazdırılacak veri yok', 'warning');
-            return;
-        }
-
-        var printStyles = document.createElement('style');
-        printStyles.id = 'printStyles';
-        printStyles.innerHTML = `
-            body * { visibility: hidden; }
-            .print-container, .print-container * { visibility: visible; }
-            .print-container { 
-                position: absolute; 
-                left: 0; 
-                top: 0; 
-                width: 100%; 
-                padding: 15mm 20mm; 
-                background: white; 
-                font-family: Arial, Helvetica, sans-serif;
-                visibility: visible !important;
+                modalInstance.hide();
+                window.location.reload();
+            } catch (err) {
+                msg.textContent = 'Sunucuya bağlanılamadı.';
             }
-            .personel-sayfa { page-break-after: always; }
-            .personel-sayfa:last-child { page-break-after: auto; }
-            .print-container .imza-alani { text-align: center; flex: 1; margin-top: 15px; }
-            .print-container .imza-alani .label { font-size: 10px; font-weight: 600; color: #6c757d; margin-bottom: 20px; display: block; }
-            .print-container .imza-alani .cizgi { border-top: 1px solid #333; width: 60%; margin: 0 auto; padding-top: 4px; }
-            .print-container .imza-alani .cizgi small { font-size: 9px; color: #999; }
-            .print-container .page-footer { display: flex; justify-content: space-between; margin-top: 20px; padding-top: 12px; border-top: 1px solid #dee2e6; }
-            .print-container .footer-text { text-align: center; margin-top: 10px; font-size: 8px; color: #999; border-top: 1px solid #ddd; padding-top: 8px; }
-            .no-print, .no-print * { display: none !important; }
-        `;
-        document.head.appendChild(printStyles);
-
-        var toplamMesaiGosterim = getDisplayedToplamMesai();
-
-        // Her personel için ayrı sayfa oluştur
-        var printContainer = document.createElement('div');
-        printContainer.className = 'print-container';
-
-        var allPagesHtml = '';
-        for (var i = 0; i < odemeler.length; i++) {
-            var o = odemeler[i];
-            allPagesHtml += `
-                <div class="personel-sayfa" style="page-break-after: always; padding: 15px 0;">
-                    <div style="text-align:center;margin-bottom:10px;border-bottom:2px solid #1e3c72;padding-bottom:8px;">
-                        <h1 style="font-size:18px;margin:0;color:#000;font-weight:700;">GAMABEL YATIRIM LTD</h1>
-                        <h2 style="font-size:14px;margin:2px 0;color:#000;font-weight:600;">MESAİ ÖDEME LİSTESİ</h2>
-                        <p style="margin:1px 0;font-size:11px;color:#000;font-weight:500;">${ayAdlari[currentAy].toUpperCase()} ${currentYil}</p>
-                        <p style="margin:1px 0;font-size:9px;color:#666;">Birim: ${escapeHtml(currentBirim)}</p>
-                    </div>
-
-                    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:4px;padding:6px 12px;margin:8px 0;display:flex;justify-content:space-between;align-items:center;">
-                        <span style="font-weight:700;font-size:12px;color:#1e3c72;">👤 ${escapeHtml(o.adSoyad)}</span>
-                        <span style="font-size:10px;color:#475569;">Bölüm: ${escapeHtml(o.birimAdi)} | Toplam Mesai: ${decimalHoursToClock(o.toplamSaat)} saat</span>
-                    </div>
-
-                    <table style="width:100%;border-collapse:collapse;font-size:9px;margin-bottom:8px;">
-                        <thead>
-                            <tr>
-                                <th style="background:#1e3c72;color:white;border:1px solid #1e3c72;padding:3px 6px;text-align:center;font-weight:bold;font-size:8px;">#</th>
-                                <th style="background:#1e3c72;color:white;border:1px solid #1e3c72;padding:3px 6px;text-align:center;font-weight:bold;font-size:8px;">Tarih</th>
-                                <th style="background:#1e3c72;color:white;border:1px solid #1e3c72;padding:3px 6px;text-align:center;font-weight:bold;font-size:8px;">Başlangıç</th>
-                                <th style="background:#1e3c72;color:white;border:1px solid #1e3c72;padding:3px 6px;text-align:center;font-weight:bold;font-size:8px;">Bitiş</th>
-                                <th style="background:#1e3c72;color:white;border:1px solid #1e3c72;padding:3px 6px;text-align:center;font-weight:bold;font-size:8px;">Toplam Saat</th>
-                                <th style="background:#1e3c72;color:white;border:1px solid #1e3c72;padding:3px 6px;text-align:center;font-weight:bold;font-size:8px;">Açıklama</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${(o.detaylar || []).map(function(d, idx) {
-                                return '<tr>' +
-                                    '<td style="border:1px solid #333;padding:2px 4px;text-align:center;font-size:8px;">' + (idx + 1) + '</td>' +
-                                    '<td style="border:1px solid #333;padding:2px 4px;text-align:center;font-size:8px;">' + (d.tarih || '') + '</td>' +
-                                    '<td style="border:1px solid #333;padding:2px 4px;text-align:center;font-size:8px;">' + (d.baslangic || '') + '</td>' +
-                                    '<td style="border:1px solid #333;padding:2px 4px;text-align:center;font-size:8px;">' + (d.bitis || '') + '</td>' +
-                                    '<td style="border:1px solid #333;padding:2px 4px;text-align:right;font-size:8px;">' + (d.toplamSaat ? d.toplamSaat.toFixed(2) : '0.00') + '</td>' +
-                                    '<td style="border:1px solid #333;padding:2px 4px;text-align:left;font-size:8px;">' + (d.aciklama || '') + '</td>' +
-                                '</tr>';
-                            }).join('')}
-                        </tbody>
-                        <tfoot>
-                            <tr style="background:#e9ecef;font-weight:bold;">
-                                <td colspan="4" style="border:1px solid #333;padding:3px 6px;text-align:right;font-size:9px;">TOPLAM</td>
-                                <td style="border:1px solid #333;padding:3px 6px;text-align:right;font-size:9px;">${o.toplamSaat ? o.toplamSaat.toFixed(2) : '0.00'}</td>
-                                <td style="border:1px solid #333;padding:3px 6px;"></td>
-                            </tr>
-                        </tfoot>
-                    </table>
-
-                    <div style="display:flex;justify-content:space-between;margin-top:12px;padding-top:8px;border-top:1px solid #dee2e6;">
-                        <div style="text-align:center;flex:1;">
-                            <div style="font-size:8px;font-weight:600;color:#6c757d;margin-bottom:15px;">HAZIRLAYAN</div>
-                            <div style="border-top:1px solid #333;width:50%;margin:0 auto;padding-top:3px;">
-                                <small style="font-size:7px;color:#999;">&nbsp;</small>
-                            </div>
-                        </div>
-                        <div style="text-align:center;flex:1;">
-                            <div style="font-size:8px;font-weight:600;color:#6c757d;margin-bottom:15px;">ONAYLAYAN</div>
-                            <div style="border-top:1px solid #333;width:50%;margin:0 auto;padding-top:3px;">
-                                <small style="font-size:7px;color:#999;">&nbsp;</small>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div style="text-align:center;margin-top:8px;font-size:7px;color:#999;border-top:1px solid #ddd;padding-top:5px;">
-                        Oluşturulma Tarihi: ${new Date().toLocaleDateString('tr-TR')} - GAMABEL YATIRIM LTD &nbsp;|&nbsp; Sayfa ${i+1} / ${odemeler.length}
-                    </div>
-                </div>
-            `;
         }
 
-        printContainer.innerHTML = allPagesHtml;
-        document.body.appendChild(printContainer);
+        // ----- TOPLU MESAI GİRİŞİ -----
+        function acBatchModal() {
+            document.getElementById('batchPersonel').value = '';
+            document.getElementById('batchAciklama').value = '';
+            document.getElementById('batchModalMsg').textContent = '';
+            document.querySelectorAll('.batch-day-check').forEach(cb => {
+                if (!cb.disabled) cb.checked = false;
+            });
+            batchModalInstance.show();
+        }
 
-        window.print();
+        async function kaydetTopluMesai() {
+            const personelId = document.getElementById('batchPersonel').value;
+            const aciklama = document.getElementById('batchAciklama').value.trim();
+            const msg = document.getElementById('batchModalMsg');
 
-        setTimeout(function() {
-            if (printContainer.parentNode) printContainer.parentNode.removeChild(printContainer);
-            var styles = document.getElementById('printStyles');
-            if (styles) styles.parentNode.removeChild(styles);
-        }, 100);
-    });
+            if (!personelId) {
+                msg.textContent = 'Lütfen bir personel seçiniz.';
+                return;
+            }
 
-})();
-</script>
-}
+            const selectedDays = [];
+            document.querySelectorAll('.batch-day-check:checked').forEach(cb => {
+                const gun = parseInt(cb.value);
+                const dayItem = cb.closest('.batch-day-item');
+                const start = dayItem.querySelector('.batch-start').value;
+                const end = dayItem.querySelector('.batch-end').value;
+                if (start && end) {
+                    selectedDays.push({ gun, start, end });
+                }
+            });
+
+            if (selectedDays.length === 0) {
+                msg.textContent = 'Lütfen en az bir gün seçiniz.';
+                return;
+            }
+
+            msg.textContent = 'Kaydediliyor...';
+            msg.style.color = '#2563EB';
+
+            let basarili = 0;
+            let hatali = 0;
+
+            for (const day of selectedDays) {
+                const tarih = `${@secilenYil}-${String(@secilenAy).padStart(2, '0')}-${String(day.gun).padStart(2, '0')}`;
+                const payload = {
+                    personelId: parseInt(personelId),
+                    tarih: tarih,
+                    baslangicSaati: day.start,
+                    bitisSaati: day.end,
+                    notlar: aciklama
+                };
+
+                try {
+                    const response = await fetch('/HizliMesaiGirisi/KayitEkle', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (response.ok) {
+                        basarili++;
+                    } else {
+                        hatali++;
+                    }
+                } catch (err) {
+                    hatali++;
+                }
+            }
+
+            if (hatali === 0) {
+                msg.textContent = `✅ ${basarili} gün başarıyla kaydedildi!`;
+                msg.style.color = '#16A34A';
+                setTimeout(() => {
+                    batchModalInstance.hide();
+                    window.location.reload();
+                }, 1500);
+            } else {
+                msg.textContent = `⚠️ ${basarili} gün kaydedildi, ${hatali} günde hata oluştu.`;
+                msg.style.color = '#DC2626';
+            }
+        }
+
+        // ----- MESAI RAPORU -----
+        function acReportModal() {
+            const reportData = [];
+            document.querySelectorAll('tbody tr').forEach(row => {
+                const personelAd = row.querySelector('.sticky-personel')?.textContent?.trim() || '';
+                const toplamSpan = row.querySelector('.personel-toplam span');
+                if (toplamSpan) {
+                    const txt = toplamSpan.textContent.trim();
+                    const parts = txt.split(':');
+                    if (parts.length === 2) {
+                        const saat = parseInt(parts[0]) || 0;
+                        const dakika = parseInt(parts[1]) || 0;
+                        const toplamSaat = saat + (dakika / 60);
+                        const gunSayisi = row.querySelectorAll('td[data-saat]').length;
+                        reportData.push({
+                            personel: personelAd,
+                            toplam: toplamSaat,
+                            gunSayisi: gunSayisi,
+                            ortalama: gunSayisi > 0 ? toplamSaat / gunSayisi : 0
+                        });
+                    }
+                }
+            });
+
+            reportData.sort((a, b) => b.toplam - a.toplam);
+
+            const tbody = document.getElementById('reportTableBody');
+            if (reportData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Veri bulunmuyor</td></tr>';
+            } else {
+                tbody.innerHTML = reportData.map(d => `
+                    <tr>
+                        <td><strong>${d.personel}</strong></td>
+                        <td>${formatSaatDakika(d.toplam)}</td>
+                        <td>${formatSaatDakika(d.ortalama)}</td>
+                        <td>${d.gunSayisi} gün</td>
+                    </tr>
+                `).join('');
+            }
+
+            const toplamMesai = reportData.reduce((sum, d) => sum + d.toplam, 0);
+            const ortalamaMesai = reportData.length > 0 ? toplamMesai / reportData.length : 0;
+            document.getElementById('reportTopPersonel').textContent = reportData.length > 0 ? reportData[0].personel : '-';
+            document.getElementById('reportToplamMesai').textContent = formatSaatDakika(toplamMesai);
+            document.getElementById('reportOrtalama').textContent = formatSaatDakika(ortalamaMesai);
+
+            reportModalInstance.show();
+        }
+
+        // ----- EXCEL / PDF / YAZDIR -----
+        function takvimKaydet() {
+            setTakvimMsg('Değişiklikler otomatik olarak kaydedilir.');
+        }
+
+        function setTakvimMsg(text, isError = false) {
+            const el = document.getElementById('takvimActionMsg');
+            if (el) {
+                el.textContent = text;
+                el.style.color = isError ? '#b91c1c' : '#64748b';
+            }
+        }
+
+        function takvimExcelAktar() {
+            const table = document.querySelector('.mesai-table');
+            if (!table) { setTakvimMsg('Tablo bulunamadı.', true); return; }
+            const tbl = table.cloneNode(true);
+            tbl.querySelectorAll('.no-print').forEach(el => el.remove());
+            const html = `<html><head><meta charset="UTF-8"><style>th,td{border:1px solid #000;padding:4px;text-align:center;font-size:10px;}th{background:#1e3c72;color:white;font-weight:bold;}</style></head><body>${tbl.outerHTML}</body></html>`;
+            const blob = new Blob([html], { type: 'application/vnd.ms-excel;charset=UTF-8' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'Mesai_Takvimi.xls';
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            setTakvimMsg('Excel indiriliyor...');
+        }
+
+        function renderPrintLayout() {
+            const table = document.querySelector('.mesai-table');
+            if (!table) { setTakvimMsg('Tablo bulunamadı.', true); return null; }
+            const clone = table.cloneNode(true);
+            clone.querySelectorAll('.no-print').forEach(el => el.remove());
+            const wrap = document.createElement('div');
+            wrap.style.cssText = 'width:1100px;padding:15px;font-family:Inter,sans-serif;background:white;';
+            wrap.innerHTML = `<div style="text-align:center;margin-bottom:10px;"><h3 style="font-size:16px;">GAMABEL YATIRIM LTD</h3><h4 style="font-size:14px;">HIZLI MESAİ GİRİŞİ</h4></div>`;
+            wrap.appendChild(clone);
+            return wrap;
+        }
+
+        function takvimPdfIndir() {
+            const layout = renderPrintLayout();
+            if (!layout) return;
+            document.body.appendChild(layout);
+            html2pdf().set({ margin: 5, filename: 'Mesai_Takvimi.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' } })
+                .from(layout).save().then(() => { layout.remove(); setTakvimMsg('PDF indiriliyor...'); });
+        }
+
+        function takvimYazdir() {
+            const layout = renderPrintLayout();
+            if (!layout) return;
+            const container = document.createElement('div');
+            container.id = 'printContainer';
+            container.appendChild(layout);
+            document.body.appendChild(container);
+            setTimeout(() => window.print(), 300);
+            window.addEventListener('afterprint', () => container.remove(), { once: true });
+        }
+
+        // ----- UYARI KONTROLLERİ -----
+        function kontrol8SaatUyarisi() {
+            document.querySelectorAll('td[data-saat]').forEach(td => {
+                const saat = parseFloat(td.getAttribute('data-saat')) || 0;
+                if (saat > 8) {
+                    td.style.backgroundColor = '#FEE2E2';
+                    td.title = 'Günlük 8 saat aşıldı!';
+                }
+            });
+        }
+
+        function kontrol88SaatUyarisi() {
+            document.querySelectorAll('.personel-toplam').forEach(el => {
+                const span = el.querySelector('span');
+                if (!span) return;
+                const txt = span.textContent.trim();
+                const parts = txt.split(':');
+                let toplam = 0;
+                if (parts.length === 2) {
+                    toplam = parseInt(parts[0]) || 0;
+                }
+                if (toplam > 88) {
+                    el.classList.add('uyari-aylik');
+                    el.title = 'Aylık 88 saat kotası aşıldı!';
+                } else {
+                    el.classList.remove('uyari-aylik');
+                    el.title = '';
+                }
+            });
+        }
+    </script>
+
+</body>
+</html>

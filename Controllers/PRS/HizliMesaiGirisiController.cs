@@ -149,7 +149,7 @@ public class HizliMesaiGirisiController : Controller
                                     Id = reader.GetInt32("id"),
                                     BaslangicSaati = reader["baslangic"]?.ToString() ?? "",
                                     BitisSaati = reader["bitis"]?.ToString() ?? "",
-                                    ToplamSaat = toplamSaatStr,
+                                    ToplamSaat = toplamSaat,
                                     Notlar = reader["aciklama"]?.ToString() ?? ""
                                 };
                             }

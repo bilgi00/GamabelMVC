@@ -16,7 +16,7 @@ public class OdemeFaturaImportService
     }
 
     // ================================================================
-    // ✅ YENİ: Excel'deki mevcut faturaları filtrele ve kaydet
+    // ✅ YENİ: Excel'deki mevcut faturaları filtrele ve kaydet (Tarih Eklendi)
     // ================================================================
     public async Task<(OtImportBatch? batch, int eklenen, int atlanan, List<string> atlananFaturalar)> ImportAsyncWithFilter(Stream excelStream, string dosyaAdi)
     {
@@ -27,16 +27,19 @@ public class OdemeFaturaImportService
 
         var sheet = package.Workbook.Worksheets[0];
         var lastRow = sheet.Dimension?.End.Row ?? 1;
-        var faturalar = new List<(string cariKart, string faturaNo, decimal bakiye)>();
+        
+        // ✅ Fatura verilerini tutacak liste (tarih eklendi)
+        var faturalar = new List<(string cariKart, string faturaNo, DateTime? faturaTarihi, decimal bakiye)>();
 
         // ============================================================
         // 1. Excel'den verileri oku
         // ============================================================
         for (var row = 2; row <= lastRow; row++)
         {
-            var cariKart = sheet.Cells[row, 3].Text.Trim();
-            var faturaNo = sheet.Cells[row, 6].Text.Trim();
-            var bakiyeText = sheet.Cells[row, 12].Text.Trim();
+            var cariKart = sheet.Cells[row, 3].Text.Trim();        // C sütunu - Cari Kart
+            var faturaNo = sheet.Cells[row, 6].Text.Trim();        // F sütunu - Fatura No
+            var faturaTarihiText = sheet.Cells[row, 7].Text.Trim(); // ✅ G sütunu - Fatura Tarihi
+            var bakiyeText = sheet.Cells[row, 12].Text.Trim();     // L sütunu - Bakiye
 
             if (string.IsNullOrWhiteSpace(cariKart) && string.IsNullOrWhiteSpace(faturaNo))
                 continue;
@@ -45,7 +48,31 @@ public class OdemeFaturaImportService
             if (!TryParseBakiye(bakiyeText, out var bakiye) || bakiye <= 0)
                 throw new InvalidOperationException($"{row}. satirdaki bakiye gecersizdir.");
 
-            faturalar.Add((cariKart, faturaNo, bakiye));
+            // ✅ Fatura tarihini parse et
+            DateTime? faturaTarihi = null;
+            if (!string.IsNullOrWhiteSpace(faturaTarihiText))
+            {
+                // Önce Türkçe format dene (dd.MM.yyyy)
+                if (DateTime.TryParseExact(faturaTarihiText, "dd.MM.yyyy", CultureInfo.GetCultureInfo("tr-TR"), DateTimeStyles.None, out var tarih1))
+                {
+                    faturaTarihi = tarih1;
+                }
+                // Sonra genel format dene
+                else if (DateTime.TryParse(faturaTarihiText, CultureInfo.GetCultureInfo("tr-TR"), DateTimeStyles.None, out var tarih2))
+                {
+                    faturaTarihi = tarih2;
+                }
+                else if (DateTime.TryParse(faturaTarihiText, out var tarih3))
+                {
+                    faturaTarihi = tarih3;
+                }
+                else
+                {
+                    throw new InvalidOperationException($"{row}. satirdaki fatura tarihi gecersizdir: {faturaTarihiText}");
+                }
+            }
+
+            faturalar.Add((cariKart, faturaNo, faturaTarihi, bakiye));
         }
 
         if (faturalar.Count == 0)
@@ -73,7 +100,7 @@ public class OdemeFaturaImportService
         try
         {
             // ============================================================
-            // 3. ✅ Veritabanında mevcut olanları bul
+            // 3. ✅ Veritabanında mevcut olanları bul (CariKart + FaturaNo)
             // ============================================================
             var inClause = string.Join(",", faturalar.Select((_, i) => $"(@cari{i}, @fatura{i})"));
             var kontrolCmd = new MySqlCommand(
@@ -99,7 +126,7 @@ public class OdemeFaturaImportService
             // ============================================================
             // 4. ✅ Filtrele: Sadece mevcut OLMAYANları kaydet
             // ============================================================
-            var eklenecekFaturalar = new List<(string cariKart, string faturaNo, decimal bakiye)>();
+            var eklenecekFaturalar = new List<(string cariKart, string faturaNo, DateTime? faturaTarihi, decimal bakiye)>();
             var atlananFaturalar = new List<string>();
 
             foreach (var f in faturalar)
@@ -137,15 +164,18 @@ public class OdemeFaturaImportService
             var batchId = (int)insertBatch.LastInsertedId;
 
             // ============================================================
-            // 7. Sadece eklenecek faturaları kaydet
+            // 7. ✅ Sadece eklenecek faturaları kaydet (tarih ile birlikte)
             // ============================================================
-            foreach (var (cariKart, faturaNo, bakiye) in eklenecekFaturalar)
+            foreach (var (cariKart, faturaNo, faturaTarihi, bakiye) in eklenecekFaturalar)
             {
                 var insertFatura = new MySqlCommand(
-                    "INSERT INTO prs_ot_acik_faturalar (cari_kart, fatura_no, bakiye, odemeye_dahil_edildi, odeme_durumu, import_batch_id) VALUES (@cari, @fatura, @bakiye, 0, 'bekliyor', @batch)",
+                    @"INSERT INTO prs_ot_acik_faturalar 
+                      (cari_kart, fatura_no, fatura_tarihi, bakiye, odemeye_dahil_edildi, odeme_durumu, import_batch_id) 
+                      VALUES (@cari, @fatura, @tarih, @bakiye, 0, 'bekliyor', @batch)",
                     connection, tx);
                 insertFatura.Parameters.AddWithValue("@cari", cariKart);
                 insertFatura.Parameters.AddWithValue("@fatura", faturaNo);
+                insertFatura.Parameters.AddWithValue("@tarih", faturaTarihi.HasValue ? faturaTarihi.Value : (object)DBNull.Value);
                 insertFatura.Parameters.AddWithValue("@bakiye", bakiye);
                 insertFatura.Parameters.AddWithValue("@batch", batchId);
                 await insertFatura.ExecuteNonQueryAsync();

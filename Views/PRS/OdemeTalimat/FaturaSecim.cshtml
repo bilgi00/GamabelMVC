@@ -58,6 +58,7 @@
     .batch-bilgi strong { color: #1e3c72; }
     .badge-blue { background: #dbeafe; color: #1e3c72; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; }
     .fatura-tutar { font-weight: 600; text-align: right; }
+    .fatura-tarih { text-align: center; font-size: 12px; color: #475569; white-space: nowrap; }
 </style>
 
 <div class="ot-card">
@@ -153,7 +154,7 @@
                     <span style="color:#6c757d; font-size:13px;" id="secilenAdet">0 fatura seçildi</span>
                 </div>
 
-                <!-- ✅ Firma bazında fatura grupları - CariKart = CariIsmi ile eşleştirilmiş -->
+                <!-- ✅ Firma bazında fatura grupları - Tarih sütunu eklendi -->
                 @foreach (var grup in firmaGruplari)
                 {
                     <fieldset class="firma-grup">
@@ -180,6 +181,7 @@
                                 <tr>
                                     <th style="width:40px;"></th>
                                     <th>Fatura No</th>
+                                    <th style="text-align:center; width:100px;">Tarih</th> <!-- ✅ YENİ -->
                                     <th style="text-align:right;">Bakiye</th>
                                     @if (batchId == 0)
                                     {
@@ -193,11 +195,24 @@
                                     <tr>
                                         <td>
                                             <input type="checkbox" name="secilenFaturaIdleri" value="@f.Id"
-                 
                                                    class="fatura-cb" checked onchange="updateSecilenAdet()"
                                                    data-tutar="@f.Bakiye.ToString(CultureInfo.InvariantCulture)" />
                                         </td>
                                         <td>@f.FaturaNo</td>
+                                        <!-- ✅ Tarih sütunu eklendi -->
+                                        <td class="fatura-tarih">
+                                            @{
+                                                var tarih = f.FaturaTarihi as DateTime?;
+                                                if (tarih.HasValue)
+                                                {
+                                                    @tarih.Value.ToString("dd.MM.yyyy")
+                                                }
+                                                else
+                                                {
+                                                    <span style="color:#adb5bd;">-</span>
+                                                }
+                                            }
+                                        </td>
                                         <td class="fatura-tutar">@f.Bakiye.ToString("N2") TL</td>
                                         @if (batchId == 0)
                                         {

@@ -147,89 +147,93 @@ public class OdemeTalimatService
         return result;
     }
 
-    public async Task<List<OtFaturaViewModel>> GetBatchFaturalariWithFirmaAsync(int batchId)
+   public async Task<List<OtFaturaViewModel>> GetBatchFaturalariWithFirmaAsync(int batchId)
+{
+    var result = new List<OtFaturaViewModel>();
+    await using var connection = new MySqlConnection(_connectionString);
+    await connection.OpenAsync();
+    
+    var cmd = new MySqlCommand(
+        @"SELECT 
+            f.id, 
+            f.cari_kart, 
+            f.fatura_no, 
+            f.fatura_tarihi,  -- ✅ YENİ
+            f.bakiye, 
+            f.odeme_durumu,
+            f.import_batch_id,
+            fm.odeme_ismi,
+            fm.iban
+          FROM prs_ot_acik_faturalar f
+          LEFT JOIN prs_ot_firmalar fm ON f.cari_kart = fm.cari_ismi
+          WHERE f.import_batch_id = @bid 
+            AND f.odeme_durumu = 'bekliyor'
+            AND f.odemeye_dahil_edildi = 0
+          ORDER BY f.cari_kart, f.fatura_no",
+        connection);
+    
+    cmd.Parameters.AddWithValue("@bid", batchId);
+    await using var reader = await cmd.ExecuteReaderAsync();
+    while (await reader.ReadAsync())
     {
-        var result = new List<OtFaturaViewModel>();
-        await using var connection = new MySqlConnection(_connectionString);
-        await connection.OpenAsync();
-        
-        var cmd = new MySqlCommand(
-            @"SELECT 
-                f.id, 
-                f.cari_kart, 
-                f.fatura_no, 
-                f.bakiye, 
-                f.odeme_durumu,
-                f.import_batch_id,
-                fm.odeme_ismi,
-                fm.iban
-              FROM prs_ot_acik_faturalar f
-              LEFT JOIN prs_ot_firmalar fm ON f.cari_kart = fm.cari_ismi
-              WHERE f.import_batch_id = @bid 
-                AND f.odeme_durumu = 'bekliyor'
-                AND f.odemeye_dahil_edildi = 0
-              ORDER BY f.cari_kart, f.fatura_no",
-            connection);
-        
-        cmd.Parameters.AddWithValue("@bid", batchId);
-        await using var reader = await cmd.ExecuteReaderAsync();
-        while (await reader.ReadAsync())
+        result.Add(new OtFaturaViewModel
         {
-            result.Add(new OtFaturaViewModel
-            {
-                Id = reader.GetInt32(0),
-                CariKart = reader.GetString(1),
-                FaturaNo = reader.GetString(2),
-                Bakiye = reader.GetDecimal(3),
-                OdemeDurumu = reader.IsDBNull(4) ? "bekliyor" : reader.GetString(4),
-                ImportBatchId = reader.GetInt32(5),
-                OdemeIsmi = reader.IsDBNull(6) ? null : reader.GetString(6),
-                IBAN = reader.IsDBNull(7) ? null : reader.GetString(7)
-            });
-        }
-        return result;
+            Id = reader.GetInt32(0),
+            CariKart = reader.GetString(1),
+            FaturaNo = reader.GetString(2),
+            FaturaTarihi = reader.IsDBNull(3) ? null : reader.GetDateTime(3),  // ✅ YENİ
+            Bakiye = reader.GetDecimal(4),
+            OdemeDurumu = reader.IsDBNull(5) ? "bekliyor" : reader.GetString(5),
+            ImportBatchId = reader.GetInt32(6),
+            OdemeIsmi = reader.IsDBNull(7) ? null : reader.GetString(7),
+            IBAN = reader.IsDBNull(8) ? null : reader.GetString(8)
+        });
     }
+    return result;
+}
 
-    public async Task<List<OtFaturaViewModel>> GetTumAcikFaturalarWithFirmaAsync()
+public async Task<List<OtFaturaViewModel>> GetTumAcikFaturalarWithFirmaAsync()
+{
+    var result = new List<OtFaturaViewModel>();
+    await using var connection = new MySqlConnection(_connectionString);
+    await connection.OpenAsync();
+    
+    var cmd = new MySqlCommand(
+        @"SELECT 
+            f.id, 
+            f.cari_kart, 
+            f.fatura_no, 
+            f.fatura_tarihi,  -- ✅ YENİ
+            f.bakiye, 
+            f.odeme_durumu,
+            f.import_batch_id,
+            fm.odeme_ismi,
+            fm.iban
+          FROM prs_ot_acik_faturalar f
+          LEFT JOIN prs_ot_firmalar fm ON f.cari_kart = fm.cari_ismi
+          WHERE f.odeme_durumu = 'bekliyor'
+            AND f.odemeye_dahil_edildi = 0
+          ORDER BY f.cari_kart, f.fatura_no",
+        connection);
+    
+    await using var reader = await cmd.ExecuteReaderAsync();
+    while (await reader.ReadAsync())
     {
-        var result = new List<OtFaturaViewModel>();
-        await using var connection = new MySqlConnection(_connectionString);
-        await connection.OpenAsync();
-        
-        var cmd = new MySqlCommand(
-            @"SELECT 
-                f.id, 
-                f.cari_kart, 
-                f.fatura_no, 
-                f.bakiye, 
-                f.odeme_durumu,
-                f.import_batch_id,
-                fm.odeme_ismi,
-                fm.iban
-              FROM prs_ot_acik_faturalar f
-              LEFT JOIN prs_ot_firmalar fm ON f.cari_kart = fm.cari_ismi
-              WHERE f.odeme_durumu = 'bekliyor'
-                AND f.odemeye_dahil_edildi = 0
-              ORDER BY f.cari_kart, f.fatura_no",
-            connection);
-        
-        await using var reader = await cmd.ExecuteReaderAsync();
-        while (await reader.ReadAsync())
+        result.Add(new OtFaturaViewModel
         {
-            result.Add(new OtFaturaViewModel
-            {
-                Id = reader.GetInt32(0),
-                CariKart = reader.GetString(1),
-                FaturaNo = reader.GetString(2),
-                Bakiye = reader.GetDecimal(3),
-                OdemeDurumu = reader.IsDBNull(4) ? "bekliyor" : reader.GetString(4),
-                ImportBatchId = reader.GetInt32(5),
-                OdemeIsmi = reader.IsDBNull(6) ? null : reader.GetString(6),
-                IBAN = reader.IsDBNull(7) ? null : reader.GetString(7)
-            });
-        }
-        return result;
+            Id = reader.GetInt32(0),
+            CariKart = reader.GetString(1),
+            FaturaNo = reader.GetString(2),
+            FaturaTarihi = reader.IsDBNull(3) ? null : reader.GetDateTime(3),  // ✅ YENİ
+            Bakiye = reader.GetDecimal(4),
+            OdemeDurumu = reader.IsDBNull(5) ? "bekliyor" : reader.GetString(5),
+            ImportBatchId = reader.GetInt32(6),
+            OdemeIsmi = reader.IsDBNull(7) ? null : reader.GetString(7),
+            IBAN = reader.IsDBNull(8) ? null : reader.GetString(8)
+        });
     }
+    return result;
+} 
 
     // -----------------------------------------------------------------------
     // TALİMAT OLUŞTUR - GEÇİCİ (VERİTABANINA KAYIT YOK)
