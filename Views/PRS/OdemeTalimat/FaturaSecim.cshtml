@@ -112,6 +112,9 @@
                 <input type="hidden" name="batchId" value="@batchId" />
 
                 <!-- Banka Seçimi -->
+                @{
+                    var secilenBankaId = ViewBag.SecilenBankaId as int? ?? 0;
+                }
                 @if (bankalar.Any())
                 {
                     <div class="row align-items-center mb-3">
@@ -122,7 +125,14 @@
                             <select id="bankaId" name="bankaId" class="form-select" required>
                                 @foreach (var b in bankalar)
                                 {
-                                    <option value="@b.Id">@b.SubeAdi — @b.IBAN</option>
+                                    if (b.Id == secilenBankaId)
+                                    {
+                                        <option value="@b.Id" selected>@b.SubeAdi — @b.IBAN</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@b.Id">@b.SubeAdi — @b.IBAN</option>
+                                    }
                                 }
                             </select>
                         </div>
@@ -192,10 +202,12 @@
                             <tbody>
                                 @foreach (var f in grup.Faturalar)
                                 {
+                                    var seciliFaturalar = ViewBag.SecilenFaturaIdleri as HashSet<int> ?? new HashSet<int>();
+                                    var isChecked = seciliFaturalar.Contains(f.Id) ? "checked" : "";
                                     <tr>
                                         <td>
                                             <input type="checkbox" name="secilenFaturaIdleri" value="@f.Id"
-                                                   class="fatura-cb" checked onchange="updateSecilenAdet()"
+                                                   class="fatura-cb" @isChecked onchange="updateSecilenAdet()"
                                                    data-tutar="@f.Bakiye.ToString(CultureInfo.InvariantCulture)" />
                                         </td>
                                         <td>@f.FaturaNo</td>

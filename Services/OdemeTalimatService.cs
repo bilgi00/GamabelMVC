@@ -252,10 +252,24 @@ public async Task<List<OtFaturaViewModel>> GetTumAcikFaturalarWithFirmaAsync()
         if (secilenFaturaIdleri.Count == 0)
             throw new InvalidOperationException("Ödemeye dahil edilecek fatura seçilmedi.");
 
+        using var connection = new MySqlConnection(_connectionString);
+        connection.Open();
+
+        var yil = DateTime.Now.Year;
+        var siralamaCmd = new MySqlCommand(
+            "SELECT son_sira FROM prs_ot_talimat_siralari WHERE yil = @yil",
+            connection);
+        siralamaCmd.Parameters.AddWithValue("@yil", yil);
+        var siralamaResult = siralamaCmd.ExecuteScalar();
+        var sonSira = siralamaResult == null || siralamaResult == DBNull.Value
+            ? 0
+            : Convert.ToInt32(siralamaResult);
+        var sonrakiSira = sonSira + 1;
+
         var talimat = new OtTalimat
         {
             Id = 0,
-            TalimatNo = $"G{DateTime.Now:yy}/000",
+            TalimatNo = $"G{DateTime.Now:yy}/{sonrakiSira}",
             Tarih = DateTime.Now,
             BankaId = bankaId,
             BankaSubeAdi = "",
@@ -266,9 +280,6 @@ public async Task<List<OtFaturaViewModel>> GetTumAcikFaturalarWithFirmaAsync()
             Durum = "beklemede",
             Satirlar = new List<OtTalimatSatiri>()
         };
-
-        using var connection = new MySqlConnection(_connectionString);
-        connection.Open();
 
         try
         {
@@ -309,6 +320,10 @@ public async Task<List<OtFaturaViewModel>> GetTumAcikFaturalarWithFirmaAsync()
                 {
                     talimat.BankaSubeAdi = r.GetString(0);
                     talimat.BankaIBAN = r.GetString(1);
+                }
+                else
+                {
+                    throw new InvalidOperationException("Seçilen banka kaydı bulunamadı. Lütfen önce bankayı tanımlayın veya farklı bir banka seçin.");
                 }
             }
 
@@ -428,6 +443,14 @@ public async Task<List<OtFaturaViewModel>> GetTumAcikFaturalarWithFirmaAsync()
 
             var siraNo = Convert.ToInt32(await new MySqlCommand("SELECT LAST_INSERT_ID()", connection, tx).ExecuteScalarAsync());
             var talimatNo = $"G{DateTime.Now:yy}/{siraNo}";
+
+            var bankaKontrolCmd = new MySqlCommand(
+                "SELECT COUNT(1) FROM prs_ot_bankalar WHERE id = @id",
+                connection, tx);
+            bankaKontrolCmd.Parameters.AddWithValue("@id", geciciTalimat.BankaId);
+            var bankaVarMi = Convert.ToInt32(await bankaKontrolCmd.ExecuteScalarAsync());
+            if (bankaVarMi == 0)
+                throw new InvalidOperationException("Seçilen banka kaydı bulunamadı. Lütfen bankayı yeniden seçin veya talimatı yeniden oluşturun.");
 
             var talimatEkleCmd = new MySqlCommand(
                 @"INSERT INTO prs_ot_talimatlar

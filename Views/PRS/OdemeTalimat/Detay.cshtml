@@ -226,6 +226,9 @@
             {
                 <form method="post" asp-action="TalimatKaydet" asp-route-id="0" style="display:inline;">
                     @Html.AntiForgeryToken()
+                    <input type="hidden" name="GeciciTalimatJson" value="@System.Net.WebUtility.HtmlEncode(ViewBag.GeciciTalimatJson as string ?? string.Empty)" />
+                    <input type="hidden" name="GeciciFaturaIdleriJson" value="@System.Net.WebUtility.HtmlEncode(ViewBag.GeciciFaturaIdleriJson as string ?? string.Empty)" />
+                    <input type="hidden" name="GeciciBankaId" value="@ViewBag.GeciciBankaId" />
                     <button type="submit" class="ot-btn ot-btn-success rounded-pill shadow px-4 py-2">
                         <i class="fas fa-save me-2"></i> Talimatı Kaydet
                     </button>
