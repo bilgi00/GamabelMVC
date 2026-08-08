@@ -225,8 +225,8 @@ public class HizliMesaiGirisiController : Controller
             if ((bitis - baslangic).TotalHours <= 0)
                 return BadRequest("Geçerli bir süre giriniz");
 
-            if ((bitis - baslangic).TotalHours > 12)
-                return BadRequest("Tek seferde maksimum 12 saat mesai girilebilir");
+            if ((bitis - baslangic).TotalHours > 8)
+                return BadRequest("Tek seferde maksimum 8 saat mesai girilebilir");
 
             // 7. Veritabanı işlemleri
             await using var conn = await _dbFactory.CreateConnectionAsync();
@@ -298,8 +298,8 @@ public class HizliMesaiGirisiController : Controller
             if (bitis <= baslangic)
                 return BadRequest("Bitiş saati, başlangıç saatinden sonra olmalıdır");
 
-            if ((bitis - baslangic).TotalHours > 12)
-                return BadRequest("Tek seferde maksimum 12 saat mesai girilebilir");
+            if ((bitis - baslangic).TotalHours > 8)
+                return BadRequest("Tek seferde maksimum 8 saat mesai girilebilir");
 
             await using var conn = await _dbFactory.CreateConnectionAsync();
 

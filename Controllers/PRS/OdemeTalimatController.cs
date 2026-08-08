@@ -135,6 +135,25 @@ public class OdemeTalimatController : Controller
             ViewBag.Bankalar = bankalar;
             ViewBag.KullaniciAdi = KullaniciAdi();
 
+            var secilenFaturaIdleri = new HashSet<int>();
+            var secilenFaturaIdleriJson = TempData["SecilenFaturaIdleri"] as string;
+            if (!string.IsNullOrWhiteSpace(secilenFaturaIdleriJson))
+            {
+                try
+                {
+                    var selectedIds = JsonSerializer.Deserialize<List<int>>(secilenFaturaIdleriJson);
+                    if (selectedIds != null)
+                        secilenFaturaIdleri = new HashSet<int>(selectedIds);
+                }
+                catch
+                {
+                    secilenFaturaIdleri = new HashSet<int>();
+                }
+            }
+
+            ViewBag.SecilenFaturaIdleri = secilenFaturaIdleri;
+            ViewBag.SecilenBankaId = TempData["SecilenBankaId"] is int id ? id : 0;
+
             if (!faturalar.Any())
             {
                 if (batchId.HasValue && batchId.Value > 0)
@@ -181,6 +200,8 @@ public class OdemeTalimatController : Controller
 
             if (geciciTalimat == null)
             {
+                TempData["SecilenFaturaIdleri"] = JsonSerializer.Serialize(secilenFaturaIdleri);
+                TempData["SecilenBankaId"] = bankaId;
                 TempData["Hata"] = "Talimat oluşturulamadı.";
                 if (batchId > 0)
                     return RedirectToAction("FaturaSecim", new { batchId });
@@ -212,6 +233,8 @@ public class OdemeTalimatController : Controller
         }
         catch (Exception ex)
         {
+            TempData["SecilenFaturaIdleri"] = JsonSerializer.Serialize(secilenFaturaIdleri);
+            TempData["SecilenBankaId"] = bankaId;
             TempData["Hata"] = "Talimat oluşturma hatası: " + ex.Message;
             if (batchId > 0)
                 return RedirectToAction("FaturaSecim", new { batchId });
@@ -236,12 +259,12 @@ public async Task<IActionResult> Detay(int id)
         var geciciFaturaIdleriJson = HttpContext.Session.GetString("GeciciFaturaIdleri");
         var geciciBatchId = HttpContext.Session.GetInt32("GeciciBatchId") ?? 0;
 
-        // 2. Session boşsa TempData'dan al
+        // 2. Session boşsa TempData'dan al ve korunmasını sağla
         if (string.IsNullOrEmpty(geciciTalimatJson))
         {
-            geciciTalimatJson = TempData["GeciciTalimat"] as string;
-            geciciFaturaIdleriJson = TempData["GeciciFaturaIdleri"] as string;
-            geciciBatchId = TempData["GeciciBatchId"] as int? ?? 0;
+            geciciTalimatJson = TempData.Peek("GeciciTalimat") as string;
+            geciciFaturaIdleriJson = TempData.Peek("GeciciFaturaIdleri") as string;
+            geciciBatchId = TempData.Peek("GeciciBatchId") as int? ?? 0;
         }
 
         if (string.IsNullOrEmpty(geciciTalimatJson))
@@ -268,6 +291,10 @@ public async Task<IActionResult> Detay(int id)
                 TempData["Hata"] = "Geçici talimat verisi bozuk.";
                 return RedirectToAction("Index");
             }
+
+            ViewBag.GeciciTalimatJson = geciciTalimatJson;
+            ViewBag.GeciciFaturaIdleriJson = geciciFaturaIdleriJson;
+            ViewBag.GeciciBankaId = geciciTalimat.BankaId;
 
             // ⭐ DEBUG: Satır sayısını kontrol et
             System.Diagnostics.Debug.WriteLine($"Detay - Satır Sayısı: {geciciTalimat.Satirlar?.Count ?? 0}");
@@ -306,7 +333,7 @@ public async Task<IActionResult> Detay(int id)
     // -----------------------------------------------------------------------
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> TalimatKaydet(int id)
+    public async Task<IActionResult> TalimatKaydet(int id, string? GeciciTalimatJson = null, string? GeciciFaturaIdleriJson = null, int? GeciciBankaId = null)
     {
         if (!IsLoggedIn()) return RedirectToAction("Login", "Account");
         if (!IsAdmin()) return Forbid();
@@ -326,14 +353,38 @@ public async Task<IActionResult> Detay(int id)
                 geciciBatchId = TempData["GeciciBatchId"] as int? ?? 0;
             }
 
+            if (string.IsNullOrEmpty(geciciTalimatJson) && !string.IsNullOrEmpty(GeciciTalimatJson))
+                geciciTalimatJson = GeciciTalimatJson;
+
+            if (string.IsNullOrEmpty(geciciFaturaIdleriJson) && !string.IsNullOrEmpty(GeciciFaturaIdleriJson))
+                geciciFaturaIdleriJson = GeciciFaturaIdleriJson;
+
             if (string.IsNullOrEmpty(geciciTalimatJson) || string.IsNullOrEmpty(geciciFaturaIdleriJson))
             {
                 TempData["Hata"] = "Geçici talimat bulunamadı.";
                 return RedirectToAction("Index");
             }
 
-            var geciciTalimat = JsonSerializer.Deserialize<OtTalimat>(geciciTalimatJson);
-            var secilenFaturaIdleri = JsonSerializer.Deserialize<List<int>>(geciciFaturaIdleriJson);
+            var jsonOptions = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true,
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+            };
+
+            var geciciTalimat = JsonSerializer.Deserialize<OtTalimat>(geciciTalimatJson, jsonOptions);
+            var secilenFaturaIdleri = JsonSerializer.Deserialize<List<int>>(geciciFaturaIdleriJson, jsonOptions);
+
+            if (geciciTalimat != null && geciciTalimat.BankaId == 0 && GeciciBankaId.HasValue)
+                geciciTalimat.BankaId = GeciciBankaId.Value;
+
+            // Seçilen bankanın hâlâ veritabanında mevcut olduğunu kontrol et
+            var bankalar = await _talimatService.GetBankalarAsync();
+            if (geciciTalimat == null || !bankalar.Any(b => b.Id == geciciTalimat.BankaId))
+            {
+                TempData["Hata"] = $"Seçilen banka (id: {geciciTalimat?.BankaId ?? 0}) bulunamadı. Lütfen bankayı yeniden seçin veya talimatı yeniden oluşturun.";
+                return RedirectToAction("Detay", new { id = 0 });
+            }
 
             if (geciciTalimat == null || secilenFaturaIdleri == null)
             {

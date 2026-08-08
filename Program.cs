@@ -28,6 +28,10 @@ builder.Services.Configure<RazorViewEngineOptions>(options =>
 builder.Services.AddSingleton<DbConnectionFactory>();
 builder.Services.AddSingleton<IWebHostEnvironment>(builder.Environment);
 
+// PRS hizmetleri
+builder.Services.AddSingleton<OdemeFaturaImportService>();
+builder.Services.AddSingleton<OdemeTalimatService>();
+
 // Sistem bilgileri servisi (IP, MAC, Bilgisayar Adı vb.)
 builder.Services.AddSingleton<ISystemInfoService, SystemInfoService>();
 

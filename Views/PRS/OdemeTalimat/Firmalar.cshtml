@@ -19,6 +19,15 @@
     .form-row input { padding: 7px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; }
     .form-row label { font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 4px; }
     .alert-hata { background: #fee2e2; border: 1px solid #fca5a5; color: #991b1b; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; }
+    .modal-overlay { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(15,23,42,0.55); display:flex; align-items:center; justify-content:center; z-index:1000; }
+    .modal-card { background:white; border-radius:14px; width:min(96%,540px); max-width:540px; box-shadow:0 24px 80px rgba(15,23,42,0.18); overflow:hidden; }
+    .modal-header { display:flex; align-items:center; justify-content:space-between; padding:18px 20px; border-bottom:1px solid #e2e8f0; }
+    .modal-header h2 { margin:0; font-size:16px; }
+    .modal-close { appearance:none; border:none; background:transparent; font-size:24px; line-height:1; cursor:pointer; color:#374151; }
+    .modal-body { padding:20px; display:grid; gap:14px; }
+    .modal-body label { display:block; font-size:13px; font-weight:700; color:#1e293b; margin-bottom:6px; }
+    .modal-body input { width:100%; padding:10px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:14px; }
+    .modal-actions { display:flex; gap:10px; justify-content:flex-end; padding:16px 20px 20px; }
 </style>
 
 <div style="margin-bottom:12px;">
@@ -50,7 +59,7 @@
                 </div>
                 <div>
                     <label>IBAN *</label>
-                    <input type="text" name="IBAN" required placeholder="TR..." maxlength="26" style="width:230px; font-family:monospace;" />
+                    <input type="text" name="IBAN" required placeholder="TR..." maxlength="35" style="width:230px; font-family:monospace;" />
                 </div>
                 <div>
                     <label>Açıklama</label>
@@ -87,7 +96,11 @@
                             <td>@f.OdemeIsmi</td>
                             <td style="font-family:monospace; font-size:12px;">@f.IBAN</td>
                             <td style="color:#6c757d;">@(f.Aciklama ?? "—")</td>
-                            <td>
+                            <td style="display:flex; gap:8px; justify-content:flex-end;">
+                                <button type="button" class="ot-btn ot-btn-secondary" style="padding:5px 12px; font-size:12px;"
+                                        onclick="openFirmaEditModal(@f.Id, '@Html.Raw(f.CariIsmi.Replace("'", "\\'").Replace("\"", "\\\""))', '@Html.Raw((f.OdemeIsmi ?? string.Empty).Replace("'", "\\'").Replace("\"", "\\\""))', '@Html.Raw(f.IBAN.Replace("'", "\\'").Replace("\"", "\\\""))', '@Html.Raw((f.Aciklama ?? string.Empty).Replace("'", "\\'").Replace("\"", "\\\""))')">
+                                    ✏ Düzenle
+                                </button>
                                 <form method="post" asp-controller="OdemeTalimat" asp-action="FirmaSil"
                                       onsubmit="return confirm('@f.CariIsmi silinsin mi?')">
                                     <input type="hidden" name="id" value="@f.Id" />
@@ -98,6 +111,49 @@
                     }
                 </tbody>
             </table>
+            <div id="firmaEditModal" class="modal-overlay" style="display:none;">
+                <div class="modal-card">
+                    <div class="modal-header">
+                        <h2>Firma Düzenle</h2>
+                        <button type="button" class="modal-close" onclick="closeFirmaEditModal()">×</button>
+                    </div>
+                    <form method="post" asp-controller="OdemeTalimat" asp-action="FirmaKaydet">
+                        <input type="hidden" id="editFirmaId" name="Id" value="0" />
+                        <div class="modal-body">
+                            <label>Cari İsmi *</label>
+                            <input type="text" id="editCariIsmi" name="CariIsmi" required />
+                            <label>Ödeme İsmi</label>
+                            <input type="text" id="editOdemeIsmi" name="OdemeIsmi" />
+                            <label>IBAN *</label>
+                            <input type="text" id="editIBAN" name="IBAN" required maxlength="35" />
+                            <label>Açıklama</label>
+                            <input type="text" id="editAciklama" name="Aciklama" />
+                        </div>
+                        <div class="modal-actions">
+                            <button type="button" class="ot-btn ot-btn-secondary" onclick="closeFirmaEditModal()">Vazgeç</button>
+                            <button type="submit" class="ot-btn ot-btn-primary">Kaydet</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         }
     </div>
 </div>
+
+@section Scripts {
+<script>
+    function openFirmaEditModal(id, cariIsmi, odemeIsmi, iban, aciklama) {
+        document.getElementById('editFirmaId').value = id;
+        document.getElementById('editCariIsmi').value = cariIsmi || '';
+        document.getElementById('editOdemeIsmi').value = odemeIsmi || '';
+        document.getElementById('editIBAN').value = iban || '';
+        document.getElementById('editAciklama').value = aciklama || '';
+        document.getElementById('firmaEditModal').style.display = 'flex';
+    }
+
+    function closeFirmaEditModal() {
+        document.getElementById('firmaEditModal').style.display = 'none';
+    }
+</script>
+}
+
