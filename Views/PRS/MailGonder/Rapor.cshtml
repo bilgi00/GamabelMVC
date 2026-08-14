@@ -61,9 +61,32 @@
                 <label class="form-label">Durum</label>
                 <select name="durum" class="form-select">
                     <option value="">Tümü</option>
-                    <option value="Gönderildi" @(ViewBag.SeciliDurum == "Gönderildi" ? "selected" : "")>✅ Başarılı</option>
-                    <option value="Başarısız" @(ViewBag.SeciliDurum == "Başarısız" ? "selected" : "")>❌ Başarısız</option>
-                    <option value="Beklemede" @(ViewBag.SeciliDurum == "Beklemede" ? "selected" : "")>⏳ Beklemede</option>
+                    @if ((ViewBag.SeciliDurum ?? "") == "Gönderildi")
+                    {
+                        <option value="Gönderildi" selected>✅ Başarılı</option>
+                    }
+                    else
+                    {
+                        <option value="Gönderildi">✅ Başarılı</option>
+                    }
+
+                    @if ((ViewBag.SeciliDurum ?? "") == "Başarısız")
+                    {
+                        <option value="Başarısız" selected>❌ Başarısız</option>
+                    }
+                    else
+                    {
+                        <option value="Başarısız">❌ Başarısız</option>
+                    }
+
+                    @if ((ViewBag.SeciliDurum ?? "") == "Beklemede")
+                    {
+                        <option value="Beklemede" selected>⏳ Beklemede</option>
+                    }
+                    else
+                    {
+                        <option value="Beklemede">⏳ Beklemede</option>
+                    }
                 </select>
             </div>
             <div class="col-md-3 d-flex align-items-end">

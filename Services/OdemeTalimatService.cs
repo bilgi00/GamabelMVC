@@ -645,6 +645,8 @@ public async Task<List<OtFaturaViewModel>> GetTumAcikFaturalarWithFirmaAsync()
         var result = new List<OtFirma>();
         await using var connection = new MySqlConnection(_connectionString);
         await connection.OpenAsync();
+        // Ensure email columns exist (backfill safe)
+        await EnsureFirmaEmailColumnsAsync(connection);
         var cmd = new MySqlCommand(
             "SELECT id, cari_ismi, odeme_ismi, iban, aciklama, email, email_cc FROM prs_ot_firmalar ORDER BY cari_ismi", 
             connection);
@@ -669,6 +671,8 @@ public async Task<List<OtFaturaViewModel>> GetTumAcikFaturalarWithFirmaAsync()
     {
         await using var connection = new MySqlConnection(_connectionString);
         await connection.OpenAsync();
+        // Ensure columns before insert/update
+        await EnsureFirmaEmailColumnsAsync(connection);
         MySqlCommand cmd = firma.Id == 0
             ? new MySqlCommand(
                 "INSERT INTO prs_ot_firmalar (cari_ismi, odeme_ismi, iban, aciklama, email, email_cc) VALUES (@cari, @odeme, @iban, @aciklama, @email, @emailcc)",
@@ -684,6 +688,44 @@ public async Task<List<OtFaturaViewModel>> GetTumAcikFaturalarWithFirmaAsync()
         cmd.Parameters.AddWithValue("@email", string.IsNullOrWhiteSpace(firma.Email) ? (object)DBNull.Value : firma.Email);
         cmd.Parameters.AddWithValue("@emailcc", string.IsNullOrWhiteSpace(firma.EmailCc) ? (object)DBNull.Value : firma.EmailCc);
         await cmd.ExecuteNonQueryAsync();
+    }
+
+    private async Task EnsureFirmaEmailColumnsAsync(MySqlConnection conn)
+    {
+        try
+        {
+            var columnQuery = @"
+                SELECT COUNT(*)
+                FROM information_schema.COLUMNS
+                WHERE TABLE_SCHEMA = DATABASE()
+                  AND TABLE_NAME = 'prs_ot_firmalar'
+                  AND COLUMN_NAME IN ('email', 'email_cc')";
+
+            using var cmd = new MySqlCommand(columnQuery, conn);
+            var existsCount = Convert.ToInt32(await cmd.ExecuteScalarAsync());
+
+            if (existsCount < 2)
+            {
+                // Try adding missing columns individually
+                try
+                {
+                    var alter1 = new MySqlCommand("ALTER TABLE prs_ot_firmalar ADD COLUMN email VARCHAR(255) NULL AFTER aciklama;", conn);
+                    await alter1.ExecuteNonQueryAsync();
+                }
+                catch { }
+
+                try
+                {
+                    var alter2 = new MySqlCommand("ALTER TABLE prs_ot_firmalar ADD COLUMN email_cc VARCHAR(1000) NULL AFTER email;", conn);
+                    await alter2.ExecuteNonQueryAsync();
+                }
+                catch { }
+            }
+        }
+        catch
+        {
+            // Ignore; admin should run migration if this fails
+        }
     }
 
     public async Task FirmaSilAsync(int id)

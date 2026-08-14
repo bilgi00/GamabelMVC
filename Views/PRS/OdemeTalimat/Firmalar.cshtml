@@ -34,6 +34,10 @@
     <a href="/OdemeTalimat" class="ot-btn ot-btn-secondary">← Ödeme Talimatlarına Dön</a>
 </div>
 
+<div style="margin-bottom:12px;">
+    <a href="/MailGonder" class="ot-btn ot-btn-primary">✉ Toplu Mail Gönder</a>
+</div>
+
 <div class="ot-card">
     <div class="ot-header">
         <h1 style="font-size:18px; margin:0;">🏢 Firma Yönetimi</h1>
@@ -47,6 +51,7 @@
 
         <!-- Yeni Firma Ekleme Formu -->
         <form method="post" asp-controller="OdemeTalimat" asp-action="FirmaKaydet">
+            @Html.AntiForgeryToken()
             <input type="hidden" name="Id" value="0" />
             <div class="form-row">
                 <div>
@@ -104,7 +109,20 @@
                             <td>@f.CariIsmi</td>
                             <td>@f.OdemeIsmi</td>
                             <td style="font-family:monospace; font-size:12px;">@f.IBAN</td>
-                            <td style="color:#6c757d;">@(!string.IsNullOrWhiteSpace(f.Email) ? f.Email : "—")</td>
+                            <td style="color:#6c757d;">
+                                @if (!string.IsNullOrWhiteSpace(f.Email))
+                                {
+                                    <div>@f.Email</div>
+                                }
+                                else
+                                {
+                                    <div>—</div>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(f.EmailCc))
+                                {
+                                    <div style="font-size:12px; color:#94a3b8; margin-top:4px;">CC: @f.EmailCc</div>
+                                }
+                            </td>
                             <td style="color:#6c757d;">@(f.Aciklama ?? "—")</td>
                             <td style="display:flex; gap:8px; justify-content:flex-end;">
                                 <a href="/MailGonder?firmaId=@f.Id" class="ot-btn ot-btn-secondary" style="padding:5px 12px; font-size:12px;">✉ Mail Gönder</a>
@@ -112,11 +130,12 @@
                                     onclick="openFirmaEditModal(@f.Id, '@Html.Raw(f.CariIsmi.Replace("'", "\\'").Replace("\"", "\\\""))', '@Html.Raw((f.OdemeIsmi ?? string.Empty).Replace("'", "\\'").Replace("\"", "\\\""))', '@Html.Raw(f.IBAN.Replace("'", "\\'").Replace("\"", "\\\""))', '@Html.Raw((f.Aciklama ?? string.Empty).Replace("'", "\\'").Replace("\"", "\\\""))', '@Html.Raw((f.Email ?? string.Empty).Replace("'", "\\'").Replace("\"", "\\\""))', '@Html.Raw((f.EmailCc ?? string.Empty).Replace("'", "\\'").Replace("\"", "\\\""))')">
                                     ✏ Düzenle
                                 </button>
-                                <form method="post" asp-controller="OdemeTalimat" asp-action="FirmaSil"
-                                      onsubmit="return confirm('@f.CariIsmi silinsin mi?')">
-                                    <input type="hidden" name="id" value="@f.Id" />
-                                    <button type="submit" class="ot-btn ot-btn-danger" style="padding:5px 12px; font-size:12px;">🗑 Sil</button>
-                                </form>
+                                                                <form method="post" asp-controller="OdemeTalimat" asp-action="FirmaSil"
+                                                                            onsubmit="return confirm('@f.CariIsmi silinsin mi?')">
+                                                                        @Html.AntiForgeryToken()
+                                                                        <input type="hidden" name="id" value="@f.Id" />
+                                                                        <button type="submit" class="ot-btn ot-btn-danger" style="padding:5px 12px; font-size:12px;">🗑 Sil</button>
+                                                                </form>
                             </td>
                         </tr>
                     }
@@ -129,6 +148,7 @@
                         <button type="button" class="modal-close" onclick="closeFirmaEditModal()">×</button>
                     </div>
                     <form method="post" asp-controller="OdemeTalimat" asp-action="FirmaKaydet">
+                        @Html.AntiForgeryToken()
                         <input type="hidden" id="editFirmaId" name="Id" value="0" />
                         <div class="modal-body">
                             <label>Cari İsmi *</label>

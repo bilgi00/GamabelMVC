@@ -37,7 +37,7 @@ public class MailGonderController : Controller
     // ANA SAYFA
     // ================================================================
     [HttpGet]
-    public async Task<IActionResult> Index(int? talimatId = null)
+    public async Task<IActionResult> Index(int? talimatId = null, int? firmaId = null)
     {
         if (!IsLoggedIn()) return RedirectToAction("Login", "Account");
         if (!IsAdmin()) return Forbid();
@@ -58,6 +58,7 @@ public class MailGonderController : Controller
             ViewBag.SeciliTalimat = seciliTalimat;
             ViewBag.KullaniciAdi = KullaniciAdi();
             ViewBag.QueueCount = _mailQueue.QueueCount;
+            ViewBag.SeciliFirmaId = firmaId ?? 0;
 
             return View();
         }
@@ -297,4 +298,44 @@ public class MailGonderController : Controller
         ViewBag.KullaniciAdi = KullaniciAdi();
         return View();
     }
+
+    // MailGonderController.cs - Preview metodu
+
+[HttpPost]
+public async Task<IActionResult> Preview([FromBody] PreviewModel model)
+{
+    if (!IsLoggedIn()) return Unauthorized();
+    if (!IsAdmin()) return Forbid();
+
+    try
+    {
+        var talimat = await _talimatService.GetTalimatDetayAsync(model.TalimatId);
+        if (talimat == null)
+            return Json(new { basarili = false, mesaj = "Talimat bulunamadı." });
+
+        var firmalar = await _talimatService.GetFirmalarAsync();
+        var firma = firmalar.FirstOrDefault(f => f.Id == model.FirmaId);
+        if (firma == null)
+            return Json(new { basarili = false, mesaj = "Firma bulunamadı." });
+
+        var firmaSatirlar = talimat.Satirlar
+            .Where(s => s.FirmaOdemeIsmi == firma.OdemeIsmi)
+            .ToList();
+
+        var html = await MailTemplateOlustur(talimat, firma, firmaSatirlar, model.OzelMesaj);
+        return Json(new { basarili = true, html = html });
+    }
+    catch (Exception ex)
+    {
+        return Json(new { basarili = false, mesaj = ex.Message });
+    }
+}
+
+public class PreviewModel
+{
+    public int TalimatId { get; set; }
+    public int FirmaId { get; set; }
+    public string OzelMesaj { get; set; } = string.Empty;
+}
+
 }

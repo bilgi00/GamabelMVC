@@ -41,6 +41,8 @@ builder.Services.AddScoped<IMailService, MailService>();
 builder.Services.AddSingleton<MailQueueService>();
 builder.Services.AddHostedService(provider => provider.GetRequiredService<MailQueueService>());
 
+
+
 var app = builder.Build();
 
 // Seed test user in Development mode
