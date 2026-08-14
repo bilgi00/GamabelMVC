@@ -35,6 +35,12 @@ builder.Services.AddSingleton<OdemeTalimatService>();
 // Sistem bilgileri servisi (IP, MAC, Bilgisayar Adı vb.)
 builder.Services.AddSingleton<ISystemInfoService, SystemInfoService>();
 
+// Mail gönderim servisleri
+builder.Services.AddScoped<IMailService, MailService>();
+// MailQueueService'i hem singleton olarak erişilebilir kıl ve HostedService olarak çalıştır
+builder.Services.AddSingleton<MailQueueService>();
+builder.Services.AddHostedService(provider => provider.GetRequiredService<MailQueueService>());
+
 var app = builder.Build();
 
 // Seed test user in Development mode

@@ -9,6 +9,8 @@
     var firmaGruplariList = firmaGruplari.ToList();
     var toplamFaturaSayisi = firmaGruplariList.Sum(g => ((IEnumerable<dynamic>)g.Faturalar).Count());
     var toplamBakiye = firmaGruplariList.Sum(g => ((IEnumerable<dynamic>)g.Faturalar).Sum(f => (decimal)f.Bakiye));
+    var secilenTalimatTarihi = ViewBag.SecilenTalimatTarihi as DateTime? ?? DateTime.Today;
+    var secilenTalimatTarihiStr = secilenTalimatTarihi.ToString("yyyy-MM-dd");
 }
 
 <style>
@@ -110,6 +112,15 @@
         {
             <form method="post" asp-controller="OdemeTalimat" asp-action="TalimatOlustur" id="talimatForm">
                 <input type="hidden" name="batchId" value="@batchId" />
+
+                <div class="row align-items-center mb-3">
+                    <label for="talimatTarihi" class="col-auto col-form-label fw-semibold">
+                        📅 Talimat tarihi:
+                    </label>
+                    <div class="col">
+                        <input type="date" id="talimatTarihi" name="talimatTarihi" class="form-control" value="@secilenTalimatTarihiStr" required />
+                    </div>
+                </div>
 
                 <!-- Banka Seçimi -->
                 @{

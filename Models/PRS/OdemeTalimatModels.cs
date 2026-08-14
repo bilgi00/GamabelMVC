@@ -10,6 +10,8 @@ public class OtFirma
     public string OdemeIsmi { get; set; } = string.Empty;
     public string IBAN { get; set; } = string.Empty;
     public string? Aciklama { get; set; }
+    public string Email { get; set; } = string.Empty;
+    public string? EmailCc { get; set; }
 }
 
 public class OtBanka
@@ -88,4 +90,5 @@ public class OtTalimatSatiri
     public string FirmaIBAN { get; set; } = string.Empty;
     public string Aciklama { get; set; } = string.Empty;
     public decimal Tutar { get; set; }
+    public List<int> AcikFaturaIdleri { get; set; } = new();
 }

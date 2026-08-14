@@ -575,6 +575,26 @@ public class SevkiyatController : Controller
                     cmd.Parameters.AddWithValue("@SevkMiktari", miktar);
                     cmd.Parameters.AddWithValue("@SevkedenKullaniciId", kullaniciId);
                     await cmd.ExecuteNonQueryAsync();
+
+                    // Sevkiyat kaydı oluşturulduktan sonra log tablosuna da kayıt ekle
+                    var sevkiyatId = cmd.LastInsertedId;
+                    var kullaniciAdi = HttpContext.Session.GetString("KullaniciAdi") ?? "";
+
+                    // Log tablosunun varlığını garantiye al
+                    await EnsureSevkiyatLogTableAsync(conn);
+
+                    var insertLogQuery = @"
+                        INSERT INTO stk_SevkiyatLog (SevkiyatId, EksikKaydiId, KullaniciId, KullaniciAdi, Islem, IslemTarihi)
+                        VALUES (@SevkiyatId, @EksikKaydiId, @KullaniciId, @KullaniciAdi, 'SevkEt', NOW())";
+
+                    using (var logCmd = new MySqlCommand(insertLogQuery, conn))
+                    {
+                        logCmd.Parameters.AddWithValue("@SevkiyatId", sevkiyatId);
+                        logCmd.Parameters.AddWithValue("@EksikKaydiId", eksikKaydiId);
+                        logCmd.Parameters.AddWithValue("@KullaniciId", kullaniciId);
+                        logCmd.Parameters.AddWithValue("@KullaniciAdi", kullaniciAdi);
+                        await logCmd.ExecuteNonQueryAsync();
+                    }
                 }
 
                 // Eksik kaydının durumunu güncelle
@@ -1126,6 +1146,28 @@ public class SevkiyatController : Controller
                 OlusturmaTarihi DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 INDEX idx_rol_okundu (HedefRol, OkunduMu),
                 INDEX idx_sube (HedefSubeId)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_turkish_ci;";
+
+        using (var cmd = new MySqlCommand(tableQuery, conn))
+        {
+            await cmd.ExecuteNonQueryAsync();
+        }
+    }
+
+    private async Task EnsureSevkiyatLogTableAsync(MySqlConnection conn)
+    {
+        var tableQuery = @"
+            CREATE TABLE IF NOT EXISTS stk_SevkiyatLog (
+                Id INT PRIMARY KEY AUTO_INCREMENT,
+                SevkiyatId BIGINT NULL,
+                EksikKaydiId INT NOT NULL,
+                KullaniciId INT NOT NULL,
+                KullaniciAdi VARCHAR(150) NOT NULL,
+                Islem VARCHAR(50) NOT NULL,
+                IslemTarihi DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_sevkiyat (SevkiyatId),
+                INDEX idx_eksik (EksikKaydiId),
+                INDEX idx_kullanici (KullaniciId)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_turkish_ci;";
 
         using (var cmd = new MySqlCommand(tableQuery, conn))

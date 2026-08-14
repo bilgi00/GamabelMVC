@@ -10,6 +10,8 @@
     var secilenBirim = (string?)ViewBag.SecilenBirim ?? "";
     var gunSayisi = (int)ViewBag.GunSayisi;
     var rol = ViewBag.Rol ?? "";
+    var kullaniciBirim = ViewBag.KullaniciBirim ?? "";
+    var isAdmin = ViewBag.Rol == "admin";
     
     // Ay adlarını tanımla
     var ayAdlari = new[] { "", "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", 
@@ -80,6 +82,21 @@
         }
         
         return $"{saatInt}:{dakika:D2}";
+    }
+    
+    // Saat string'ini decimal'e çevir
+    private decimal SaatToDecimal(string saatStr)
+    {
+        if (string.IsNullOrEmpty(saatStr)) return 0;
+        
+        var parts = saatStr.Split(':');
+        if (parts.Length == 2)
+        {
+            int saat = int.Parse(parts[0]);
+            int dakika = int.Parse(parts[1]);
+            return saat + (dakika / 60m);
+        }
+        return 0;
     }
 }
 
@@ -313,6 +330,16 @@
             border-radius: 6px;
         }
 
+        /* ✅ Silme butonu için kırmızı hover */
+        .mesai-cell.highlight-delete {
+            background: #FEE2E2 !important;
+            border: 2px solid #DC2626;
+        }
+        
+        .mesai-cell.highlight-delete .badge-pill {
+            background: #DC2626;
+        }
+
         .stats-mini-card {
             background: white;
             padding: 12px 10px;
@@ -386,6 +413,20 @@
             background: #1D4ED8;
         }
 
+        .modal-custom .btn-danger-custom {
+            background: #DC2626;
+            border: none;
+            border-radius: 40px;
+            padding: 6px 20px;
+            font-weight: 600;
+            color: white;
+            font-size: 13px;
+        }
+
+        .modal-custom .btn-danger-custom:hover {
+            background: #B91C1C;
+        }
+
         .modal-custom .btn-soft-cancel {
             background: #F1F5F9;
             border: none;
@@ -418,6 +459,30 @@
             color: #DC2626;
         }
 
+        /* ✅ Toplam + Hafta Sonu + Resmi Tatil sütunu */
+        .personel-toplam-detay {
+            min-width: 70px;
+            position: sticky;
+            right: 0;
+            background: #F1F5F9;
+            border-left: 2px solid var(--primary-deep);
+            font-weight: 700;
+            font-size: 10px;
+            text-align: center;
+            padding: 3px 4px;
+        }
+        .personel-toplam-detay .normal-saat {
+            color: var(--primary-deep);
+        }
+        .personel-toplam-detay .ekstra-saat {
+            color: #DC2626;
+            font-size: 9px;
+        }
+        .personel-toplam-detay .toplam-saat {
+            color: #16A34A;
+            font-size: 12px;
+        }
+
         /* Toplu Mesai Girişi Butonu */
         .btn-batch {
             background: linear-gradient(135deg, #667EEA 0%, #764BA2 100%);
@@ -433,6 +498,23 @@
         .btn-batch:hover {
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+            color: white;
+        }
+
+        .btn-batch-danger {
+            background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%);
+            color: white;
+            border: none;
+            padding: 4px 12px;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 11px;
+            transition: 0.3s;
+            margin-left: 6px;
+        }
+        .btn-batch-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(220, 38, 38, 0.4);
             color: white;
         }
 
@@ -473,141 +555,38 @@
         }
 
         @@media (max-width: 768px) {
-            body {
-                padding: 10px;
-            }
-            
-            .dashboard-card {
-                padding: 16px 12px;
-            }
-            
-            .page-headline {
-                font-size: 20px;
-            }
-            
-            .btn-group-icon {
-                justify-content: flex-start;
-                margin-top: 6px;
-            }
-            
-            .btn-soft-primary {
-                padding: 6px 12px;
-                font-size: 12px;
-            }
-
-            .month-badge {
-                font-size: 14px;
-                padding: 4px 12px;
-            }
-
-            .mesai-table thead th {
-                min-width: 30px;
-                padding: 4px 2px;
-                font-size: 10px;
-            }
-            
-            .mesai-table thead th .day-num {
-                font-size: 11px;
-            }
-            
-            .mesai-table thead th .day-name {
-                font-size: 7px;
-            }
-
-            .sticky-personel {
-                min-width: 90px;
-                max-width: 90px;
-                font-size: 10px;
-                padding: 3px 6px;
-            }
-
-            .mesai-cell {
-                min-height: 28px;
-                font-size: 10px;
-            }
-
-            .mesai-cell .badge-pill {
-                font-size: 9px;
-                padding: 2px 6px;
-            }
-            
-            .mesai-cell .empty-plus {
-                font-size: 14px;
-            }
-            
-            .stats-mini-card .stat-number {
-                font-size: 18px;
-            }
-
-            .batch-day-item {
-                flex-wrap: wrap;
-            }
-
-            .batch-day-item .time-inputs {
-                width: 100%;
-                justify-content: flex-start;
-            }
-
-            .batch-day-item .time-inputs input[type="time"] {
-                width: 80px;
-                font-size: 11px;
-            }
+            body { padding: 10px; }
+            .dashboard-card { padding: 16px 12px; }
+            .page-headline { font-size: 20px; }
+            .btn-group-icon { justify-content: flex-start; margin-top: 6px; }
+            .btn-soft-primary { padding: 6px 12px; font-size: 12px; }
+            .month-badge { font-size: 14px; padding: 4px 12px; }
+            .mesai-table thead th { min-width: 30px; padding: 4px 2px; font-size: 10px; }
+            .mesai-table thead th .day-num { font-size: 11px; }
+            .mesai-table thead th .day-name { font-size: 7px; }
+            .sticky-personel { min-width: 90px; max-width: 90px; font-size: 10px; padding: 3px 6px; }
+            .mesai-cell { min-height: 28px; font-size: 10px; }
+            .mesai-cell .badge-pill { font-size: 9px; padding: 2px 6px; }
+            .mesai-cell .empty-plus { font-size: 14px; }
+            .stats-mini-card .stat-number { font-size: 18px; }
+            .batch-day-item { flex-wrap: wrap; }
+            .batch-day-item .time-inputs { width: 100%; justify-content: flex-start; }
+            .batch-day-item .time-inputs input[type="time"] { width: 80px; font-size: 11px; }
         }
 
         /* print */
         @@media print {
-            body {
-                background: white;
-                padding: 0;
-            }
-            .dashboard-card {
-                box-shadow: none;
-                padding: 10px;
-                border-radius: 0;
-            }
-            .no-print {
-                display: none !important;
-            }
-            .mesai-table thead th {
-                background: #f1f5f9 !important;
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-            }
-            .weekend-sat-col {
-                background: #fde2e4 !important;
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-            }
-            .weekend-sun-col {
-                background: #fcccd1 !important;
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-            }
-            .cell-today {
-                outline: 2px solid #22c55e !important;
-                outline-offset: -1px;
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-            }
-            .mesai-cell .badge-pill {
-                background: #2563eb !important;
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-            }
-            .sticky-personel {
-                background: #f8fafc !important;
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-            }
-            .stats-mini-card {
-                border: 1px solid #e2e8f0;
-                box-shadow: none;
-            }
-            .personel-toplam.uyari-aylik {
-                background: #fecaca !important;
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-            }
+            body { background: white; padding: 0; }
+            .dashboard-card { box-shadow: none; padding: 10px; border-radius: 0; }
+            .no-print { display: none !important; }
+            .mesai-table thead th { background: #f1f5f9 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .weekend-sat-col { background: #fde2e4 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .weekend-sun-col { background: #fcccd1 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .cell-today { outline: 2px solid #22c55e !important; outline-offset: -1px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .mesai-cell .badge-pill { background: #2563eb !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .sticky-personel { background: #f8fafc !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .stats-mini-card { border: 1px solid #e2e8f0; box-shadow: none; }
+            .personel-toplam.uyari-aylik { background: #fecaca !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         }
     </style>
 </head>
@@ -676,7 +655,7 @@
             <div class="alert alert-info-custom d-flex align-items-center gap-3 no-print" style="padding:8px 16px; font-size:13px;">
                 <i class="bi bi-info-circle-fill fs-5 text-primary"></i>
                 <div>
-                    <strong>Çift tıklayarak mesai girebilirsiniz.</strong> Kaydedilen kayıtlar otomatik saklanır.
+                    <strong>Tıklayarak mesai girebilirsiniz.</strong> Sağ tık veya Shift+Click ile silebilirsiniz.
                     Hafta sonları <span class="badge bg-danger bg-opacity-10 text-danger">kırmızı</span> renkle gösterilir.
                 </div>
             </div>
@@ -703,6 +682,7 @@
                                     </th>
                                 }
                                 <th class="bg-light" style="position:sticky;top:0;z-index:15;min-width:50px;font-weight:700;color:var(--primary-deep); font-size:11px; padding:4px 3px;">TOPLAM</th>
+                                <th class="bg-light" style="position:sticky;top:0;z-index:15;min-width:70px;font-weight:700;color:var(--primary-deep); font-size:10px; padding:4px 3px;">+ Hafta Sonu</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -723,10 +703,9 @@
                                             personelMesaiVerileri[personel.Id].ContainsKey(gun.ToString()))
                                         {
                                             var mesai = personelMesaiVerileri[personel.Id][gun.ToString()];
-                                            // DOĞRUDAN FormatSaatDakika fonksiyonuna gönder
                                             var saatStr = FormatSaatDakika(mesai.ToplamSaat);
                                             <td class="@haftaSinif @(bugunMu ? "cell-today" : "")" data-gun="@gun" data-saat="@mesai.ToplamSaat.ToString(System.Globalization.CultureInfo.InvariantCulture)" style="padding:1px;">
-                                                <div class="mesai-cell" onclick="mesaiDetay(@personel.Id, @gun, @mesai.Id)" title="Düzenlemek için tıklayın" data-bs-toggle="tooltip" style="min-height:30px; font-size:11px;">
+                                                <div class="mesai-cell" onclick="mesaiDetay(@personel.Id, @gun, @mesai.Id)" oncontextmenu="silMesai(event, @personel.Id, @gun, @mesai.Id)" title="Tıkla düzenle, Sağ tık sil" data-bs-toggle="tooltip" style="min-height:30px; font-size:11px;">
                                                     <span class="badge-pill" style="font-size:10px; padding:2px 8px;">@saatStr</span>
                                                 </div>
                                             </td>
@@ -742,6 +721,13 @@
                                     }
                                     <td class="personel-toplam" data-personel-id="@personel.Id" style="font-size:11px; padding:3px 4px;">
                                         <span id="toplam-@personel.Id">00:00</span>
+                                    </td>
+                                    <td class="personel-toplam-detay" data-personel-id="@personel.Id" style="font-size:10px; padding:3px 4px;">
+                                        <span id="toplamDetay-@personel.Id">
+                                            <span class="normal-saat">00:00</span><br/>
+                                            <span class="ekstra-saat">+0</span><br/>
+                                            <span class="toplam-saat">00:00</span>
+                                        </span>
                                     </td>
                                 </tr>
                             }
@@ -804,11 +790,19 @@
                     <div class="row g-2">
                         <div class="col-6">
                             <label class="form-label fw-semibold" style="font-size:13px;"><i class="bi bi-clock me-2"></i>Başlangıç</label>
-                            <input id="mesaiBaslangic" type="time" class="form-control" value="08:00" style="font-size:13px; padding:8px 12px;" />
+                            <input id="mesaiBaslangic" type="time" class="form-control" style="font-size:13px; padding:8px 12px;" />
                         </div>
                         <div class="col-6">
                             <label class="form-label fw-semibold" style="font-size:13px;"><i class="bi bi-clock me-2"></i>Bitiş</label>
-                            <input id="mesaiBitis" type="time" class="form-control" value="17:00" style="font-size:13px; padding:8px 12px;" />
+                            <input id="mesaiBitis" type="time" class="form-control" style="font-size:13px; padding:8px 12px;" />
+                        </div>
+                    </div>
+                    <div class="row g-2 mt-2">
+                        <div class="col-6">
+                            <div id="mesaiSureBilgi" class="text-muted small" style="font-size:12px;">Süre: —</div>
+                        </div>
+                        <div class="col-6 text-end">
+                            <div id="mesaiAylikUyari" class="text-danger small" style="font-size:11px; display:none;"></div>
                         </div>
                     </div>
                     <div class="mb-2 mt-2">
@@ -818,6 +812,9 @@
                     <div id="mesaiModalMsg" class="text-danger small mt-1" style="font-size:12px;"></div>
                 </div>
                 <div class="modal-footer border-0" style="padding:0 16px 16px 16px;">
+                    <button type="button" class="btn btn-danger btn-sm" id="btnSilMesai" onclick="silMesaiKaydi()" style="display:none; border-radius:40px; padding:6px 16px;">
+                        <i class="bi bi-trash me-1"></i> Sil
+                    </button>
                     <button type="button" class="btn-soft-cancel" data-bs-dismiss="modal" style="font-size:13px; padding:6px 20px;">Vazgeç</button>
                     <button type="button" class="btn-primary-custom" onclick="kaydetMesai()" style="font-size:13px; padding:6px 20px;">Kaydet</button>
                 </div>
@@ -955,6 +952,7 @@
         let modalInstance = null;
         let batchModalInstance = null;
         let reportModalInstance = null;
+        let silModu = false;
 
         document.addEventListener('DOMContentLoaded', function() {
             // Bootstrap modal init
@@ -967,15 +965,46 @@
             const reportModalEl = document.getElementById('reportModal');
             reportModalInstance = new bootstrap.Modal(reportModalEl);
 
+            // Modal açıldığında verileri yükle
+            modalEl.addEventListener('show.bs.modal', function() {
+                if (seciliHucre.mode === 'edit' && seciliKayitId > 0) {
+                    mesaiVerileriniGetir(seciliKayitId);
+                }
+            });
+
             hesaplaToplamlar();
             istatistikleriGuncelle();
-            kontrol8SaatUyarisi();
+            hesaplaDetayliToplamlar();
             kontrol88SaatUyarisi();
 
             // tooltipleri aktif et
             const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
             tooltipTriggerList.map(el => new bootstrap.Tooltip(el));
         });
+
+        // ----- MESAI VERİLERİNİ GETİR (Düzenleme için) -----
+        async function mesaiVerileriniGetir(kayitId) {
+            try {
+                const response = await fetch('/HizliMesaiGirisi/GetMesaiDetay?kayitId=' + kayitId);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.baslangic) {
+                        document.getElementById('mesaiBaslangic').value = data.baslangic;
+                    }
+                    if (data.bitis) {
+                        document.getElementById('mesaiBitis').value = data.bitis;
+                    }
+                    if (data.aciklama) {
+                        document.getElementById('mesaiAciklama').value = data.aciklama;
+                    }
+                    // Sil butonunu göster
+                    document.getElementById('btnSilMesai').style.display = 'inline-block';
+                    hesaplaSure();
+                }
+            } catch (err) {
+                console.error('Veri getirme hatası:', err);
+            }
+        }
 
         // ----- TOPLAM HESAPLAMA (saat toplamları) -----
         function hesaplaToplamlar() {
@@ -990,6 +1019,43 @@
                 const toplamCell = row.querySelector('.personel-toplam span');
                 if (toplamCell) {
                     toplamCell.textContent = formatSaatDakika(toplam);
+                }
+            });
+        }
+
+        // ----- DETAYLI TOPLAM HESAPLAMA (Normal + Hafta Sonu) -----
+        function hesaplaDetayliToplamlar() {
+            const rows = document.querySelectorAll('tbody tr');
+            rows.forEach(row => {
+                let normalToplam = 0;
+                let haftaSonuToplam = 0;
+                let toplam = 0;
+                const cells = row.querySelectorAll('td[data-saat]');
+                const gunIndex = 0;
+                cells.forEach(cell => {
+                    const val = parseFloat(cell.getAttribute('data-saat')) || 0;
+                    const gun = parseInt(cell.getAttribute('data-gun'));
+                    toplam += val;
+                    
+                    // Hafta sonu kontrolü
+                    const tarih = new Date(@secilenYil, @secilenAy - 1, gun);
+                    const isWeekend = tarih.getDay() === 0 || tarih.getDay() === 6;
+                    if (isWeekend) {
+                        haftaSonuToplam += val;
+                    } else {
+                        normalToplam += val;
+                    }
+                });
+                
+                const detayCell = row.querySelector('.personel-toplam-detay');
+                if (detayCell) {
+                    const normalSpan = detayCell.querySelector('.normal-saat');
+                    const ekstraSpan = detayCell.querySelector('.ekstra-saat');
+                    const toplamSpan = detayCell.querySelector('.toplam-saat');
+                    
+                    if (normalSpan) normalSpan.textContent = formatSaatDakika(normalToplam);
+                    if (ekstraSpan) ekstraSpan.textContent = '+' + formatSaatDakika(haftaSonuToplam);
+                    if (toplamSpan) toplamSpan.textContent = formatSaatDakika(toplam);
                 }
             });
         }
@@ -1047,6 +1113,97 @@
             }
         }
 
+        // ----- 88 SAAT UYARISI -----
+        function kontrol88SaatUyarisi() {
+            document.querySelectorAll('.personel-toplam').forEach(el => {
+                const span = el.querySelector('span');
+                if (!span) return;
+                const txt = span.textContent.trim();
+                const parts = txt.split(':');
+                let toplam = 0;
+                if (parts.length === 2) {
+                    toplam = parseInt(parts[0]) || 0;
+                }
+                if (toplam > 88) {
+                    el.classList.add('uyari-aylik');
+                    el.title = 'Aylık 88 saat kotası aşıldı!';
+                } else {
+                    el.classList.remove('uyari-aylik');
+                    el.title = '';
+                }
+            });
+        }
+
+        // ----- SAAT HESAPLAMA (Canlı) -----
+        function hesaplaSure() {
+            const baslangic = document.getElementById('mesaiBaslangic').value;
+            const bitis = document.getElementById('mesaiBitis').value;
+            const bilgiEl = document.getElementById('mesaiSureBilgi');
+            const uyariEl = document.getElementById('mesaiAylikUyari');
+            
+            if (!baslangic || !bitis) {
+                bilgiEl.textContent = 'Süre: —';
+                return null;
+            }
+
+            const basParts = baslangic.split(':');
+            const bitParts = bitis.split(':');
+            
+            if (basParts.length !== 2 || bitParts.length !== 2) {
+                bilgiEl.textContent = 'Süre: Geçersiz format';
+                return null;
+            }
+
+            const basSaat = parseInt(basParts[0]);
+            const basDak = parseInt(basParts[1]);
+            const bitSaat = parseInt(bitParts[0]);
+            const bitDak = parseInt(bitParts[1]);
+
+            const basToplamDak = basSaat * 60 + basDak;
+            const bitToplamDak = bitSaat * 60 + bitDak;
+            let farkDk = bitToplamDak - basToplamDak;
+
+            if (farkDk <= 0) {
+                bilgiEl.textContent = 'Bitiş saati başlangıçtan sonra olmalıdır!';
+                bilgiEl.style.color = '#DC2626';
+                return null;
+            }
+
+            // 8 saat kontrolü
+            if (farkDk > 480) {
+                bilgiEl.textContent = '⚠️ 8 saatten fazla mesai girilemez!';
+                bilgiEl.style.color = '#DC2626';
+                return null;
+            }
+
+            bilgiEl.style.color = '#475569';
+            const saat = Math.floor(farkDk / 60);
+            const dakika = farkDk % 60;
+            bilgiEl.textContent = 'Süre: ' + saat + ' saat ' + dakika + ' dk';
+
+            // Aylık 88 saat kontrolü
+            if (seciliHucre.personelId > 0) {
+                const toplamSpan = document.querySelector('.personel-toplam[data-personel-id="' + seciliHucre.personelId + '"] span');
+                if (toplamSpan) {
+                    const txt = toplamSpan.textContent.trim();
+                    const parts = txt.split(':');
+                    let mevcutToplam = 0;
+                    if (parts.length === 2) {
+                        mevcutToplam = parseInt(parts[0]) || 0;
+                    }
+                    const yeniToplam = mevcutToplam + (farkDk / 60);
+                    if (yeniToplam > 88) {
+                        uyariEl.style.display = 'block';
+                        uyariEl.textContent = '⚠️ Bu kayıt ile aylık 88 saat aşılıyor! (Mevcut: ' + formatSaatDakika(mevcutToplam) + ')';
+                    } else {
+                        uyariEl.style.display = 'none';
+                    }
+                }
+            }
+
+            return farkDk;
+        }
+
         // ----- NAVIGATION -----
         function birimSecildi() {
             const birim = document.getElementById('subeSelect').value;
@@ -1077,6 +1234,10 @@
             document.getElementById('mesaiBaslangic').value = '08:00';
             document.getElementById('mesaiBitis').value = '17:00';
             document.getElementById('mesaiAciklama').value = '';
+            document.getElementById('mesaiSureBilgi').textContent = 'Süre: —';
+            document.getElementById('mesaiSureBilgi').style.color = '#475569';
+            document.getElementById('mesaiAylikUyari').style.display = 'none';
+            document.getElementById('btnSilMesai').style.display = 'none';
             modalInstance.show();
         }
 
@@ -1087,27 +1248,110 @@
             document.getElementById('mesaiTarih').value = tarih;
             document.getElementById('mesaiModalTitle').textContent = 'Mesai Güncelle';
             document.getElementById('mesaiModalMsg').textContent = '';
-            const cell = document.querySelector(`td[data-gun="${gun}"] .badge-pill`);
-            if (cell) {
-                const val = cell.textContent.trim();
-                const parts = val.split(':');
-                if (parts.length === 2) {
-                    document.getElementById('mesaiBaslangic').value = parts[0] + ':' + parts[1];
-                    document.getElementById('mesaiBitis').value = parts[0] + ':' + parts[1];
-                }
-            }
+            document.getElementById('mesaiAciklama').value = '';
+            document.getElementById('btnSilMesai').style.display = 'inline-block';
+            document.getElementById('mesaiSureBilgi').textContent = 'Süre: —';
+            document.getElementById('mesaiSureBilgi').style.color = '#475569';
+            document.getElementById('mesaiAylikUyari').style.display = 'none';
+            
+            // Verileri getir
+            mesaiVerileriniGetir(kayitId);
+            
             modalInstance.show();
         }
 
+        // ----- MESAI SİLME (Sağ Tık ile) -----
+        function silMesai(event, personelId, gun, kayitId) {
+            event.preventDefault();
+            if (confirm('Bu mesai kaydını silmek istediğinizden emin misiniz?')) {
+                fetch('/HizliMesaiGirisi/Sil', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(kayitId)
+                })
+                .then(function(response) {
+                    if (response.ok) {
+                        window.location.reload();
+                    } else {
+                        alert('Silme işlemi başarısız oldu.');
+                    }
+                })
+                .catch(function() {
+                    alert('Sunucu hatası!');
+                });
+            }
+        }
+
+        // ----- SİL BUTONU (Modal içinden) -----
+        function silMesaiKaydi() {
+            if (seciliKayitId > 0) {
+                if (confirm('Bu mesai kaydını silmek istediğinizden emin misiniz?')) {
+                    fetch('/HizliMesaiGirisi/Sil', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(seciliKayitId)
+                    })
+                    .then(function(response) {
+                        if (response.ok) {
+                            modalInstance.hide();
+                            window.location.reload();
+                        } else {
+                            document.getElementById('mesaiModalMsg').textContent = 'Silme işlemi başarısız oldu.';
+                            document.getElementById('mesaiModalMsg').style.color = '#DC2626';
+                        }
+                    })
+                    .catch(function() {
+                        document.getElementById('mesaiModalMsg').textContent = 'Sunucu hatası!';
+                        document.getElementById('mesaiModalMsg').style.color = '#DC2626';
+                    });
+                }
+            }
+        }
+
+        // ----- KAYDET MESAI -----
         async function kaydetMesai() {
             const baslangic = document.getElementById('mesaiBaslangic').value;
             const bitis = document.getElementById('mesaiBitis').value;
             const aciklama = document.getElementById('mesaiAciklama').value.trim();
             const msg = document.getElementById('mesaiModalMsg');
 
+            msg.textContent = '';
+            msg.style.color = '#DC2626';
+
             if (!baslangic || !bitis) {
                 msg.textContent = 'Başlangıç ve bitiş saati zorunludur.';
                 return;
+            }
+
+            // Süre kontrolü
+            const farkDk = hesaplaSure();
+            if (farkDk === null) {
+                msg.textContent = 'Geçerli bir saat aralığı giriniz. Bitiş saati başlangıçtan sonra olmalıdır.';
+                return;
+            }
+
+            // 8 saat kontrolü
+            if (farkDk > 480) {
+                msg.textContent = 'Günlük maksimum 8 saat mesai girilebilir!';
+                return;
+            }
+
+            // 88 saat aylık kontrolü
+            if (seciliHucre.personelId > 0) {
+                const toplamSpan = document.querySelector('.personel-toplam[data-personel-id="' + seciliHucre.personelId + '"] span');
+                if (toplamSpan) {
+                    const txt = toplamSpan.textContent.trim();
+                    const parts = txt.split(':');
+                    let mevcutToplam = 0;
+                    if (parts.length === 2) {
+                        mevcutToplam = parseInt(parts[0]) || 0;
+                    }
+                    const yeniToplam = mevcutToplam + (farkDk / 60);
+                    if (yeniToplam > 88) {
+                        msg.textContent = '⚠️ Bu kayıt ile aylık 88 saat aşılıyor! (Mevcut: ' + formatSaatDakika(mevcutToplam) + ')';
+                        return;
+                    }
+                }
             }
 
             const payload = {
@@ -1177,6 +1421,38 @@
 
             if (selectedDays.length === 0) {
                 msg.textContent = 'Lütfen en az bir gün seçiniz.';
+                return;
+            }
+
+            // 88 saat kontrolü için mevcut toplamı al
+            let mevcutToplam = 0;
+            const toplamSpan = document.querySelector('.personel-toplam[data-personel-id="' + personelId + '"] span');
+            if (toplamSpan) {
+                const txt = toplamSpan.textContent.trim();
+                const parts = txt.split(':');
+                if (parts.length === 2) {
+                    mevcutToplam = parseInt(parts[0]) || 0;
+                }
+            }
+
+            // Seçilen günlerin toplam saatini hesapla
+            let eklenecekToplam = 0;
+            for (const day of selectedDays) {
+                const basParts = day.start.split(':');
+                const bitParts = day.end.split(':');
+                const basSaat = parseInt(basParts[0]);
+                const basDak = parseInt(basParts[1]);
+                const bitSaat = parseInt(bitParts[0]);
+                const bitDak = parseInt(bitParts[1]);
+                const farkDk = (bitSaat * 60 + bitDak) - (basSaat * 60 + basDak);
+                if (farkDk > 0) {
+                    eklenecekToplam += farkDk / 60;
+                }
+            }
+
+            if (mevcutToplam + eklenecekToplam > 88) {
+                msg.textContent = '⚠️ Bu kayıtlar ile aylık 88 saat aşılıyor! (Mevcut: ' + formatSaatDakika(mevcutToplam) + ')';
+                msg.style.color = '#DC2626';
                 return;
             }
 
@@ -1332,37 +1608,6 @@
             document.body.appendChild(container);
             setTimeout(() => window.print(), 300);
             window.addEventListener('afterprint', () => container.remove(), { once: true });
-        }
-
-        // ----- UYARI KONTROLLERİ -----
-        function kontrol8SaatUyarisi() {
-            document.querySelectorAll('td[data-saat]').forEach(td => {
-                const saat = parseFloat(td.getAttribute('data-saat')) || 0;
-                if (saat > 8) {
-                    td.style.backgroundColor = '#FEE2E2';
-                    td.title = 'Günlük 8 saat aşıldı!';
-                }
-            });
-        }
-
-        function kontrol88SaatUyarisi() {
-            document.querySelectorAll('.personel-toplam').forEach(el => {
-                const span = el.querySelector('span');
-                if (!span) return;
-                const txt = span.textContent.trim();
-                const parts = txt.split(':');
-                let toplam = 0;
-                if (parts.length === 2) {
-                    toplam = parseInt(parts[0]) || 0;
-                }
-                if (toplam > 88) {
-                    el.classList.add('uyari-aylik');
-                    el.title = 'Aylık 88 saat kotası aşıldı!';
-                } else {
-                    el.classList.remove('uyari-aylik');
-                    el.title = '';
-                }
-            });
         }
     </script>
 

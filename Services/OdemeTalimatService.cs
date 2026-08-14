@@ -242,7 +242,8 @@ public async Task<List<OtFaturaViewModel>> GetTumAcikFaturalarWithFirmaAsync()
         List<int> secilenFaturaIdleri,
         int bankaId,
         string hazirlayanKullanici,
-        int batchId = 0)
+        int batchId = 0,
+        DateTime? talimatTarihi = null)
     {
         if (bankaId <= 0)
             throw new InvalidOperationException("Geçerli banka seçilmelidir.");
@@ -270,7 +271,7 @@ public async Task<List<OtFaturaViewModel>> GetTumAcikFaturalarWithFirmaAsync()
         {
             Id = 0,
             TalimatNo = $"G{DateTime.Now:yy}/{sonrakiSira}",
-            Tarih = DateTime.Now,
+            Tarih = (talimatTarihi ?? DateTime.Today).Date,
             BankaId = bankaId,
             BankaSubeAdi = "",
             BankaIBAN = "",
@@ -357,7 +358,8 @@ public async Task<List<OtFaturaViewModel>> GetTumAcikFaturalarWithFirmaAsync()
                     FirmaOdemeIsmi = odemeIsmi,
                     FirmaIBAN = firmaIBAN,
                     Aciklama = $"FATURA NO: {faturaNoListesi}",
-                    Tutar = tutar
+                    Tutar = tutar,
+                    AcikFaturaIdleri = grup.Select(f => f.Id).ToList()
                 });
 
                 toplamTutar += tutar;
@@ -455,9 +457,10 @@ public async Task<List<OtFaturaViewModel>> GetTumAcikFaturalarWithFirmaAsync()
             var talimatEkleCmd = new MySqlCommand(
                 @"INSERT INTO prs_ot_talimatlar
                   (talimat_no, tarih, banka_id, toplam_tutar, toplam_adet, hazirlayan_kullanici, durum)
-                  VALUES (@no, NOW(), @banka, @toplamTutar, @toplamAdet, @hazirlayan, 'beklemede')",
+                  VALUES (@no, @tarih, @banka, @toplamTutar, @toplamAdet, @hazirlayan, 'beklemede')",
                 connection, tx);
             talimatEkleCmd.Parameters.AddWithValue("@no", talimatNo);
+            talimatEkleCmd.Parameters.AddWithValue("@tarih", geciciTalimat.Tarih.Date);
             talimatEkleCmd.Parameters.AddWithValue("@banka", geciciTalimat.BankaId);
             talimatEkleCmd.Parameters.AddWithValue("@toplamTutar", geciciTalimat.ToplamTutar);
             talimatEkleCmd.Parameters.AddWithValue("@toplamAdet", geciciTalimat.ToplamAdet);
@@ -478,13 +481,21 @@ public async Task<List<OtFaturaViewModel>> GetTumAcikFaturalarWithFirmaAsync()
                 await satirEkleCmd.ExecuteNonQueryAsync();
                 var satirId = (int)satirEkleCmd.LastInsertedId;
 
-                foreach (var f in faturalar.Where(f => f.CariKart == satir.FirmaOdemeIsmi))
+                var ilgiliFaturaIds = satir.AcikFaturaIdleri?.Any() == true
+                    ? satir.AcikFaturaIdleri
+                    : faturalar.Where(f => f.CariKart == satir.FirmaOdemeIsmi).Select(f => f.Id).ToList();
+
+                foreach (var faturaId in ilgiliFaturaIds)
                 {
+                    var fatura = faturalar.FirstOrDefault(f => f.Id == faturaId);
+                    if (fatura == null)
+                        continue;
+
                     var iliskiCmd = new MySqlCommand(
                         "INSERT INTO prs_ot_talimat_satiri_faturalari (talimat_satiri_id, acik_fatura_id) VALUES (@sid, @afid)",
                         connection, tx);
                     iliskiCmd.Parameters.AddWithValue("@sid", satirId);
-                    iliskiCmd.Parameters.AddWithValue("@afid", f.Id);
+                    iliskiCmd.Parameters.AddWithValue("@afid", fatura.Id);
                     await iliskiCmd.ExecuteNonQueryAsync();
 
                     string updateSql;
@@ -494,7 +505,7 @@ public async Task<List<OtFaturaViewModel>> GetTumAcikFaturalarWithFirmaAsync()
                         updateSql = "UPDATE prs_ot_acik_faturalar SET odemeye_dahil_edildi = 1, odeme_durumu = 'odendi' WHERE id = @id";
 
                     var updateCmd = new MySqlCommand(updateSql, connection, tx);
-                    updateCmd.Parameters.AddWithValue("@id", f.Id);
+                    updateCmd.Parameters.AddWithValue("@id", fatura.Id);
                     if (batchId > 0)
                         updateCmd.Parameters.AddWithValue("@batchId", batchId);
 
@@ -635,7 +646,7 @@ public async Task<List<OtFaturaViewModel>> GetTumAcikFaturalarWithFirmaAsync()
         await using var connection = new MySqlConnection(_connectionString);
         await connection.OpenAsync();
         var cmd = new MySqlCommand(
-            "SELECT id, cari_ismi, odeme_ismi, iban, aciklama FROM prs_ot_firmalar ORDER BY cari_ismi", 
+            "SELECT id, cari_ismi, odeme_ismi, iban, aciklama, email, email_cc FROM prs_ot_firmalar ORDER BY cari_ismi", 
             connection);
         await using var r = await cmd.ExecuteReaderAsync();
         while (await r.ReadAsync())
@@ -646,7 +657,9 @@ public async Task<List<OtFaturaViewModel>> GetTumAcikFaturalarWithFirmaAsync()
                 CariIsmi = r.GetString(1),
                 OdemeIsmi = r.GetString(2),
                 IBAN = r.GetString(3),
-                Aciklama = r.IsDBNull(4) ? null : r.GetString(4)
+                Aciklama = r.IsDBNull(4) ? null : r.GetString(4),
+                Email = r.IsDBNull(5) ? string.Empty : r.GetString(5),
+                EmailCc = r.IsDBNull(6) ? null : r.GetString(6)
             });
         }
         return result;
@@ -658,16 +671,18 @@ public async Task<List<OtFaturaViewModel>> GetTumAcikFaturalarWithFirmaAsync()
         await connection.OpenAsync();
         MySqlCommand cmd = firma.Id == 0
             ? new MySqlCommand(
-                "INSERT INTO prs_ot_firmalar (cari_ismi, odeme_ismi, iban, aciklama) VALUES (@cari, @odeme, @iban, @aciklama)",
+                "INSERT INTO prs_ot_firmalar (cari_ismi, odeme_ismi, iban, aciklama, email, email_cc) VALUES (@cari, @odeme, @iban, @aciklama, @email, @emailcc)",
                 connection)
             : new MySqlCommand(
-                "UPDATE prs_ot_firmalar SET cari_ismi = @cari, odeme_ismi = @odeme, iban = @iban, aciklama = @aciklama WHERE id = @id",
+                "UPDATE prs_ot_firmalar SET cari_ismi = @cari, odeme_ismi = @odeme, iban = @iban, aciklama = @aciklama, email = @email, email_cc = @emailcc WHERE id = @id",
                 connection);
         if (firma.Id != 0) cmd.Parameters.AddWithValue("@id", firma.Id);
         cmd.Parameters.AddWithValue("@cari", firma.CariIsmi);
         cmd.Parameters.AddWithValue("@odeme", firma.OdemeIsmi);
         cmd.Parameters.AddWithValue("@iban", firma.IBAN);
         cmd.Parameters.AddWithValue("@aciklama", firma.Aciklama ?? (object)DBNull.Value);
+        cmd.Parameters.AddWithValue("@email", string.IsNullOrWhiteSpace(firma.Email) ? (object)DBNull.Value : firma.Email);
+        cmd.Parameters.AddWithValue("@emailcc", string.IsNullOrWhiteSpace(firma.EmailCc) ? (object)DBNull.Value : firma.EmailCc);
         await cmd.ExecuteNonQueryAsync();
     }
 

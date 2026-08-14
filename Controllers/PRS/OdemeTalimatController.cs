@@ -134,6 +134,9 @@ public class OdemeTalimatController : Controller
             ViewBag.FirmaGruplari = firmaGruplari;
             ViewBag.Bankalar = bankalar;
             ViewBag.KullaniciAdi = KullaniciAdi();
+            ViewBag.SecilenTalimatTarihi = TempData["SecilenTalimatTarihi"] is DateTime tarih
+                ? tarih.Date
+                : DateTime.Today;
 
             var secilenFaturaIdleri = new HashSet<int>();
             var secilenFaturaIdleriJson = TempData["SecilenFaturaIdleri"] as string;
@@ -176,10 +179,13 @@ public class OdemeTalimatController : Controller
     // -----------------------------------------------------------------------
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> TalimatOlustur(List<int> secilenFaturaIdleri, int bankaId, int batchId = 0)
+    public async Task<IActionResult> TalimatOlustur(List<int> secilenFaturaIdleri, int bankaId, int batchId = 0, DateTime? talimatTarihi = null)
     {
         if (!IsLoggedIn()) return RedirectToAction("Login", "Account");
         if (!IsAdmin()) return Forbid();
+
+        var secilenTarih = talimatTarihi?.Date ?? DateTime.Today;
+        TempData["SecilenTalimatTarihi"] = secilenTarih;
 
         if (secilenFaturaIdleri == null || secilenFaturaIdleri.Count == 0)
         {
@@ -196,7 +202,8 @@ public class OdemeTalimatController : Controller
                 secilenFaturaIdleri, 
                 bankaId, 
                 KullaniciAdi(), 
-                batchId);
+                batchId,
+                secilenTarih);
 
             if (geciciTalimat == null)
             {

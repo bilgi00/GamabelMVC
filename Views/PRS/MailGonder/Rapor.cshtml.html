@@ -1,0 +1,152 @@
+@{
+    ViewData["Title"] = "Mail Gönderim Raporu";
+    var logs = ViewBag.Logs as List<gamabelmvc.Models.PRS.MailGonderimLog> ?? new();
+}
+
+<style>
+    .filter-section { background: #f8fafc; padding: 16px; border-radius: 8px; margin-bottom: 20px; }
+    .stat-card { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; text-align: center; }
+    .stat-card .number { font-size: 28px; font-weight: 700; color: #1e3c72; }
+    .stat-card .label { font-size: 13px; color: #64748b; }
+</style>
+
+<div class="container-fluid px-4 py-3">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4><i class="fas fa-chart-bar me-2"></i>Mail Gönderim Raporu</h4>
+        <a href="/MailGonder" class="btn btn-secondary btn-sm">
+            <i class="fas fa-arrow-left me-1"></i> Geri
+        </a>
+    </div>
+
+    <!-- İstatistik Kartları -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="number">@logs.Count</div>
+                <div class="label">Toplam Gönderim</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card" style="border-left: 4px solid #22c55e;">
+                <div class="number" style="color: #22c55e;">@logs.Count(l => l.BasariliMi)</div>
+                <div class="label">✅ Başarılı</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card" style="border-left: 4px solid #dc2626;">
+                <div class="number" style="color: #dc2626;">@logs.Count(l => !l.BasariliMi && l.Durum == "Başarısız")</div>
+                <div class="label">❌ Başarısız</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card" style="border-left: 4px solid #f59e0b;">
+                <div class="number" style="color: #f59e0b;">@logs.Count(l => l.Durum == "Beklemede")</div>
+                <div class="label">⏳ Beklemede</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtre -->
+    <div class="filter-section">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Başlangıç</label>
+                <input type="date" name="baslangic" class="form-control" value="@(ViewBag.Baslangic?.ToString("yyyy-MM-dd"))" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Bitiş</label>
+                <input type="date" name="bitis" class="form-control" value="@(ViewBag.Bitis?.ToString("yyyy-MM-dd"))" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Durum</label>
+                <select name="durum" class="form-select">
+                    <option value="">Tümü</option>
+                    <option value="Gönderildi" @(ViewBag.SeciliDurum == "Gönderildi" ? "selected" : "")>✅ Başarılı</option>
+                    <option value="Başarısız" @(ViewBag.SeciliDurum == "Başarısız" ? "selected" : "")>❌ Başarısız</option>
+                    <option value="Beklemede" @(ViewBag.SeciliDurum == "Beklemede" ? "selected" : "")>⏳ Beklemede</option>
+                </select>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100"><i class="fas fa-search me-1"></i> Filtrele</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Tablo -->
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Tarih</th>
+                            <th>Talimat No</th>
+                            <th>Firma</th>
+                            <th>Email</th>
+                            <th>Konu</th>
+                            <th>Durum</th>
+                            <th>Okundu</th>
+                            <th>Hata</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (logs.Any())
+                        {
+                            @foreach (var log in logs)
+                            {
+                                var rowClass = log.Durum == "Başarısız" ? "table-danger" : log.Durum == "Gönderildi" ? "table-success" : "";
+                                <tr class="@rowClass">
+                                    <td>@log.GonderimTarihi.ToString("dd.MM.yyyy HH:mm")</td>
+                                    <td>@log.TalimatId</td>
+                                    <td>@log.FirmaId</td>
+                                    <td>@log.AliciEmail</td>
+                                    <td>@log.Konu</td>
+                                    <td>
+                                        @if (log.Durum == "Gönderildi")
+                                        {
+                                            <span class="badge bg-success">✅ Gönderildi</span>
+                                        }
+                                        else if (log.Durum == "Başarısız")
+                                        {
+                                            <span class="badge bg-danger">❌ Başarısız</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-warning">⏳ Beklemede</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (log.OkunduMu)
+                                        {
+                                            <span class="badge bg-info">✅ Okundu</span>
+                                        }
+                                        else if (log.Durum == "Gönderildi")
+                                        {
+                                            <span class="badge bg-secondary">⏳ Bekleniyor</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-light text-muted">-</span>
+                                        }
+                                    </td>
+                                    <td style="max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                                        @log.HataMesaji
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="8" class="text-center text-muted py-4">
+                                    <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
+                                    Henüz mail gönderim kaydı bulunmuyor.
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

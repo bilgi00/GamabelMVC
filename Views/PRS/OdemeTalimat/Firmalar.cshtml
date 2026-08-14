@@ -66,6 +66,14 @@
                     <input type="text" name="Aciklama" placeholder="(opsiyonel)" style="width:160px;" />
                 </div>
                 <div>
+                    <label>Email</label>
+                    <input type="email" name="Email" placeholder="firma@ornek.com" style="width:220px;" />
+                </div>
+                <div>
+                    <label>CC</label>
+                    <input type="text" name="EmailCc" placeholder="cc1@ornek.com,cc2@ornek.com" style="width:220px;" />
+                </div>
+                <div>
                     <button type="submit" class="ot-btn ot-btn-primary">➕ Ekle</button>
                 </div>
             </div>
@@ -84,6 +92,7 @@
                         <th>Cari İsmi</th>
                         <th>Ödeme İsmi</th>
                         <th>IBAN</th>
+                        <th>Email</th>
                         <th>Açıklama</th>
                         <th></th>
                     </tr>
@@ -95,10 +104,12 @@
                             <td>@f.CariIsmi</td>
                             <td>@f.OdemeIsmi</td>
                             <td style="font-family:monospace; font-size:12px;">@f.IBAN</td>
+                            <td style="color:#6c757d;">@(!string.IsNullOrWhiteSpace(f.Email) ? f.Email : "—")</td>
                             <td style="color:#6c757d;">@(f.Aciklama ?? "—")</td>
                             <td style="display:flex; gap:8px; justify-content:flex-end;">
+                                <a href="/MailGonder?firmaId=@f.Id" class="ot-btn ot-btn-secondary" style="padding:5px 12px; font-size:12px;">✉ Mail Gönder</a>
                                 <button type="button" class="ot-btn ot-btn-secondary" style="padding:5px 12px; font-size:12px;"
-                                        onclick="openFirmaEditModal(@f.Id, '@Html.Raw(f.CariIsmi.Replace("'", "\\'").Replace("\"", "\\\""))', '@Html.Raw((f.OdemeIsmi ?? string.Empty).Replace("'", "\\'").Replace("\"", "\\\""))', '@Html.Raw(f.IBAN.Replace("'", "\\'").Replace("\"", "\\\""))', '@Html.Raw((f.Aciklama ?? string.Empty).Replace("'", "\\'").Replace("\"", "\\\""))')">
+                                    onclick="openFirmaEditModal(@f.Id, '@Html.Raw(f.CariIsmi.Replace("'", "\\'").Replace("\"", "\\\""))', '@Html.Raw((f.OdemeIsmi ?? string.Empty).Replace("'", "\\'").Replace("\"", "\\\""))', '@Html.Raw(f.IBAN.Replace("'", "\\'").Replace("\"", "\\\""))', '@Html.Raw((f.Aciklama ?? string.Empty).Replace("'", "\\'").Replace("\"", "\\\""))', '@Html.Raw((f.Email ?? string.Empty).Replace("'", "\\'").Replace("\"", "\\\""))', '@Html.Raw((f.EmailCc ?? string.Empty).Replace("'", "\\'").Replace("\"", "\\\""))')">
                                     ✏ Düzenle
                                 </button>
                                 <form method="post" asp-controller="OdemeTalimat" asp-action="FirmaSil"
@@ -128,6 +139,10 @@
                             <input type="text" id="editIBAN" name="IBAN" required maxlength="35" />
                             <label>Açıklama</label>
                             <input type="text" id="editAciklama" name="Aciklama" />
+                            <label>Email</label>
+                            <input type="email" id="editEmail" name="Email" />
+                            <label>CC</label>
+                            <input type="text" id="editEmailCc" name="EmailCc" />
                         </div>
                         <div class="modal-actions">
                             <button type="button" class="ot-btn ot-btn-secondary" onclick="closeFirmaEditModal()">Vazgeç</button>
@@ -142,12 +157,14 @@
 
 @section Scripts {
 <script>
-    function openFirmaEditModal(id, cariIsmi, odemeIsmi, iban, aciklama) {
+    function openFirmaEditModal(id, cariIsmi, odemeIsmi, iban, aciklama, email, emailCc) {
         document.getElementById('editFirmaId').value = id;
         document.getElementById('editCariIsmi').value = cariIsmi || '';
         document.getElementById('editOdemeIsmi').value = odemeIsmi || '';
         document.getElementById('editIBAN').value = iban || '';
         document.getElementById('editAciklama').value = aciklama || '';
+        document.getElementById('editEmail').value = email || '';
+        document.getElementById('editEmailCc').value = emailCc || '';
         document.getElementById('firmaEditModal').style.display = 'flex';
     }
 
