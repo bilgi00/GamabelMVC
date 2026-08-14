@@ -40,6 +40,7 @@ public class MailGonderModel
     public string Mesaj { get; set; } = string.Empty;
     public string? CC { get; set; }
     public string? BCc { get; set; }
+    public DateTime? GonderimZamani { get; set; }
     public bool TestModu { get; set; }
     public string? TestEmail { get; set; }
 }

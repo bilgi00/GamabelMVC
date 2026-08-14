@@ -369,6 +369,7 @@ public class KullaniciController : Controller
             updateCmd.Parameters.AddWithValue("@email", email.Trim());
             updateCmd.Parameters.AddWithValue("@kullaniciAdi", kullaniciAdi);
             await updateCmd.ExecuteNonQueryAsync();
+            HttpContext.Session.SetString("KullaniciEmail", email.Trim());
 
             ViewBag.Basari = $"Email adresiniz başarıyla güncellendi: {email}";
             return await Profil();

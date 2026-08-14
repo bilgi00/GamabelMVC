@@ -36,9 +36,10 @@ public class AccountController : Controller
         {
             await using var connection = new MySqlConnection(_connectionString);
             await connection.OpenAsync();
+            await EnsureUserEmailColumnAsync(connection);
 
             await using var command = new MySqlCommand(
-                "SELECT id, birim, rol, aktif_mi FROM admin_kullanicilar WHERE kullanici_adi = @kullaniciAdi AND sifre = @sifre",
+                "SELECT id, birim, rol, aktif_mi, email FROM admin_kullanicilar WHERE kullanici_adi = @kullaniciAdi AND sifre = @sifre",
                 connection);
             command.Parameters.AddWithValue("@kullaniciAdi", model.KullaniciAdi);
             command.Parameters.AddWithValue("@sifre", model.Sifre);
@@ -60,6 +61,7 @@ public class AccountController : Controller
                 HttpContext.Session.SetString("KullaniciAdi", model.KullaniciAdi);
                 HttpContext.Session.SetString("Birim", reader.IsDBNull(1) ? "" : reader.GetString(1));
                 HttpContext.Session.SetString("Rol", roleName);
+                HttpContext.Session.SetString("KullaniciEmail", reader.IsDBNull(4) ? "" : reader.GetString(4));
                 HttpContext.Session.SetString("ActiveModule", "Personel");
 
                 await LoadAndSetRolePermissionsAsync(connection, roleName);
@@ -83,6 +85,26 @@ public class AccountController : Controller
     {
         HttpContext.Session.Clear();
         return RedirectToAction("Login");
+    }
+
+    private static async Task EnsureUserEmailColumnAsync(MySqlConnection connection)
+    {
+        const string columnExistsQuery = @"
+            SELECT COUNT(*)
+            FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = 'admin_kullanicilar'
+              AND COLUMN_NAME = 'email'";
+
+        await using var checkCommand = new MySqlCommand(columnExistsQuery, connection);
+        var columnExists = Convert.ToInt32(await checkCommand.ExecuteScalarAsync()) > 0;
+        if (!columnExists)
+        {
+            await using var alterCommand = new MySqlCommand(
+                "ALTER TABLE admin_kullanicilar ADD COLUMN email VARCHAR(255) NULL AFTER sifre",
+                connection);
+            await alterCommand.ExecuteNonQueryAsync();
+        }
     }
 
     private async Task LoadAndSetRolePermissionsAsync(MySqlConnection connection, string roleName)

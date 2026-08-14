@@ -18,7 +18,7 @@ public class MailQueueService : BackgroundService
     public void Enqueue(MailModel mail)
     {
         _queue.Enqueue(mail);
-        _logger.LogInformation($"Mail kuyruğa eklendi: {mail.To}");
+        _logger.LogInformation($"Mail kuyruğa eklendi: {mail.To} (planlanan zaman: {mail.GonderimZamani?.ToString("dd.MM.yyyy HH:mm") ?? "hemen"})");
     }
 
     public int QueueCount => _queue.Count;
@@ -29,6 +29,19 @@ public class MailQueueService : BackgroundService
         {
             if (_queue.TryDequeue(out var mail))
             {
+                var now = DateTime.Now;
+                if (mail.GonderimZamani.HasValue && mail.GonderimZamani.Value > now)
+                {
+                    var delay = mail.GonderimZamani.Value - now;
+                    _queue.Enqueue(mail);
+                    var waitTime = delay > TimeSpan.FromMinutes(5) ? TimeSpan.FromMinutes(5) : delay;
+                    if (waitTime > TimeSpan.Zero)
+                    {
+                        await Task.Delay(waitTime, stoppingToken);
+                    }
+                    continue;
+                }
+
                 try
                 {
                     using var scope = _scopeFactory.CreateScope();
@@ -41,9 +54,18 @@ public class MailQueueService : BackgroundService
                 }
                 catch (Exception ex)
                 {
+                    mail.RetryCount++;
+
+                    if (mail.RetryCount >= 3)
+                    {
+                        await LogMailAsync(mail, "Başarısız (maks deneme aşıldı)", false, ex.Message);
+                        _logger.LogError(ex, "Mail gönderim hatası, tekrar deneme limiti aşıldı. To: {To}", mail.To);
+                        continue;
+                    }
+
                     _queue.Enqueue(mail);
                     await LogMailAsync(mail, "Başarısız", false, ex.Message);
-                    _logger.LogError($"Mail gönderim hatası: {ex.Message}");
+                    _logger.LogError(ex, "Mail gönderim hatası. Tekrar denenecek. To: {To}. RetryCount: {RetryCount}", mail.To, mail.RetryCount);
                     
                     await Task.Delay(5000, stoppingToken);
                 }

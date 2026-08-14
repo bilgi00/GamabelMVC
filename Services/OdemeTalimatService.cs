@@ -667,6 +667,40 @@ public async Task<List<OtFaturaViewModel>> GetTumAcikFaturalarWithFirmaAsync()
         return result;
     }
 
+    public async Task<List<OtFirma>> GetFirmalarByTalimatAsync(int talimatId)
+    {
+        var result = new List<OtFirma>();
+        await using var connection = new MySqlConnection(_connectionString);
+        await connection.OpenAsync();
+        await EnsureFirmaEmailColumnsAsync(connection);
+
+        var cmd = new MySqlCommand(
+            @"SELECT DISTINCT f.id, f.cari_ismi, f.odeme_ismi, f.iban, f.aciklama, f.email, f.email_cc
+              FROM prs_ot_talimat_satirlari s
+              INNER JOIN prs_ot_firmalar f ON f.id = s.firma_id
+              WHERE s.talimat_id = @talimatId
+              ORDER BY f.cari_ismi",
+            connection);
+        cmd.Parameters.AddWithValue("@talimatId", talimatId);
+
+        await using var r = await cmd.ExecuteReaderAsync();
+        while (await r.ReadAsync())
+        {
+            result.Add(new OtFirma
+            {
+                Id = r.GetInt32(0),
+                CariIsmi = r.GetString(1),
+                OdemeIsmi = r.GetString(2),
+                IBAN = r.GetString(3),
+                Aciklama = r.IsDBNull(4) ? null : r.GetString(4),
+                Email = r.IsDBNull(5) ? string.Empty : r.GetString(5),
+                EmailCc = r.IsDBNull(6) ? null : r.GetString(6)
+            });
+        }
+
+        return result;
+    }
+
     public async Task FirmaKaydetAsync(OtFirma firma)
     {
         await using var connection = new MySqlConnection(_connectionString);

@@ -1,0 +1,25 @@
+{
+  "// AÇIKLAMA": "Sunucu bilgilerinizi aşağıya girin. Kullanmak istediğiniz yöntemi 'DeployMethod' ile seçin.",
+
+  "DeployMethod": "ftp",
+
+  "FTP": {
+    "Server": "94.73.145.55",
+    "Port": 21,
+    "Username": "u2636310",
+    "Password": "VQLjJ1hmp3VdOQTp",
+    "RemotePath": "/httpdocs/",
+    "UseSsl": false,
+    "ParallelUploads": 5
+  },
+
+  "FileCopy": {
+    "DestinationPath": "\\\\sunucu\\paylasim\\site\\"
+  },
+
+  "Build": {
+    "Configuration": "Release",
+    "Runtime": "",
+    "SelfContained": false
+  }
+}

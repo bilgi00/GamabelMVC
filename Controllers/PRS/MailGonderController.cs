@@ -1,5 +1,6 @@
 // Controllers/PRS/MailGonderController.cs
 using Microsoft.AspNetCore.Mvc;
+using MySqlConnector;
 using gamabelmvc.Services;
 using gamabelmvc.Models.PRS;
 
@@ -10,17 +11,20 @@ public class MailGonderController : Controller
     private readonly OdemeTalimatService _talimatService;
     private readonly IMailService _mailService;
     private readonly MailQueueService _mailQueue;
+    private readonly IConfiguration _configuration;
     private readonly ILogger<MailGonderController> _logger;
 
     public MailGonderController(
         OdemeTalimatService talimatService,
         IMailService mailService,
         MailQueueService mailQueue,
+        IConfiguration configuration,
         ILogger<MailGonderController> logger)
     {
         _talimatService = talimatService;
         _mailService = mailService;
         _mailQueue = mailQueue;
+        _configuration = configuration;
         _logger = logger;
     }
 
@@ -33,6 +37,45 @@ public class MailGonderController : Controller
     private bool IsAdmin() =>
         HttpContext.Session.GetString("Rol") == "admin";
 
+    private async Task<string?> GetCurrentUserEmailAsync()
+    {
+        var sessionEmail = HttpContext.Session.GetString("KullaniciEmail");
+        if (!string.IsNullOrWhiteSpace(sessionEmail))
+            return sessionEmail.Trim();
+
+        var kullaniciAdi = HttpContext.Session.GetString("KullaniciAdi");
+        if (string.IsNullOrWhiteSpace(kullaniciAdi))
+            return null;
+
+        var connString = _configuration.GetConnectionString("MyConnection");
+        if (string.IsNullOrWhiteSpace(connString))
+            return null;
+
+        try
+        {
+            await using var connection = new MySqlConnection(connString);
+            await connection.OpenAsync();
+
+            await using var command = new MySqlCommand(
+                "SELECT email FROM admin_kullanicilar WHERE kullanici_adi = @kullaniciAdi AND email IS NOT NULL AND TRIM(email) <> '' LIMIT 1",
+                connection);
+            command.Parameters.AddWithValue("@kullaniciAdi", kullaniciAdi);
+
+            var result = await command.ExecuteScalarAsync();
+            if (result is string email && !string.IsNullOrWhiteSpace(email))
+            {
+                HttpContext.Session.SetString("KullaniciEmail", email.Trim());
+                return email.Trim();
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Kullanıcı email sorgulanırken hata oluştu.");
+        }
+
+        return null;
+    }
+
     // ================================================================
     // ANA SAYFA
     // ================================================================
@@ -44,16 +87,20 @@ public class MailGonderController : Controller
 
         try
         {
-            var firmalar = await _talimatService.GetFirmalarAsync();
             var sonTalimatlar = await _talimatService.GetSonTalimatlarAsync(20);
-            
             OtTalimat? seciliTalimat = null;
+            var talimatFirmalar = new List<OtFirma>();
+
             if (talimatId.HasValue && talimatId.Value > 0)
             {
                 seciliTalimat = await _talimatService.GetTalimatDetayAsync(talimatId.Value);
+                if (seciliTalimat != null)
+                {
+                    talimatFirmalar = await _talimatService.GetFirmalarByTalimatAsync(seciliTalimat.Id);
+                }
             }
 
-            ViewBag.Firmalar = firmalar;
+            ViewBag.Firmalar = talimatFirmalar;
             ViewBag.SonTalimatlar = sonTalimatlar;
             ViewBag.SeciliTalimat = seciliTalimat;
             ViewBag.KullaniciAdi = KullaniciAdi();
@@ -95,8 +142,8 @@ public class MailGonderController : Controller
                 return RedirectToAction("Index");
             }
 
-            var firmalar = await _talimatService.GetFirmalarAsync();
-            var seciliFirmalar = firmalar.Where(f => model.FirmaIdleri.Contains(f.Id)).ToList();
+            var talimatFirmalar = await _talimatService.GetFirmalarByTalimatAsync(model.TalimatId);
+            var seciliFirmalar = talimatFirmalar.Where(f => model.FirmaIdleri.Contains(f.Id)).ToList();
 
             if (seciliFirmalar.Count == 0)
             {
@@ -134,7 +181,8 @@ public class MailGonderController : Controller
                         Konu = model.Konu ?? $"Ödeme Talimatı - {talimat.TalimatNo}",
                         Body = mesajIcerik,
                         TalimatId = talimat.Id,
-                        FirmaId = firma.Id
+                        FirmaId = firma.Id,
+                        GonderimZamani = model.GonderimZamani
                     });
 
                     gonderilen++;
@@ -248,16 +296,16 @@ public class MailGonderController : Controller
 
         try
         {
-            var kullaniciEmail = HttpContext.Session.GetString("KullaniciEmail") ?? "";
-            if (string.IsNullOrEmpty(kullaniciEmail))
+            var kullaniciEmail = await GetCurrentUserEmailAsync();
+            if (string.IsNullOrWhiteSpace(kullaniciEmail))
                 return Json(new { basarili = false, mesaj = "Email adresiniz tanımlı değil." });
 
             var talimat = await _talimatService.GetTalimatDetayAsync(model.TalimatId);
             if (talimat == null)
                 return Json(new { basarili = false, mesaj = "Talimat bulunamadı." });
 
-            var firmalar = await _talimatService.GetFirmalarAsync();
-            var seciliFirma = firmalar.FirstOrDefault(f => model.FirmaIdleri.Contains(f.Id));
+            var talimatFirmalar = await _talimatService.GetFirmalarByTalimatAsync(model.TalimatId);
+            var seciliFirma = talimatFirmalar.FirstOrDefault(f => model.FirmaIdleri.Contains(f.Id));
             if (seciliFirma == null)
                 return Json(new { basarili = false, mesaj = "Firma bulunamadı." });
 
@@ -313,8 +361,8 @@ public async Task<IActionResult> Preview([FromBody] PreviewModel model)
         if (talimat == null)
             return Json(new { basarili = false, mesaj = "Talimat bulunamadı." });
 
-        var firmalar = await _talimatService.GetFirmalarAsync();
-        var firma = firmalar.FirstOrDefault(f => f.Id == model.FirmaId);
+        var talimatFirmalar = await _talimatService.GetFirmalarByTalimatAsync(model.TalimatId);
+        var firma = talimatFirmalar.FirstOrDefault(f => f.Id == model.FirmaId);
         if (firma == null)
             return Json(new { basarili = false, mesaj = "Firma bulunamadı." });
 
@@ -330,6 +378,7 @@ public async Task<IActionResult> Preview([FromBody] PreviewModel model)
         return Json(new { basarili = false, mesaj = ex.Message });
     }
 }
+
 
 public class PreviewModel
 {

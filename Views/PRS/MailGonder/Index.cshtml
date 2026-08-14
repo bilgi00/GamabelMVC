@@ -6,6 +6,26 @@
     var kullaniciAdi = ViewBag.KullaniciAdi ?? "";
     var queueCount = ViewBag.QueueCount ?? 0;
     var preFirmaId = (int?)(ViewBag.SeciliFirmaId ?? 0);
+    
+    // ✅ Sadece seçili talimata ait firmaları filtrele
+    var talimatFirmaIsimleri = new HashSet<string>();
+    if (seciliTalimat != null)
+    {
+        talimatFirmaIsimleri = seciliTalimat.Satirlar
+            .Select(s => s.FirmaOdemeIsmi)
+            .ToHashSet();
+    }
+    var filtrelenmisFirmalar = firmalar
+        .Where(f => talimatFirmaIsimleri.Contains(f.OdemeIsmi))
+        .OrderBy(f => f.OdemeIsmi)
+        .ThenBy(f => f.CariIsmi)
+        .ToList();
+
+    var firmaGruplari = filtrelenmisFirmalar
+        .GroupBy(f => string.IsNullOrWhiteSpace(f.OdemeIsmi) ? f.CariIsmi : f.OdemeIsmi)
+        .Select(g => new { Adi = g.Key, Firmalar = g.OrderBy(x => x.CariIsmi).ThenBy(x => x.Id).ToList() })
+        .OrderBy(g => g.Adi)
+        .ToList();
 }
 
 <style>
@@ -78,7 +98,7 @@
         <div class="mail-header">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
-                    <h4 class="mb-0"><i class="fas fa-envelope me-2"></i>Ödeme Talimatı Mail Gönder v1-1 <span class="badge bg-light text-dark ms-2">v.1</span></h4>
+                    <h4 class="mb-0"><i class="fas fa-envelope me-2"></i>Ödeme Talimatı Mail Gönder <span class="badge bg-light text-dark ms-2">v.1</span></h4>
                     <p class="mb-0 opacity-75 small">Seçili firmalara ödeme detaylarını e-posta ile gönderin</p>
                 </div>
                 <div>
@@ -189,11 +209,11 @@
                         </div>
                     </div>
 
-                    <!-- ✅ 2. FİRMA LİSTESİ (GRUPLAMALI) -->
+                    <!-- ✅ 2. FİRMA LİSTESİ (SADECE TALİMATA AİT FIRMALAR) -->
                     <div class="row mb-4">
                         <div class="col-12">
                             <div class="d-flex justify-content-between align-items-center mb-2">
-                                <label class="form-label fw-semibold mb-0">🏢 Firmalar</label>
+                                <label class="form-label fw-semibold mb-0">🏢 Talimattaki Firmalar</label>
                                 <div>
                                     <button type="button" class="btn-select-all" onclick="selectAll(true)">Tümünü Seç</button>
                                     <button type="button" class="btn-select-all" onclick="selectAll(false)">Temizle</button>
@@ -201,57 +221,58 @@
                                 </div>
                             </div>
 
-                            <!-- Firmaları gruba göre grupla -->
-                            @{
-                                var firmaGruplari = firmalar.GroupBy(f => f.Grup ?? "Diğer").OrderBy(g => g.Key);
-                            }
-                            @foreach (var grup in firmaGruplari)
+                            @if (firmaGruplari.Any())
                             {
-                                var grupAdi = grup.Key;
-                                var grupFirmaSayisi = grup.Count();
-                                var grupEmailVarSayisi = grup.Count(f => !string.IsNullOrEmpty(f.Email));
-                                <div class="firma-grup">
-                                    <div class="grup-baslik" onclick="toggleGrup(this)">
-                                        <span>
-                                            <span class="grup-icon">▶</span>
-                                            🏢 @grupAdi
-                                            <span class="badge bg-light text-dark ms-1">@grupFirmaSayisi firma</span>
-                                        </span>
-                                        <span>
-                                            <span class="badge bg-success">@grupEmailVarSayisi email var</span>
-                                            <span class="badge bg-secondary">@(grupFirmaSayisi - grupEmailVarSayisi) email yok</span>
-                                        </span>
-                                    </div>
-                                    <div class="grup-icerik acik">
-                                        @foreach (var firma in grup)
-                                        {
-                                            var hasEmail = !string.IsNullOrEmpty(firma.Email);
-                                            var checkedAttr = (preFirmaId.HasValue && firma.Id == preFirmaId.Value) ? "checked" : "";
-                                            <div class="firma-item">
-                                                <input type="checkbox" name="FirmaIdleri" value="@firma.Id" 
-                                                       id="firma_@firma.Id" @(hasEmail ? checkedAttr : "disabled") />
-                                                <div class="firma-bilgi">
-                                                    <div class="adi">
-                                                        @firma.OdemeIsmi
-                                                        @if (!hasEmail)
+                                <div class="firma-list">
+                                    @foreach (var grup in firmaGruplari)
+                                    {
+                                        <div class="firma-grup">
+                                            <div class="grup-baslik" onclick="toggleGrup(this)">
+                                                <span>
+                                                    <i class="fas fa-building me-2"></i>@grup.Adi
+                                                    <span class="text-muted">(@grup.Firmalar.Count)</span>
+                                                </span>
+                                                <span class="grup-icon">▼</span>
+                                            </div>
+                                            <div class="grup-icerik acik">
+                                                @foreach (var firma in grup.Firmalar)
+                                                {
+                                                    var hasEmail = !string.IsNullOrEmpty(firma.Email);
+                                                    var checkedAttr = (preFirmaId.HasValue && firma.Id == preFirmaId.Value) ? "checked" : "";
+                                                    <div class="firma-item">
+                                                        <input type="checkbox" name="FirmaIdleri" value="@firma.Id" 
+                                                               id="firma_@firma.Id" @(hasEmail ? checkedAttr : "disabled") />
+                                                        <div class="firma-bilgi">
+                                                            <div class="adi">
+                                                                @firma.CariIsmi
+                                                                @if (!hasEmail)
+                                                                {
+                                                                    <span class="badge-email-yok ms-2">📭 Email yok</span>
+                                                                }
+                                                                else
+                                                                {
+                                                                    <span class="badge-email-var ms-2">📧 Email var</span>
+                                                                }
+                                                            </div>
+                                                            <div class="email">@(string.IsNullOrEmpty(firma.Email) ? "Email adresi tanımlı değil" : firma.Email)</div>
+                                                            <div class="iban">IBAN: @firma.IBAN</div>
+                                                        </div>
+                                                        @if (hasEmail)
                                                         {
-                                                            <span class="badge-email-yok ms-2">📭 Email yok</span>
-                                                        }
-                                                        else
-                                                        {
-                                                            <span class="badge-email-var ms-2">📧 Email var</span>
+                                                            <label for="firma_@firma.Id" class="text-muted small" style="cursor:pointer;">Seç</label>
                                                         }
                                                     </div>
-                                                    <div class="email">@(string.IsNullOrEmpty(firma.Email) ? "Email adresi tanımlı değil" : firma.Email)</div>
-                                                    <div class="iban">IBAN: @firma.IBAN</div>
-                                                </div>
-                                                @if (hasEmail)
-                                                {
-                                                    <label for="firma_@firma.Id" class="text-muted small" style="cursor:pointer;">Seç</label>
                                                 }
                                             </div>
-                                        }
-                                    </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="alert alert-warning mb-0">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    Bu talimata ait firma bulunamadı. Lütfen talimat detaylarını kontrol edin.
                                 </div>
                             }
                             <div class="mt-2 text-muted small">
@@ -440,6 +461,7 @@
                 </div>
             `;
 
+            // ✅ Önizleme için doğru endpoint
             fetch('/MailGonder/Preview', {
                 method: 'POST',
                 headers: {
@@ -494,6 +516,7 @@
             document.getElementById('gonderBtn').disabled = true;
             document.getElementById('gonderBtn').innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Gönderiliyor...';
 
+            // ✅ Kullanıcı email'ini session'dan al
             fetch('/MailGonder/TestGonder', {
                 method: 'POST',
                 headers: {
