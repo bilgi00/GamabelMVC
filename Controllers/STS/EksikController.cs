@@ -224,6 +224,74 @@ namespace gamabelmvc.Controllers.STS
         }
     }
 
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Sil(int id)
+    {
+        var subeId = HttpContext.Session.GetInt32("SubeId") ?? 0;
+        if (subeId == 0)
+        {
+            return RedirectToAction("Login", "Account");
+        }
+
+        try
+        {
+            using (var conn = await _dbFactory.CreateConnectionAsync())
+            {
+                var kayitQuery = @"SELECT Id, SubeId, Durum FROM stk_EksikKaydi WHERE Id = @Id AND SubeId = @SubeId LIMIT 1;";
+                using (var cmd = new MySqlCommand(kayitQuery, conn))
+                {
+                    cmd.Parameters.AddWithValue("@Id", id);
+                    cmd.Parameters.AddWithValue("@SubeId", subeId);
+
+                    using (var reader = await cmd.ExecuteReaderAsync())
+                    {
+                        if (!await reader.ReadAsync())
+                        {
+                            TempData["Hata"] = "Silinecek kayıt bulunamadı.";
+                            return RedirectToAction(nameof(SubeListe));
+                        }
+
+                        var durum = reader.GetString("Durum");
+                        if (durum != "Bekliyor")
+                        {
+                            TempData["Hata"] = "Sevk edilen ürün silinemez.";
+                            return RedirectToAction(nameof(SubeListe));
+                        }
+                    }
+                }
+
+                var sevkiyatSayisiQuery = "SELECT COUNT(*) FROM stk_Sevkiyat WHERE EksikKaydiId = @Id;";
+                using (var cmd = new MySqlCommand(sevkiyatSayisiQuery, conn))
+                {
+                    cmd.Parameters.AddWithValue("@Id", id);
+                    var sevkiyatSayisi = Convert.ToInt32(await cmd.ExecuteScalarAsync() ?? 0);
+                    if (sevkiyatSayisi > 0)
+                    {
+                        TempData["Hata"] = "Bu ürün sevk işlemi için hazır olduğundan silinemez.";
+                        return RedirectToAction(nameof(SubeListe));
+                    }
+                }
+
+                var deleteQuery = "DELETE FROM stk_EksikKaydi WHERE Id = @Id AND SubeId = @SubeId;";
+                using (var cmd = new MySqlCommand(deleteQuery, conn))
+                {
+                    cmd.Parameters.AddWithValue("@Id", id);
+                    cmd.Parameters.AddWithValue("@SubeId", subeId);
+                    await cmd.ExecuteNonQueryAsync();
+                }
+            }
+
+            TempData["Message"] = "Sipariş başarıyla silindi.";
+            return RedirectToAction(nameof(SubeListe));
+        }
+        catch (Exception ex)
+        {
+            TempData["Hata"] = $"Silme işlemi başarısız: {ex.Message}";
+            return RedirectToAction(nameof(SubeListe));
+        }
+    }
+
     // GET: Eksik/Ekle - Yeni eksik kaydı ekleme formu
     public async Task<IActionResult> Ekle()
     {
@@ -260,20 +328,25 @@ namespace gamabelmvc.Controllers.STS
 
     // POST: Eksik/Ekle
     [HttpPost]
-    public async Task<IActionResult> Ekle([FromBody] EksikTopluSatirlarRequest request)
+    public async Task<IActionResult> Ekle([FromBody] EksikTopluSatirlarRequest request, bool forceDuplicateSave = false)
     {
-        // DEBUG: Gelen JSON'u logla
         string satirlarJson = null;
-        try {
+        try
+        {
             System.IO.Directory.CreateDirectory("E:/gamabelmvc/temp");
             satirlarJson = System.Text.Json.JsonSerializer.Serialize(request?.satirlar ?? new List<EksikTopluSatir>());
             System.IO.File.WriteAllText("E:/gamabelmvc/temp/satirlarJson.txt", satirlarJson ?? "<null>");
-        } catch { }
+        }
+        catch { }
+
         try
         {
             var subeId = HttpContext.Session.GetInt32("SubeId") ?? 0;
             var kullaniciId = HttpContext.Session.GetInt32("KullaniciId") ?? 0;
-            if (subeId == 0) return Unauthorized(new { success = false, message = "Oturum süresi doldu. Lütfen tekrar giriş yapın." });
+            if (subeId == 0)
+            {
+                return Unauthorized(new { success = false, message = "Oturum süresi doldu. Lütfen tekrar giriş yapın." });
+            }
 
             var haftaNo = GetHaftaNo();
 
@@ -293,6 +366,9 @@ namespace gamabelmvc.Controllers.STS
                 var kopyaSatir = 0;
                 var bekleyenSevkEngeli = 0;
                 var engellenenUrunler = new List<string>();
+                var duplicateProductNames = new List<string>();
+                var urunAdiCache = new Dictionary<int, string>();
+
                 foreach (var satir in satirlar)
                 {
                     if (satir.UrunId <= 0 || satir.Miktar <= 0)
@@ -302,18 +378,33 @@ namespace gamabelmvc.Controllers.STS
                         continue;
                     }
 
+                    if (!urunAdiCache.TryGetValue(satir.UrunId, out var urunAdi))
+                    {
+                        using (var urunCmd = new MySqlCommand("SELECT Ad FROM stk_Urun WHERE Id = @UrunId LIMIT 1", conn))
+                        {
+                            urunCmd.Parameters.AddWithValue("@UrunId", satir.UrunId);
+                            var urunAdiObj = await urunCmd.ExecuteScalarAsync();
+                            urunAdi = urunAdiObj == null || urunAdiObj == DBNull.Value
+                                ? $"ÜrünId:{satir.UrunId}"
+                                : urunAdiObj.ToString() ?? $"ÜrünId:{satir.UrunId}";
+                        }
+                        urunAdiCache[satir.UrunId] = urunAdi;
+                    }
+
                     var bekleyenSevkSonucu = await BekleyenSevkiyatVarMiAsync(conn, subeId, satir.UrunId);
                     if (bekleyenSevkSonucu.VarMi)
                     {
                         atlandi++;
                         bekleyenSevkEngeli++;
-                        var urunAdi = string.IsNullOrWhiteSpace(bekleyenSevkSonucu.UrunAdi)
+                        var engellenenUrunAdi = string.IsNullOrWhiteSpace(bekleyenSevkSonucu.UrunAdi)
                             ? $"ÜrünId:{satir.UrunId}"
                             : bekleyenSevkSonucu.UrunAdi;
-                        if (!engellenenUrunler.Contains(urunAdi, StringComparer.OrdinalIgnoreCase))
+
+                        if (!engellenenUrunler.Any(x => string.Equals(x, engellenenUrunAdi, StringComparison.OrdinalIgnoreCase)))
                         {
-                            engellenenUrunler.Add(urunAdi);
+                            engellenenUrunler.Add(engellenenUrunAdi);
                         }
+
                         continue;
                     }
 
@@ -326,8 +417,55 @@ namespace gamabelmvc.Controllers.STS
                         var count = Convert.ToInt64(await checkCmd.ExecuteScalarAsync() ?? 0L);
                         if (count > 0)
                         {
-                            atlandi++;
-                            kopyaSatir++;
+                            if (!duplicateProductNames.Any(x => string.Equals(x, urunAdi, StringComparison.OrdinalIgnoreCase)))
+                            {
+                                duplicateProductNames.Add(urunAdi);
+                            }
+
+                            if (!forceDuplicateSave)
+                            {
+                                atlandi++;
+                                kopyaSatir++;
+                                continue;
+                            }
+
+                            var updateQuery = @"
+                                UPDATE stk_EksikKaydi
+                                SET Miktar = Miktar + @Miktar,
+                                    Aciklama = @Aciklama,
+                                    GeciktiMi = @GeciktiMi,
+                                    Durum = 'Bekliyor',
+                                    GirisTarihi = NOW(),
+                                    GirisiYapanKullaniciId = @GirisiYapanKullaniciId,
+                                    SonGuncellemeTarihi = NOW()
+                                WHERE HaftaNo = @HaftaNo
+                                  AND SubeId = @SubeId
+                                  AND UrunId = @UrunId
+                                ORDER BY Id DESC
+                                LIMIT 1;";
+
+                            using (var updateCmd = new MySqlCommand(updateQuery, conn))
+                            {
+                                updateCmd.Parameters.AddWithValue("@Miktar", satir.Miktar);
+                                updateCmd.Parameters.AddWithValue("@Aciklama", satir.Aciklama ?? "");
+                                updateCmd.Parameters.AddWithValue("@GeciktiMi", IsLateEntry(DateTime.Now));
+                                updateCmd.Parameters.AddWithValue("@GirisiYapanKullaniciId", kullaniciId);
+                                updateCmd.Parameters.AddWithValue("@HaftaNo", haftaNo);
+                                updateCmd.Parameters.AddWithValue("@SubeId", subeId);
+                                updateCmd.Parameters.AddWithValue("@UrunId", satir.UrunId);
+
+                                var affectedRows = await updateCmd.ExecuteNonQueryAsync();
+                                if (affectedRows > 0)
+                                {
+                                    eklendi++;
+                                    kopyaSatir++;
+                                }
+                                else
+                                {
+                                    atlandi++;
+                                }
+                            }
+
                             continue;
                         }
                     }
@@ -367,7 +505,9 @@ namespace gamabelmvc.Controllers.STS
 
                 var warningMessage = bekleyenSevkEngeli > 0
                     ? $"Sevk onayı bekleyen sevkiyat olduğundan {bekleyenSevkEngeli} satır eklenemedi."
-                    : string.Empty;
+                    : kopyaSatir > 0
+                        ? $"Aynı hafta içinde daha önce eklenmiş ürünler tespit edildi. Bu ürünler: {string.Join(", ", duplicateProductNames.Distinct(StringComparer.OrdinalIgnoreCase))}."
+                        : string.Empty;
 
                 return Json(new
                 {
@@ -378,6 +518,7 @@ namespace gamabelmvc.Controllers.STS
                     kopyaSatir,
                     bekleyenSevkEngeli,
                     engellenenUrunler,
+                    duplicateProductNames = duplicateProductNames.Distinct(StringComparer.OrdinalIgnoreCase).ToList(),
                     warningMessage,
                     message = $"Satır eklendi: {eklendi}, atlanan: {atlandi} (geçersiz: {gecersizSatir}, kopya: {kopyaSatir}, bekleyen sevkiyat: {bekleyenSevkEngeli})"
                 });

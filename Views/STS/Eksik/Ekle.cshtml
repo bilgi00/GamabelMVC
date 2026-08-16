@@ -54,6 +54,15 @@
                 <button class="btn btn-success" type="button" onclick="saveAll()">Tümünü Kaydet</button>
             </div>
         </div>
+
+        <div id="duplicateInfo" class="alert alert-warning border-warning mt-3 d-none" role="alert">
+            <h6 class="alert-heading mb-2">Aynı hafta içinde tekrar edilen ürünler</h6>
+            <p id="duplicateInfoText" class="mb-3"></p>
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-warning btn-sm" id="confirmDuplicateBtn">Yine de Kaydet</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="cancelDuplicateBtn">İptal Et</button>
+            </div>
+        </div>
     </div>
     <div id="toast" class="toast align-items-center text-bg-success border-0 position-fixed bottom-0 end-0 m-4" role="alert" aria-live="assertive" aria-atomic="true" style="opacity:0;transition:opacity .5s;">
         <div class="d-flex">
@@ -151,22 +160,33 @@ function removeProduct(index){
 function clearAll(){
     if(confirm("Tüm ürünler silinsin mi?")){ products = []; renderTable(); }
 }
-async function saveAll(){
+function showDuplicateWarning(items) {
+    const panel = document.getElementById("duplicateInfo");
+    const text = document.getElementById("duplicateInfoText");
+    const list = items && items.length > 0
+        ? items.map(item => `<li>${item}</li>`).join("")
+        : "";
+
+    text.innerHTML = `<strong>Bu ürünler aynı hafta içinde daha önce işlendi:</strong><ul class="mb-0 mt-2">${list}</ul>`;
+    panel.classList.remove("d-none");
+}
+
+function hideDuplicateWarning() {
+    document.getElementById("duplicateInfo").classList.add("d-none");
+}
+
+async function saveAll(forceDuplicateSave = false){
     if(products.length === 0){ alert("Eklemek için ürün seçiniz."); return; }
-    // Tüm ürünlerin miktarını kontrol et ve düzelt
     for (let p of products) {
         if (!p.qty || p.qty < 1) p.qty = 1;
     }
-    // Debug için gönderilen veriyi göster
-    console.log("Kaydedilecek ürünler:", products);
-    // Backend'in beklediği alanlara dönüştür
     const satirlar = products.map(p => ({
         UrunId: p.id,
         Miktar: p.qty,
         Aciklama: p.note || ""
     }));
     try {
-        const response = await fetch("/Eksik/Ekle", {
+        const response = await fetch(`/Eksik/Ekle?forceDuplicateSave=${forceDuplicateSave}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ satirlar })
@@ -181,6 +201,11 @@ async function saveAll(){
 
         if (!response.ok || !result || result.success !== true) {
             alert(result?.message || "Kayıt sırasında hata oluştu.");
+            return;
+        }
+
+        if (Array.isArray(result.duplicateProductNames) && result.duplicateProductNames.length > 0 && !forceDuplicateSave) {
+            showDuplicateWarning(result.duplicateProductNames);
             return;
         }
 
@@ -276,5 +301,15 @@ document.getElementById("barcodeInput").addEventListener("keypress", function(e)
 });
 document.getElementById("note").addEventListener("keypress", function(e){
     if(e.key === "Enter") addProductByName();
+});
+
+document.getElementById("confirmDuplicateBtn").addEventListener("click", function() {
+    hideDuplicateWarning();
+    saveAll(true);
+});
+
+document.getElementById("cancelDuplicateBtn").addEventListener("click", function() {
+    hideDuplicateWarning();
+    alert("İşlem iptal edildi. Tekrar sipariş ekleme işlemi yapılmadı.");
 });
 </script>

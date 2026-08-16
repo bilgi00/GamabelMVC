@@ -36,7 +36,7 @@
         <div class="alert alert-danger">@TempData["Hata"]</div>
     }
 
-    @if (Model != null && Model.Count > 0)
+    @if (Model is IEnumerable<gamabelmvc.Models.STS.StsEksikKaydi> eksikList && eksikList.Any())
     {
         <div class="table-responsive">
             <table class="table table-striped table-hover sts-table-sticky">
@@ -54,7 +54,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var eksik in Model)
+                    @foreach (var eksik in eksikList)
                     {
                         var durumClass = eksik.Durum == "Bekliyor" ? "bg-warning text-dark"
                             : eksik.Durum == "SevkEdildi" ? "bg-primary"
@@ -96,7 +96,19 @@
                                 }
                             </td>
                             <td>
-                                <button class="btn btn-sm btn-danger">Sil</button>
+                                @if (eksik.Durum == "Bekliyor")
+                                {
+                                    <form asp-controller="Eksik" asp-action="Sil" method="post" class="d-inline" onsubmit="return confirm('Bu siparişi silmek istediğinize emin misiniz?');">
+                                        <input type="hidden" name="id" value="@eksik.Id" />
+                                        <button type="submit" class="btn btn-sm btn-danger">Sil</button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <button type="button" class="btn btn-sm btn-secondary" disabled title="Sevk edilen ürün silinemez.">
+                                        Sil
+                                    </button>
+                                }
                             </td>
                         </tr>
                     }

@@ -31,7 +31,6 @@ public class MailService : IMailService
         var smtpPortText = _configuration["Smtp:Port"];
         var smtpUser = _configuration["Smtp:Username"];
         var smtpPass = _configuration["Smtp:Password"];
-        var fromEmail = _configuration["Smtp:FromEmail"] ?? smtpUser;
         var fromName = _configuration["Smtp:FromName"] ?? "GAMABEL YATIRIM LTD";
 
         if (string.IsNullOrWhiteSpace(smtpHost) ||
@@ -39,6 +38,17 @@ public class MailService : IMailService
             string.IsNullOrWhiteSpace(smtpPass))
         {
             throw new InvalidOperationException("SMTP ayarları eksik. appsettings.json içindeki Smtp:Host, Username ve Password alanlarını kontrol edin.");
+        }
+
+        var fromEmail = string.IsNullOrWhiteSpace(_configuration["Smtp:FromEmail"]) ? smtpUser : _configuration["Smtp:FromEmail"];
+        if (string.IsNullOrWhiteSpace(fromEmail))
+        {
+            throw new InvalidOperationException("SMTP gönderici e-postası boş olamaz.");
+        }
+
+        if (string.IsNullOrWhiteSpace(mail.To))
+        {
+            throw new InvalidOperationException("Mail alıcısı boş olamaz.");
         }
 
         if (!int.TryParse(smtpPortText, out var smtpPort))

@@ -6,3 +6,5 @@
 [2026-08-14 23:16:45] Lokal -> GitHub push basarili. Branch: main | Commit: yen gt uygulamas
 [2026-08-14 23:17:58] Build basarisiz: gamabelmvc.csproj
 [2026-08-15 00:41:38] GAMABEL MVC Gelistirme Merkezi baslatildi.
+[2026-08-15 00:45:01] Lokal -> GitHub push basarili. Branch: main | Commit: Emal sorunu cozusdu
+[2026-08-16 09:13:11] GAMABEL MVC Gelistirme Merkezi baslatildi.
