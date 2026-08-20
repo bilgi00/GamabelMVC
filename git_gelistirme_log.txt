@@ -8,3 +8,4 @@
 [2026-08-15 00:41:38] GAMABEL MVC Gelistirme Merkezi baslatildi.
 [2026-08-15 00:45:01] Lokal -> GitHub push basarili. Branch: main | Commit: Emal sorunu cozusdu
 [2026-08-16 09:13:11] GAMABEL MVC Gelistirme Merkezi baslatildi.
+[2026-08-20 18:10:44] GAMABEL MVC Gelistirme Merkezi baslatildi.

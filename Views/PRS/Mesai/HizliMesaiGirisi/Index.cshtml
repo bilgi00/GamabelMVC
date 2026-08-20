@@ -196,34 +196,96 @@
         }
 
         .table-wrap {
-            border-radius: 16px;
-            overflow: auto;
+            position: relative;
+            overflow-x: auto;
+            overflow-y: auto;
+            height: 430px;
+            max-height: 430px;
             border: 1px solid var(--border-light);
+            border-radius: 16px;
             background: white;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255,255,255,0.8);
+            scrollbar-width: auto;
+            scrollbar-color: #94A3B8 #F1F5F9;
+            isolation: isolate;
+        }
+
+        .table-wrap::-webkit-scrollbar {
+            width: 12px;
+            height: 12px;
+        }
+
+        .table-wrap::-webkit-scrollbar-track {
+            background: #F1F5F9;
+            border-radius: 10px;
+        }
+
+        .table-wrap::-webkit-scrollbar-thumb {
+            background: #94A3B8;
+            border-radius: 10px;
+            border: 3px solid #F1F5F9;
+        }
+
+        .table-wrap::-webkit-scrollbar-thumb:hover {
+            background: #64748B;
+        }
+
+        .table-wrap::-webkit-scrollbar-corner {
+            background: #E2E8F0;
+        }
+
+        .sticky-table-header {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            overflow: hidden;
+            z-index: 300;
+            pointer-events: none;
+            background: #F8FAFC;
+        }
+
+        .table-shell {
+            position: relative;
+        }
+
+        .sticky-table-header .mesai-table {
+            margin: 0;
+            transform: translateX(0);
         }
 
         .mesai-table {
             width: max-content;
             min-width: 100%;
-            border-collapse: collapse;
+            border-collapse: separate;
+            border-spacing: 0;
             font-size: 12px;
+            position: relative;
         }
 
         .mesai-table thead th {
-            background: #F8FAFC;
+            position: -webkit-sticky;
+            position: sticky;
+            top: 0;
+            background: #F8FAFC !important;
             color: #0F172A;
             font-weight: 600;
             padding: 6px 3px;
             border-bottom: 2px solid var(--border-light);
-            position: sticky;
-            top: 0;
-            z-index: 20;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+            z-index: 40;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+            background-clip: padding-box;
             text-align: center;
             vertical-align: middle;
             min-width: 38px;
             font-size: 11px;
+        }
+
+        .mesai-table tbody td {
+            height: 30px;
+            padding: 1px 2px;
+            vertical-align: middle;
+            border-bottom: 1px solid #F1F5F9;
         }
 
         .mesai-table thead th .day-num {
@@ -243,10 +305,10 @@
         }
 
         .sticky-personel {
+            position: sticky !important;
+            left: 0 !important;
             background: #F8FAFC !important;
-            position: sticky;
-            left: 0;
-            z-index: 30;
+            z-index: 90;
             min-width: 130px;
             max-width: 130px;
             padding: 4px 8px;
@@ -258,6 +320,46 @@
             overflow: hidden;
             text-overflow: ellipsis;
             font-size: 11px;
+        }
+
+        thead .sticky-personel {
+            top: 0 !important;
+            left: 0 !important;
+            z-index: 200 !important;
+            background: #E2E8F0 !important;
+            box-shadow: 2px 2px 5px rgba(0,0,0,.12);
+        }
+
+        .mesai-table tbody td.sticky-personel {
+            z-index: 90;
+            background: #F8FAFC !important;
+        }
+
+        .mesai-table thead th.toplam-baslik,
+        .mesai-table thead th.toplam-detay-baslik {
+            position: -webkit-sticky;
+            position: sticky;
+            top: 0;
+            background: #F8FAFC !important;
+            z-index: 100 !important;
+        }
+
+        .toplam-baslik {
+            min-width: 50px;
+            font-weight: 700;
+            color: var(--primary-deep);
+            font-size: 11px;
+            padding: 4px 3px;
+            border-left: 1px solid var(--border-light);
+        }
+
+        .toplam-detay-baslik {
+            min-width: 70px;
+            font-weight: 700;
+            color: var(--primary-deep);
+            font-size: 10px;
+            padding: 4px 3px;
+            border-left: 2px solid var(--primary-deep);
         }
 
         .sticky-personel i {
@@ -291,7 +393,7 @@
             align-items: center;
             justify-content: center;
             width: 100%;
-            min-height: 30px;
+            min-height: 28px;
             padding: 1px 2px;
             font-weight: 600;
             transition: all 0.15s ease;
@@ -564,6 +666,7 @@
             .mesai-table thead th { min-width: 30px; padding: 4px 2px; font-size: 10px; }
             .mesai-table thead th .day-num { font-size: 11px; }
             .mesai-table thead th .day-name { font-size: 7px; }
+            .table-wrap { height: 400px; max-height: 400px; }
             .sticky-personel { min-width: 90px; max-width: 90px; font-size: 10px; padding: 3px 6px; }
             .mesai-cell { min-height: 28px; font-size: 10px; }
             .mesai-cell .badge-pill { font-size: 9px; padding: 2px 6px; }
@@ -579,6 +682,7 @@
             body { background: white; padding: 0; }
             .dashboard-card { box-shadow: none; padding: 10px; border-radius: 0; }
             .no-print { display: none !important; }
+            .sticky-table-header { display: none !important; }
             .mesai-table thead th { background: #f1f5f9 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .weekend-sat-col { background: #fde2e4 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .weekend-sun-col { background: #fcccd1 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -663,8 +767,9 @@
             <!-- CALENDAR TABLE -->
             @if (!string.IsNullOrEmpty(secilenBirim) && personeller.Count > 0)
             {
-                <div class="table-wrap">
-                    <table class="mesai-table" id="mesaiTable">
+                <div class="table-shell">
+                    <div class="table-wrap">
+                        <table class="mesai-table" id="mesaiTable">
                         <thead>
                             <tr>
                                 <th class="sticky-personel" style="min-width:130px; font-size:11px;">
@@ -676,13 +781,13 @@
                                     var isWeekend = tarih.DayOfWeek == DayOfWeek.Saturday || tarih.DayOfWeek == DayOfWeek.Sunday;
                                     var haftaSinif = isWeekend ? (tarih.DayOfWeek == DayOfWeek.Saturday ? "weekend-sat-col" : "weekend-sun-col") : "";
                                     var bugunMu = tarih.Date == DateTime.Now.Date;
-                                    <th class="@haftaSinif @(bugunMu ? "cell-today" : "")" style="position:sticky;top:0;z-index:15;min-width:38px; font-size:11px; padding:4px 2px;">
+                                    <th class="@haftaSinif @(bugunMu ? "cell-today" : "")" style="min-width:38px; font-size:11px; padding:4px 2px;">
                                         <span class="day-num" style="font-size:13px;">@gun</span>
                                         <span class="day-name" style="font-size:8px;">@tarih.ToString("ddd", new System.Globalization.CultureInfo("tr-TR")).ToUpper()</span>
                                     </th>
                                 }
-                                <th class="bg-light" style="position:sticky;top:0;z-index:15;min-width:50px;font-weight:700;color:var(--primary-deep); font-size:11px; padding:4px 3px;">TOPLAM</th>
-                                <th class="bg-light" style="position:sticky;top:0;z-index:15;min-width:70px;font-weight:700;color:var(--primary-deep); font-size:10px; padding:4px 3px;">+ Hafta Sonu</th>
+                                <th class="bg-light toplam-baslik">TOPLAM</th>
+                                <th class="bg-light toplam-detay-baslik">+ Hafta Sonu</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -732,7 +837,8 @@
                                 </tr>
                             }
                         </tbody>
-                    </table>
+                        </table>
+                    </div>
                 </div>
 
                 <!-- STATS CARDS -->
@@ -980,7 +1086,52 @@
             // tooltipleri aktif et
             const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
             tooltipTriggerList.map(el => new bootstrap.Tooltip(el));
+
+            sabitTabloBasliginiOlustur();
         });
+
+        function sabitTabloBasliginiOlustur() {
+            const tableWrap = document.querySelector('.table-wrap');
+            const table = document.getElementById('mesaiTable');
+            if (!tableWrap || !table || !table.tHead) return;
+
+            const stickyHeader = document.createElement('div');
+            stickyHeader.className = 'sticky-table-header';
+
+            const stickyTable = table.cloneNode(true);
+            stickyTable.removeAttribute('id');
+            const stickyBody = stickyTable.querySelector('tbody');
+            if (stickyBody) stickyBody.remove();
+            stickyTable.style.width = table.offsetWidth + 'px';
+            stickyTable.style.minWidth = table.offsetWidth + 'px';
+
+            const originalCells = table.tHead.rows[0].cells;
+            const stickyCells = stickyTable.tHead.rows[0].cells;
+            for (let index = 0; index < originalCells.length; index++) {
+                const width = originalCells[index].getBoundingClientRect().width;
+                if (stickyCells[index]) {
+                    stickyCells[index].style.width = width + 'px';
+                    stickyCells[index].style.minWidth = width + 'px';
+                    stickyCells[index].style.maxWidth = width + 'px';
+                }
+            }
+
+            stickyHeader.appendChild(stickyTable);
+            tableWrap.parentElement.appendChild(stickyHeader);
+            table.tHead.style.visibility = 'hidden';
+
+            const syncStickyHeader = function() {
+                stickyTable.style.transform = 'translateX(-' + tableWrap.scrollLeft + 'px)';
+            };
+
+            tableWrap.addEventListener('scroll', syncStickyHeader, { passive: true });
+            window.addEventListener('resize', function() {
+                stickyTable.style.width = table.offsetWidth + 'px';
+                stickyTable.style.minWidth = table.offsetWidth + 'px';
+                syncStickyHeader();
+            });
+            syncStickyHeader();
+        }
 
         // ----- MESAI VERİLERİNİ GETİR (Düzenleme için) -----
         async function mesaiVerileriniGetir(kayitId) {

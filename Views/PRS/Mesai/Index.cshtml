@@ -404,10 +404,10 @@
                 '<td style="width:80px">' + getGunAdi(k.tarih) + '</td>' +
                 '<td style="width:100px"><input type="time" class="inp-bas" value="' + k.baslangic + '" data-idx="' + i + '"></td>' +
                 '<td style="width:100px"><input type="time" class="inp-bit" value="' + k.bitis + '" data-idx="' + i + '"></td>' +
-                '<td style="width:80px" class="readonly-cell fiili-cell">' + parseFloat(k.fiiliSaat).toFixed(1) + '</td>' +
-                '<td style="width:75px" class="readonly-cell">' + parseFloat(k.zam01Saat).toFixed(1) + '</td>' +
-                '<td style="width:75px" class="readonly-cell">' + parseFloat(k.zam05Saat).toFixed(1) + '</td>' +
-                '<td style="width:85px" class="readonly-cell toplam-cell">' + parseFloat(k.toplamSaat).toFixed(1) + '</td>' +
+                '<td style="width:80px" class="readonly-cell fiili-cell">' + parseFloat(k.fiiliSaat).toFixed(2) + '</td>' +
+                '<td style="width:75px" class="readonly-cell">' + parseFloat(k.zam01Saat).toFixed(2) + '</td>' +
+                '<td style="width:75px" class="readonly-cell">' + parseFloat(k.zam05Saat).toFixed(2) + '</td>' +
+                '<td style="width:85px" class="readonly-cell toplam-cell">' + parseFloat(k.toplamSaat).toFixed(2) + '</td>' +
                 '<td style="width:150px"><input type="text" class="inp-aciklama" value="' + escapeHtml(k.aciklama || '') + '" data-idx="' + i + '" style="width:110px"></td>' +
                 '<td style="width:40px" class="no-print"><button class="btn btn-sm btn-danger btn-mesai-sil" data-idx="' + i + '">X</button></td>';
 
@@ -418,11 +418,11 @@
             tfToplam += parseFloat(k.toplamSaat);
         }
 
-        document.getElementById('tfFiili').textContent = tfFiili.toFixed(1);
-        document.getElementById('tfZam01').textContent = tfZam01.toFixed(1);
-        document.getElementById('tfZam05').textContent = tfZam05.toFixed(1);
-        document.getElementById('tfToplam').textContent = tfToplam.toFixed(1);
-        document.getElementById('footerToplam').textContent = tfToplam.toFixed(1);
+        document.getElementById('tfFiili').textContent = tfFiili.toFixed(2);
+        document.getElementById('tfZam01').textContent = tfZam01.toFixed(2);
+        document.getElementById('tfZam05').textContent = tfZam05.toFixed(2);
+        document.getElementById('tfToplam').textContent = tfToplam.toFixed(2);
+        document.getElementById('footerToplam').textContent = tfToplam.toFixed(2);
 
         // Input olayları
         tbody.querySelectorAll('.inp-bas, .inp-bit').forEach(function(el) {
@@ -675,10 +675,10 @@
             html += '<td style="border:1px solid #333;padding:3px;">' + escapeHtml(gun || '') + '</td>';
             html += '<td style="border:1px solid #333;padding:3px;">' + escapeHtml(k.baslangic || '') + '</td>';
             html += '<td style="border:1px solid #333;padding:3px;">' + escapeHtml(k.bitis || '') + '</td>';
-            html += '<td style="border:1px solid #333;padding:3px;text-align:right;">' + fiili.toFixed(1) + '</td>';
-            html += '<td style="border:1px solid #333;padding:3px;text-align:right;">' + zam01.toFixed(1) + '</td>';
-            html += '<td style="border:1px solid #333;padding:3px;text-align:right;">' + zam05.toFixed(1) + '</td>';
-            html += '<td style="border:1px solid #333;padding:3px;text-align:right;">' + toplam.toFixed(1) + '</td>';
+            html += '<td style="border:1px solid #333;padding:3px;text-align:right;">' + fiili.toFixed(2) + '</td>';
+            html += '<td style="border:1px solid #333;padding:3px;text-align:right;">' + zam01.toFixed(2) + '</td>';
+            html += '<td style="border:1px solid #333;padding:3px;text-align:right;">' + zam05.toFixed(2) + '</td>';
+            html += '<td style="border:1px solid #333;padding:3px;text-align:right;">' + toplam.toFixed(2) + '</td>';
             html += '<td style="border:1px solid #333;padding:3px;">' + escapeHtml(k.aciklama || '') + '</td>';
             html += '<td style="border:1px solid #333;padding:3px;"></td>';
             html += '</tr>';
@@ -686,10 +686,10 @@
 
         html += '<tr style="background:#dde5f3;font-weight:700;">';
         html += '<td colspan="5" style="border:1px solid #333;padding:4px;text-align:right;">GENEL TOPLAM</td>';
-        html += '<td style="border:1px solid #333;padding:4px;text-align:right;">' + toplamFiili.toFixed(1) + '</td>';
-        html += '<td style="border:1px solid #333;padding:4px;text-align:right;">' + toplamZam01.toFixed(1) + '</td>';
-        html += '<td style="border:1px solid #333;padding:4px;text-align:right;">' + toplamZam05.toFixed(1) + '</td>';
-        html += '<td style="border:1px solid #333;padding:4px;text-align:right;">' + toplamSaat.toFixed(1) + '</td>';
+        html += '<td style="border:1px solid #333;padding:4px;text-align:right;">' + toplamFiili.toFixed(2) + '</td>';
+        html += '<td style="border:1px solid #333;padding:4px;text-align:right;">' + toplamZam01.toFixed(2) + '</td>';
+        html += '<td style="border:1px solid #333;padding:4px;text-align:right;">' + toplamZam05.toFixed(2) + '</td>';
+        html += '<td style="border:1px solid #333;padding:4px;text-align:right;">' + toplamSaat.toFixed(2) + '</td>';
                html += '</tr>';
 
         html += '</tbody></table>';
@@ -780,20 +780,20 @@
                 html += '<td style="border:1px solid #333;padding:3px;">' + escapeHtml(gun || '') + '</td>';
                 html += '<td style="border:1px solid #333;padding:3px;">' + escapeHtml(k.baslangic || '') + '</td>';
                 html += '<td style="border:1px solid #333;padding:3px;">' + escapeHtml(k.bitis || '') + '</td>';
-                html += '<td style="border:1px solid #333;padding:3px;text-align:right;">' + fiili.toFixed(1) + '</td>';
-                html += '<td style="border:1px solid #333;padding:3px;text-align:right;">' + zam01.toFixed(1) + '</td>';
-                html += '<td style="border:1px solid #333;padding:3px;text-align:right;">' + zam05.toFixed(1) + '</td>';
-                html += '<td style="border:1px solid #333;padding:3px;text-align:right;">' + toplam.toFixed(1) + '</td>';
+                html += '<td style="border:1px solid #333;padding:3px;text-align:right;">' + fiili.toFixed(2) + '</td>';
+                html += '<td style="border:1px solid #333;padding:3px;text-align:right;">' + zam01.toFixed(2) + '</td>';
+                html += '<td style="border:1px solid #333;padding:3px;text-align:right;">' + zam05.toFixed(2) + '</td>';
+                html += '<td style="border:1px solid #333;padding:3px;text-align:right;">' + toplam.toFixed(2) + '</td>';
                 html += '<td style="border:1px solid #333;padding:3px;">' + escapeHtml(k.aciklama || '') + '</td>';
                 html += '</tr>';
             }
 
             html += '<tr style="background:#dde5f3;font-weight:700;">';
             html += '<td colspan="4" style="border:1px solid #333;padding:4px;text-align:right;">' + escapeHtml(adSoyad) + ' ALT TOPLAM</td>';
-            html += '<td style="border:1px solid #333;padding:4px;text-align:right;">' + altFiili.toFixed(1) + '</td>';
-            html += '<td style="border:1px solid #333;padding:4px;text-align:right;">' + altZam01.toFixed(1) + '</td>';
-            html += '<td style="border:1px solid #333;padding:4px;text-align:right;">' + altZam05.toFixed(1) + '</td>';
-            html += '<td style="border:1px solid #333;padding:4px;text-align:right;">' + altToplam.toFixed(1) + '</td>';
+            html += '<td style="border:1px solid #333;padding:4px;text-align:right;">' + altFiili.toFixed(2) + '</td>';
+            html += '<td style="border:1px solid #333;padding:4px;text-align:right;">' + altZam01.toFixed(2) + '</td>';
+            html += '<td style="border:1px solid #333;padding:4px;text-align:right;">' + altZam05.toFixed(2) + '</td>';
+            html += '<td style="border:1px solid #333;padding:4px;text-align:right;">' + altToplam.toFixed(2) + '</td>';
             html += '<td style="border:1px solid #333;padding:4px;"></td>';
             html += '</tr>';
             html += '</tbody></table>';
