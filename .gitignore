@@ -1,8 +1,40 @@
+# Derleme çıktıları
 bin/
 obj/
+publish/
+dist/
+build/
+
+# IDE / düzenleyici
 .vs/
-node_modules/
+.idea/
 *.user
 *.suo
-*.log
+
+# Bağımlılıklar
+node_modules/
+
+# Geçici / yerel veri
+temp/
 backups/
+logs/
+*.log
+
+# Yerel yapılandırma / gizli veriler
+appsettings.Development.json
+appsettings.Local.json
+.env
+.env.*
+secrets.json
+*.pfx
+*.pem
+*.key
+
+# Yerel veritabanı dosyaları
+*.db
+*.sqlite
+*.db-shm
+*.db-wal
+
+# Yerel yayın / hata ayıklama meta verileri
+Properties/launchSettings.json
