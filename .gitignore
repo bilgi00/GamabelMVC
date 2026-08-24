@@ -4,6 +4,7 @@ obj/
 publish/
 dist/
 build/
+backup/
 
 # IDE / düzenleyici
 .vs/

@@ -77,8 +77,8 @@ public class PuantajController : Controller
             await connection.OpenAsync();
 
             var sql = (rol == "admin" && birim == "all")
-                ? "SELECT id, ad, soyad, birim_adi FROM personeller ORDER BY birim_adi, ad, soyad"
-                : "SELECT id, ad, soyad, birim_adi FROM personeller WHERE birim_adi = @birim ORDER BY ad, soyad";
+                ? "SELECT per_no, ad, soyad, birim_adi FROM personeller ORDER BY birim_adi, ad, soyad"
+                : "SELECT per_no, ad, soyad, birim_adi FROM personeller WHERE birim_adi = @birim ORDER BY ad, soyad";
 
             await using var cmd = new MySqlCommand(sql, connection);
             if (!(rol == "admin" && birim == "all"))
@@ -89,7 +89,7 @@ public class PuantajController : Controller
             {
                 personeller.Add(new
                 {
-                    id = reader.GetInt32(0),
+                    perNo = reader.IsDBNull(0) ? "" : reader.GetString(0),
                     ad = reader.IsDBNull(1) ? "" : reader.GetString(1),
                     soyad = reader.IsDBNull(2) ? "" : reader.GetString(2),
                     birim = reader.IsDBNull(3) ? "" : reader.GetString(3)
@@ -129,7 +129,7 @@ public class PuantajController : Controller
                 izinler.Add(new
                 {
                     id = reader.GetInt32(0),
-                    personelId = reader.GetInt32(1),
+                    personelId = reader.IsDBNull(1) ? "" : reader.GetString(1),
                     gun = reader.GetInt32(2),
                     izinTipi = reader.IsDBNull(3) ? "" : reader.GetString(3),
                     aciklama = reader.IsDBNull(4) ? "" : reader.GetString(4)

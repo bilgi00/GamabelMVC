@@ -1,0 +1,63 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Report ScriptLanguage="CSharp" ReportInfo.Created="2026-01-01" ReportInfo.Modified="08/23/2026 03:12:51" ReportInfo.CreatorVersion="2026.2.0.0">
+  <Dictionary>
+    <TableDataSource Name="Mesai" ReferenceName="Mesai" DataType="System.Int32" Enabled="true">
+      <Column Name="AdSoyad" DataType="System.String"/>
+      <Column Name="Tarih" DataType="System.String"/>
+      <Column Name="Gun" DataType="System.String"/>
+      <Column Name="Baslangic" DataType="System.String"/>
+      <Column Name="Bitis" DataType="System.String"/>
+      <Column Name="FiiliSaat" DataType="System.Decimal"/>
+      <Column Name="Zam01Saat" DataType="System.Decimal"/>
+      <Column Name="Zam05Saat" DataType="System.Decimal"/>
+      <Column Name="ToplamSaat" DataType="System.Decimal"/>
+      <Column Name="Aciklama" DataType="System.String"/>
+    </TableDataSource>
+    <Parameter Name="Birim" DataType="System.String" AsString=""/>
+    <Parameter Name="Ay" DataType="System.String" AsString=""/>
+    <Parameter Name="Yil" DataType="System.Int32" AsString=""/>
+  </Dictionary>
+  <ReportPage Name="Page1" PaperWidth="297" PaperHeight="210" Watermark.Font="Arial, 60pt">
+    <ReportTitleBand Name="ReportTitle1" Width="1047.06" Height="71.82">
+      <TextObject Name="Kurum" Width="1047.06" Height="22.68" Text="GAMABEL YATIRIM LTD" HorzAlign="Center" VertAlign="Center" Font="Arial, 12pt, style=Bold"/>
+      <TextObject Name="Baslik" Top="22.68" Width="1047.06" Height="22.68" Text="EK MESAİ ÇİZELGESİ (BİRİM BAZLI)" HorzAlign="Center" VertAlign="Center" Font="Arial, 10pt, style=Bold"/>
+      <TextObject Name="Bilgi" Top="45.36" Width="1047.06" Height="18.9" Text="Birim: [Birim] | Ay: [Ay] | Yıl: [Yil]" HorzAlign="Center" VertAlign="Center" Font="Arial, 8pt"/>
+      <TextObject Name="Text1" Left="-9450" Top="-9450" Width="94.5" Height="18.9" Text="BELEDİYE BAŞKANI" Font="Arial, 10pt"/>
+      <ChildBand Name="Child2" Top="75.82" Width="1047.06" Height="37.8"/>
+    </ReportTitleBand>
+    <PageHeaderBand Name="PageHeader1" Top="117.62" Width="1047.06" Height="22.68">
+      <TextObject Name="H1" Width="151.2" Height="22.68" Border.Lines="All" Text="Adı Soyadı" HorzAlign="Center" VertAlign="Center" Font="Arial, 10pt, style=Bold"/>
+      <TextObject Name="H2" Left="151.2" Width="83.16" Height="22.68" Border.Lines="All" Text="Tarih" HorzAlign="Center" VertAlign="Center" Font="Arial, 10pt, style=Bold"/>
+      <TextObject Name="H3" Left="234.36" Width="79.38" Height="22.68" Border.Lines="All" Text="Gün" HorzAlign="Center" VertAlign="Center" Font="Arial, 10pt, style=Bold"/>
+      <TextObject Name="H4" Left="313.74" Width="75.6" Height="22.68" Border.Lines="All" Text="Başlangıç" HorzAlign="Center" VertAlign="Center" Font="Arial, 10pt, style=Bold"/>
+      <TextObject Name="H5" Left="389.34" Width="75.6" Height="22.68" Border.Lines="All" Text="Bitiş" HorzAlign="Center" VertAlign="Center" Font="Arial, 10pt, style=Bold"/>
+      <TextObject Name="H6" Left="464.94" Width="68.04" Height="22.68" Border.Lines="All" Text="Fiili" HorzAlign="Center" VertAlign="Center" Font="Arial, 10pt, style=Bold"/>
+      <TextObject Name="H7" Left="532.98" Width="68.04" Height="22.68" Border.Lines="All" Text="Zam 0.1" HorzAlign="Center" VertAlign="Center" Font="Arial, 10pt, style=Bold"/>
+      <TextObject Name="H8" Left="601.02" Width="68.04" Height="22.68" Border.Lines="All" Text="Zam 0.5" HorzAlign="Center" VertAlign="Center" Font="Arial, 10pt, style=Bold"/>
+      <TextObject Name="H9" Left="669.06" Width="68.04" Height="22.68" Border.Lines="All" Text="Toplam" HorzAlign="Center" VertAlign="Center" Font="Arial, 10pt, style=Bold"/>
+      <TextObject Name="H10" Left="737.1" Width="234.36" Height="22.68" Border.Lines="All" Text="Açıklama" HorzAlign="Center" VertAlign="Center" Font="Arial, 10pt, style=Bold"/>
+      <TextObject Name="H11" Left="971.46" Width="75.6" Height="22.68" Border.Lines="All" Text="İmza" HorzAlign="Center" VertAlign="Center" Font="Arial, 10pt, style=Bold"/>
+    </PageHeaderBand>
+    <DataBand Name="Data1" Top="144.3" Width="1047.06" Height="18.9" DataSource="Mesai">
+      <TextObject Name="D1" Width="151.2" Height="18.9" Border.Lines="All" Text="[Mesai.AdSoyad]" VertAlign="Center" Font="Arial, 10pt"/>
+      <TextObject Name="D2" Left="151.2" Width="83.16" Height="18.9" Border.Lines="All" Text="[Mesai.Tarih]" HorzAlign="Center" VertAlign="Center" Font="Arial, 10pt"/>
+      <TextObject Name="D3" Left="234.36" Width="79.38" Height="18.9" Border.Lines="All" Text="[Mesai.Gun]" HorzAlign="Center" VertAlign="Center" Font="Arial, 10pt"/>
+      <TextObject Name="D4" Left="313.74" Width="75.6" Height="18.9" Border.Lines="All" Text="[Mesai.Baslangic]" HorzAlign="Center" VertAlign="Center" Font="Arial, 10pt"/>
+      <TextObject Name="D5" Left="389.34" Width="75.6" Height="18.9" Border.Lines="All" Text="[Mesai.Bitis]" HorzAlign="Center" VertAlign="Center" Font="Arial, 10pt"/>
+      <TextObject Name="D6" Left="464.94" Width="68.04" Height="18.9" Border.Lines="All" Text="[Mesai.FiiliSaat]" HorzAlign="Right" VertAlign="Center" Font="Arial, 10pt"/>
+      <TextObject Name="D7" Left="532.98" Width="68.04" Height="18.9" Border.Lines="All" Text="[Mesai.Zam01Saat]" HorzAlign="Right" VertAlign="Center" Font="Arial, 10pt"/>
+      <TextObject Name="D8" Left="601.02" Width="68.04" Height="18.9" Border.Lines="All" Text="[Mesai.Zam05Saat]" HorzAlign="Right" VertAlign="Center" Font="Arial, 10pt"/>
+      <TextObject Name="D9" Left="669.06" Width="68.04" Height="18.9" Border.Lines="All" Text="[Mesai.ToplamSaat]" HorzAlign="Right" VertAlign="Center" Font="Arial, 10pt"/>
+      <TextObject Name="D10" Left="737.1" Width="234.36" Height="18.9" Border.Lines="All" Text="[Mesai.Aciklama]" VertAlign="Center" Font="Arial, 10pt"/>
+      <TextObject Name="D11" Left="971.46" Width="75.6" Height="18.9" Border.Lines="All" Font="Arial, 10pt"/>
+    </DataBand>
+    <ColumnFooterBand Name="ColumnFooter1" Top="167.2" Width="1047.06" Height="94.5">
+      <TextObject Name="Text2" Left="765.45" Top="47.25" Width="141.75" Height="18.9" Text="BELEDİYE BAŞKANI" Font="Arial, 10pt"/>
+      <TextObject Name="Text3" Left="330.75" Top="47.25" Width="94.5" Height="18.9" Text="BİRİM AMİRİ" Font="Arial, 10pt"/>
+    </ColumnFooterBand>
+    <PageFooterBand Name="PageFooter1" Top="265.7" Width="1047.06" Height="18.9">
+      <TextObject Name="Sayfa" Width="1047.06" Height="18.9" Text="Sayfa [PageN]" HorzAlign="Right" VertAlign="Center" Font="Arial, 7pt"/>
+      <ChildBand Name="Child1" Top="288.6" Width="1047.06" Height="37.8"/>
+    </PageFooterBand>
+  </ReportPage>
+</Report>

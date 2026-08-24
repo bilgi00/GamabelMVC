@@ -133,7 +133,7 @@ public class RaporController : Controller
             {
                 sql = @"SELECT p.ad, p.soyad, p.birim_adi, pi.izin_tipi, COUNT(*) AS gun_sayisi
                         FROM puantaj_izin pi
-                        INNER JOIN personeller p ON p.id = pi.personel_id
+                        INNER JOIN personeller p ON p.per_no = pi.personel_id
                         WHERE pi.yil = @yil AND pi.ay = @ay
                         GROUP BY pi.personel_id, pi.izin_tipi
                         ORDER BY p.birim_adi, p.ad, p.soyad, pi.izin_tipi";
@@ -143,7 +143,7 @@ public class RaporController : Controller
             {
                 sql = @"SELECT p.ad, p.soyad, p.birim_adi, pi.izin_tipi, COUNT(*) AS gun_sayisi
                         FROM puantaj_izin pi
-                        INNER JOIN personeller p ON p.id = pi.personel_id
+                        INNER JOIN personeller p ON p.per_no = pi.personel_id
                         WHERE pi.yil = @yil AND pi.ay = @ay AND p.birim_adi = @birim
                         GROUP BY pi.personel_id, pi.izin_tipi
                         ORDER BY p.ad, p.soyad, pi.izin_tipi";
@@ -209,7 +209,7 @@ public class RaporController : Controller
                                SUM(mk.zam05_saat) AS toplam_zam05,
                                SUM(mk.toplam_saat) AS toplam_saat
                         FROM mesai_kayitlari mk
-                        INNER JOIN personeller p ON p.id = mk.personel_id
+                        INNER JOIN personeller p ON p.per_no = mk.personel_id
                         WHERE YEAR(mk.tarih) = @yil AND MONTH(mk.tarih) = @ay
                         GROUP BY mk.personel_id
                         ORDER BY p.birim_adi, p.ad, p.soyad";
@@ -224,7 +224,7 @@ public class RaporController : Controller
                                SUM(mk.zam05_saat) AS toplam_zam05,
                                SUM(mk.toplam_saat) AS toplam_saat
                         FROM mesai_kayitlari mk
-                        INNER JOIN personeller p ON p.id = mk.personel_id
+                        INNER JOIN personeller p ON p.per_no = mk.personel_id
                         WHERE YEAR(mk.tarih) = @yil AND MONTH(mk.tarih) = @ay AND p.birim_adi = @birim
                         GROUP BY mk.personel_id
                         ORDER BY p.ad, p.soyad";

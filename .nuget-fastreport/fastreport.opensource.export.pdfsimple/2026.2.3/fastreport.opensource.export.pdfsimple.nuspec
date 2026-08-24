@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>FastReport.OpenSource.Export.PdfSimple</id>
+    <version>2026.2.3</version>
+    <authors>Fast Reports Inc.</authors>
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
+    <licenseUrl>https://github.com/FastReports/FastReport/blob/master/LICENSE.md</licenseUrl>
+    <projectUrl>https://www.fast-report.com/products/fast-report-net</projectUrl>
+    <iconUrl>https://www.fast-report.com/download/images/frlogo-big.png</iconUrl>
+    <description>FastReport Open Source provides a free report generator for .NET/.NET Core/.NET Framework. You can use the FastReport Open Source in MVC, Web API, console applications.
+      
+      FastReport is written in C# and it is compatible with .NET Standard 2.0 and higher. Extendable FastReport architecture allows creating your own objects, export filters, wizards, and DB engines.
+      
+      PDF export is available as a plugin. You can see an example of its use here. If this export is not enough for you and you need a full-featured PDF export with encryption, digital signing and fonts embedding - take a look at FastReport .NET Core.</description>
+    <copyright>Fast Reports Inc.</copyright>
+    <tags>reporting, reports, pdf, core</tags>
+    <repository type="git" url="https://github.com/FastReports/FastReport" branch="refs/heads/master" commit="1fd45174a0cb9c7abeee8010f72f470426e37ac9" />
+    <dependencies>
+      <group targetFramework=".NETFramework4.6.2">
+        <dependency id="FastReport.OpenSource" version="2026.2.3" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework="net6.0">
+        <dependency id="FastReport.OpenSource" version="2026.2.3" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+  </metadata>
+</package>

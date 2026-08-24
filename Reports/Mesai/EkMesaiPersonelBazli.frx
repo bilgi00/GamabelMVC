@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Report ScriptLanguage="CSharp" ReportInfo.CreatorVersion="2026.2.3.0">
+  <Dictionary>
+    <Parameter Name="Birim" DataType="System.String" /><Parameter Name="Ay" DataType="System.String" /><Parameter Name="Yil" DataType="System.Int32" />
+    <TableDataSource Name="Mesai" ReferenceName="Mesai" DataType="System.Int32" Enabled="true">
+      <Column Name="AdSoyad" DataType="System.String" /><Column Name="Tarih" DataType="System.String" /><Column Name="Gun" DataType="System.String" />
+      <Column Name="Baslangic" DataType="System.String" /><Column Name="Bitis" DataType="System.String" /><Column Name="FiiliSaat" DataType="System.Decimal" />
+      <Column Name="Zam01Saat" DataType="System.Decimal" /><Column Name="Zam05Saat" DataType="System.Decimal" /><Column Name="ToplamSaat" DataType="System.Decimal" /><Column Name="Aciklama" DataType="System.String" />
+    </TableDataSource>
+  </Dictionary>
+  <ReportPage Name="Page1" PaperWidth="210" PaperHeight="297">
+    <ReportTitleBand Name="ReportTitle1" Width="718.2" Height="66.15">
+      <TextObject Name="Title1" Width="718.2" Height="28.35" Text="EK MESAİ ÇİZELGESİ (PERSONEL BAZLI)" HorzAlign="Center" VertAlign="Center" Font="Arial, 12pt, style=Bold" />
+      <TextObject Name="Info" Top="32" Width="718.2" Height="18.9" Text="Birim: [Birim] | Ay: [Ay] | Yıl: [Yil]" HorzAlign="Center" VertAlign="Center" Font="Arial, 8pt" />
+    </ReportTitleBand>
+    <GroupHeaderBand Name="PersonelGrup" Top="70.15" Width="718.2" Height="22.68" Condition="[Mesai.AdSoyad]">
+      <TextObject Name="Personel" Width="718.2" Height="22.68" Border.Lines="All" Text="PERSONEL: [Mesai.AdSoyad]" VertAlign="Center" Font="Arial, 9pt, style=Bold" />
+      <DataBand Name="Data1" Top="96.83" Width="718.2" Height="18.9" DataSource="Mesai">
+        <TextObject Name="Tarih" Width="75.6" Height="18.9" Border.Lines="All" Text="[Mesai.Tarih]" HorzAlign="Center" Font="Arial, 7pt" />
+        <TextObject Name="Gun" Left="75.6" Width="66.15" Height="18.9" Border.Lines="All" Text="[Mesai.Gun]" HorzAlign="Center" Font="Arial, 7pt" />
+        <TextObject Name="Saat" Left="141.75" Width="94.5" Height="18.9" Border.Lines="All" Text="[Mesai.Baslangic] - [Mesai.Bitis]" HorzAlign="Center" Font="Arial, 7pt" />
+        <TextObject Name="Fiili" Left="236.25" Width="56.7" Height="18.9" Border.Lines="All" Text="[Mesai.FiiliSaat]" HorzAlign="Right" Font="Arial, 7pt" />
+        <TextObject Name="Zam01" Left="292.95" Width="56.7" Height="18.9" Border.Lines="All" Text="[Mesai.Zam01Saat]" HorzAlign="Right" Font="Arial, 7pt" />
+        <TextObject Name="Zam05" Left="349.65" Width="56.7" Height="18.9" Border.Lines="All" Text="[Mesai.Zam05Saat]" HorzAlign="Right" Font="Arial, 7pt" />
+        <TextObject Name="Toplam" Left="406.35" Width="56.7" Height="18.9" Border.Lines="All" Text="[Mesai.ToplamSaat]" HorzAlign="Right" Font="Arial, 7pt" />
+        <TextObject Name="Aciklama" Left="463.05" Width="198.45" Height="18.9" Border.Lines="All" Text="[Mesai.Aciklama]" Font="Arial, 7pt" />
+        <TextObject Name="Imza" Left="661.5" Width="56.7" Height="18.9" Border.Lines="All" Text="" />
+      </DataBand>
+    </GroupHeaderBand>
+    <PageFooterBand Name="PageFooter1" Top="119.73" Width="718.2" Height="18.9"><TextObject Name="Page" Width="718.2" Height="18.9" Text="Sayfa [PageN]" HorzAlign="Right" Font="Arial, 7pt" /></PageFooterBand>
+  </ReportPage>
+</Report>

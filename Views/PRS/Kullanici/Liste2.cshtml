@@ -66,6 +66,7 @@
                     <thead class="table-light">
                         <tr>
                             <th class="text-center" style="width: 50px;">#</th>
+                            <th>Per No</th>
                             <th>✍️ Ad</th>
                             <th>✍️ Soyad</th>
                             <th class="text-center" style="width: 120px;">⚠️ Statü</th>
@@ -113,7 +114,7 @@
                 <div class="row align-items-end">
                     <div class="col-md-6">
                         <label for="excelDosya" class="form-label fw-semibold">📁 Excel Dosyası Seçin (.xlsx)</label>
-                        <input type="file" id="excelDosya" class="form-control form-control-lg" accept=".xlsx,.xls" />
+                        <input type="file" id="excelDosya" class="form-control form-control-lg" accept=".xlsx" />
                     </div>
                     <div class="col-md-3">
                         <button id="btnAktar" class="btn btn-success btn-lg w-100 fw-bold" onclick="excelAktar()">
@@ -176,6 +177,7 @@
                 for (var i = 0; i < data.length; i++) {
                     var tr = document.createElement('tr');
                     tr.innerHTML = '<td>' + (i + 1) + '</td><td>' +
+                        (data[i].perNo || '') + '</td><td>' +
                         (data[i].ad || '') + '</td><td>' +
                         (data[i].soyad || '') + '</td><td>' +
                         (data[i].perStatu || '') + '</td>';
@@ -252,6 +254,14 @@
                         html += '<tr><td>' + (j+1) + '</td><td>' + (y.perNo||'') + '</td><td>' + (y.ad||'') + '</td><td>' + (y.soyad||'') + '</td><td>' + (y.birim||'') + '</td><td>' + (y.statu||'') + '</td></tr>';
                     }
                     html += '</tbody></table></div></div>';
+                }
+
+                if (data.hataliSatirlar && data.hataliSatirlar.length > 0) {
+                    html += '<div class="alert alert-danger mt-2"><strong>İşlenmeyen satırlar</strong><ul class="mb-0">';
+                    for (var k = 0; k < data.hataliSatirlar.length; k++) {
+                        html += '<li>' + data.hataliSatirlar[k] + '</li>';
+                    }
+                    html += '</ul></div>';
                 }
 
                 sonucDiv.innerHTML = html;

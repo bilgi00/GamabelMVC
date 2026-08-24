@@ -1,7 +1,34 @@
 # 📋 CHANGELOG - GAMABEL MVC
 
 **Format**: [VERSION] - [DATE] - [STATUS]  
-**Son Güncelleme**: 10 Temmuz 2026
+**Son Güncelleme**: 23 Ağustos 2026
+
+---
+
+## v3.4.2 - 23 Ağustos 2026 - ✅ ÖDEME TALİMATI RAPORU
+
+### 📄 Ödeme Talimatı FastReport Çıktısı
+
+- **✅ A4 ödeme talimatı rapor şablonu eklendi**:
+  - `Reports/OdemeTalimat/OdemeTalimat.frx` oluşturuldu
+  - Mevcut detay sayfasındaki kurum başlığı, talimat no/tarih, banka IBAN bilgisi, alıcı tablosu, genel toplam ve imza alanları korundu
+  - Rapor satırlarında alıcı ismi, IBAN, açıklama ve tutar bilgileri gösteriliyor
+
+- **✅ Önizleme ve PDF çıktısı eklendi**:
+  - `/OdemeTalimat/Rapor/{id}` FastReport önizlemesini açıyor
+  - `/OdemeTalimat/RaporPdf/{id}` A4 PDF dosyası oluşturuyor
+  - Yalnızca kayıtlı ödeme talimatları için rapor oluşturuluyor
+
+- **✅ Detay ekranı güncellendi**:
+  - `Views/PRS/OdemeTalimat/Detay.cshtml` içine **Rapor** ve **PDF** butonları eklendi
+  - Yeni görünüm `Views/PRS/OdemeTalimat/Rapor.cshtml` dosyasında oluşturuldu
+  - Rapor action’ları admin yetki kontrolüyle korunuyor
+
+- **📝 Güncellenen Dosyalar**:
+  - `Controllers/PRS/OdemeTalimatController.cs`
+  - `Views/PRS/OdemeTalimat/Detay.cshtml`
+  - `Views/PRS/OdemeTalimat/Rapor.cshtml`
+  - `Reports/OdemeTalimat/OdemeTalimat.frx`
 
 ---
 

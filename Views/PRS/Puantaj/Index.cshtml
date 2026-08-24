@@ -631,7 +631,7 @@
     function isWeekend(y, m, d) { var dt = new Date(y, m-1, d); return dt.getDay()===0 || dt.getDay()===6; }
     function getDurumClass(d) { return {'X':'x','İ':'i','Gİ':'gi','ÇH':'ch','Vİ':'vi','Öİ':'oi','H':'h'}[d]||'x'; }
     function getDurumDisplay(d) { return {'X':'X','İ':'İ','Gİ':'Gİ','ÇH':'ÇH','Vİ':'Vİ','Öİ':'Öİ','H':'H'}[d]||'X'; }
-    function getPersonelAdi(pid) { var p = personeller.find(function(x){return x.id===pid;}); return p ? p.ad+' '+p.soyad : ''; }
+    function getPersonelAdi(pid) { var p = personeller.find(function(x){return x.perNo===pid;}); return p ? p.ad+' '+p.soyad : ''; }
     function getFilteredPersoneller() { return personeller; }
 
     function calculateHakkedis(pid) {
@@ -726,7 +726,7 @@
                 var durum = degisenler[pid][gun];
                 var aciklama = (calismaVerileri[pid] && calismaVerileri[pid]['aciklama_'+gun]) || '';
                 izinler.push({
-                    PersonelId: parseInt(pid),
+                    PersonelId: pid,
                     Yil: currentYear,
                     Ay: currentMonth,
                     Gun: parseInt(gun),
@@ -805,7 +805,7 @@
         sel.innerHTML = '';
         getFilteredPersoneller().forEach(function(p) {
             var opt = document.createElement('option');
-            opt.value = p.id;
+            opt.value = p.perNo;
             opt.textContent = p.ad + ' ' + p.soyad + ' (' + p.birim + ')';
             sel.appendChild(opt);
         });
@@ -880,10 +880,10 @@
         var body = '';
         filtered.forEach(function(p) {
             var tX=0, tI=0, tH=0;
-            body += '<tr data-personel-id="'+p.id+'">';
+            body += '<tr data-personel-id="'+p.perNo+'">';
             body += '<td class="col-personel-sticky">'+p.ad+' '+p.soyad+'</td>';
             for (var gun=1; gun<=gunSayisi; gun++) {
-                var durum = (calismaVerileri[p.id] && calismaVerileri[p.id][gun]) || 'X';
+                var durum = (calismaVerileri[p.perNo] && calismaVerileri[p.perNo][gun]) || 'X';
                 var cls = 'durum-' + getDurumClass(durum);
                 var disp = getDurumDisplay(durum);
                 if (durum==='X') tX++;
@@ -896,9 +896,9 @@
                 if (tatilMi) extraCls += ' tatil';
                 if (isCurrentMonth && gun === todayDay) extraCls += ' today-col';
                 var titleAttr = tatilMi ? ' title="'+resmiTatiller[gun]+'"' : '';
-                body += '<td class="durum-cell '+cls+extraCls+'" data-gun="'+gun+'" data-personel="'+p.id+'" onclick="openModal('+p.id+','+gun+',\''+durum.replace(/'/g,"\\'")+'\')"'+titleAttr+'>'+disp+'</td>';
+                body += '<td class="durum-cell '+cls+extraCls+'" data-gun="'+gun+'" data-personel="'+p.perNo+'" onclick="openModal(\''+p.perNo+'\','+gun+',\''+durum.replace(/'/g,"\\'")+'\')"'+titleAttr+'>'+disp+'</td>';
             }
-            var hak = calculateHakkedis(p.id);
+                var hak = calculateHakkedis(p.perNo);
             var hakCls = hak >= 28 ? 'hakkedis-good' : (hak >= 25 ? 'hakkedis-mid' : 'hakkedis-low');
             body += '<td class="total-cell col-sayac">'+tX+'</td>';
             body += '<td class="total-cell col-sayac">'+tI+'</td>';

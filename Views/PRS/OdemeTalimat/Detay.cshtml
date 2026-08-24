@@ -221,6 +221,19 @@
                 <i class="fas fa-print me-2"></i> Yazdır
             </button>
 
+            @if (Model.Id > 0)
+            {
+                <a class="ot-btn ot-btn-primary rounded-pill shadow px-4 py-2" href="/OdemeTalimat/Rapor/@Model.Id" target="_blank">
+                    <i class="fas fa-file-alt me-2"></i> Rapor
+                </a>
+                <a class="ot-btn ot-btn-success rounded-pill shadow px-4 py-2" href="/OdemeTalimat/RaporPdf/@Model.Id">
+                    <i class="fas fa-file-pdf me-2"></i> PDF
+                </a>
+                <a class="ot-btn ot-btn-success rounded-pill shadow px-4 py-2" href="/OdemeTalimat/RaporPdf2/@Model.Id" target="_blank" rel="noopener">
+                    <i class="fas fa-file-pdf me-2"></i> PDF2 Önizleme / Yazdır
+                </a>
+            }
+
             <!-- Talimatı Kaydet Butonu -->
             @if (!kayitliMi && Model.Id == 0)
             {

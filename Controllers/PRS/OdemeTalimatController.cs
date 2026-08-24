@@ -1,7 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
+using FastReport;
+using FastReport.Export.PdfSimple;
+using FastReport.Web;
 using gamabelmvc.Services;
 using gamabelmvc.Models.PRS;
 using System.Text.Json;
+using System.Data;
 
 namespace gamabelmvc.Controllers.PRS;
 
@@ -9,13 +13,16 @@ public class OdemeTalimatController : Controller
 {
     private readonly OdemeFaturaImportService _importService;
     private readonly OdemeTalimatService _talimatService;
+    private readonly IWebHostEnvironment _environment;
 
     public OdemeTalimatController(
         OdemeFaturaImportService importService,
-        OdemeTalimatService talimatService)
+        OdemeTalimatService talimatService,
+        IWebHostEnvironment environment)
     {
         _importService = importService;
         _talimatService = talimatService;
+        _environment = environment;
     }
 
     private bool IsLoggedIn() =>
@@ -334,6 +341,96 @@ public async Task<IActionResult> Detay(int id)
 
     return View(talimat);
 }
+
+    [HttpGet]
+    public async Task<IActionResult> Rapor(int id)
+    {
+        if (!IsLoggedIn()) return RedirectToAction("Login", "Account");
+        if (!IsAdmin()) return Forbid();
+        if (id <= 0) return BadRequest("Rapor için kayıtlı bir talimat seçilmelidir.");
+
+        var talimat = await _talimatService.GetTalimatDetayAsync(id);
+        if (talimat == null) return NotFound();
+
+        var reportPath = GetReportPath();
+        if (!System.IO.File.Exists(reportPath))
+            return NotFound($"Ödeme talimatı rapor şablonu bulunamadı: {reportPath}");
+
+        var report = CreateReport(talimat, reportPath);
+        var webReport = new WebReport { Report = report };
+        webReport.Width = "100%";
+        webReport.Height = "calc(100vh - 24px)";
+        webReport.Inline = false;
+        webReport.Toolbar.Show = true;
+        webReport.Toolbar.ShowPrint = true;
+        webReport.Toolbar.Exports.Show = true;
+        webReport.Toolbar.Exports.ShowPreparedReport = true;
+        return View("~/Views/PRS/OdemeTalimat/Rapor.cshtml", webReport);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> RaporPdf(int id)
+    {
+        if (!IsLoggedIn()) return RedirectToAction("Login", "Account");
+        if (!IsAdmin()) return Forbid();
+        if (id <= 0) return BadRequest("Rapor için kayıtlı bir talimat seçilmelidir.");
+
+        var talimat = await _talimatService.GetTalimatDetayAsync(id);
+        if (talimat == null) return NotFound();
+
+        var reportPath = GetReportPath();
+        if (!System.IO.File.Exists(reportPath))
+            return NotFound($"Ödeme talimatı rapor şablonu bulunamadı: {reportPath}");
+
+        using var report = CreateReport(talimat, reportPath);
+        await using var stream = new MemoryStream();
+        using var export = new PDFSimpleExport();
+        report.Export(export, stream);
+
+        return File(stream.ToArray(), "application/pdf", $"odeme-talimat-{talimat.TalimatNo}.pdf");
+    }
+
+    [HttpGet]
+    public IActionResult RaporPdf2(int id)
+    {
+        if (!IsLoggedIn()) return RedirectToAction("Login", "Account");
+        if (!IsAdmin()) return Forbid();
+        if (id <= 0) return BadRequest("PDF2 için kayıtlı bir talimat seçilmelidir.");
+
+        return RedirectToAction(nameof(Rapor), new { id });
+    }
+
+    private string GetReportPath() =>
+        Path.Combine(_environment.ContentRootPath, "Reports", "OdemeTalimat", "OdemeTalimat.frx");
+
+    private static Report CreateReport(OtTalimat talimat, string reportPath)
+    {
+        var rows = new DataTable("OdemeTalimat");
+        rows.Columns.Add("Sira", typeof(int));
+        rows.Columns.Add("FirmaOdemeIsmi", typeof(string));
+        rows.Columns.Add("FirmaIBAN", typeof(string));
+        rows.Columns.Add("Aciklama", typeof(string));
+        rows.Columns.Add("Tutar", typeof(decimal));
+
+        for (var index = 0; index < talimat.Satirlar.Count; index++)
+        {
+            var row = talimat.Satirlar[index];
+            rows.Rows.Add(index + 1, row.FirmaOdemeIsmi, row.FirmaIBAN, row.Aciklama, row.Tutar);
+        }
+
+        var report = new Report();
+        report.Load(reportPath);
+        report.RegisterData(rows, "OdemeTalimat");
+        report.GetDataSource("OdemeTalimat")!.Enabled = true;
+        report.SetParameterValue("TalimatNo", talimat.TalimatNo);
+        report.SetParameterValue("Tarih", talimat.Tarih.ToString("dd.MM.yyyy"));
+        report.SetParameterValue("BankaIBAN", talimat.BankaIBAN);
+        report.SetParameterValue("BankaSubeAdi", talimat.BankaSubeAdi);
+        report.SetParameterValue("ToplamAdet", talimat.ToplamAdet);
+        report.SetParameterValue("ToplamTutar", talimat.ToplamTutar.ToString("N2"));
+        report.Prepare();
+        return report;
+    }
 
     // -----------------------------------------------------------------------
     // TALİMAT KAYDET (VERİTABANINA KAYIT)
