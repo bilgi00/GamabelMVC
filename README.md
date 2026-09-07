@@ -1,4 +1,170 @@
-﻿# 🏢 GAMABEL MVC
+﻿# GAMABEL MVC
+
+GAMABEL MVC, kurum içi personel, mesai, sevkiyat ve ödeme operasyonlarını yöneten ASP.NET Core MVC uygulamasıdır.
+**Güncel sürüm:** v3.4.2  
+**Son dokümante edilen güncelleme:** 23 Ağustos 2026  
+**Durum:** Aktif geliştirme ve üretim kullanımı
+## Modüller
+
+### PRS: Personel ve Mesai Yönetimi
+- Personel, kullanıcı ve birim yönetimi
+- Mesai ve hızlı mesai girişi
+- Puantaj, izin ve resmi tatil işlemleri
+- Mesai ödeme hesaplama ve Excel/PDF/yazdırma çıktıları
+- Ödeme talimatı oluşturma, FastReport önizleme ve PDF çıktısı
+- SMTP tabanlı ödeme talimatı e-posta kuyruğu
+
+### STS: Sevkiyat Takip Sistemi
+- Şube bazlı eksik kayıt girişi
+- Sevkiyat yönetimi ve sevkiyat geçmişi
+- Bölüm, firma ve grup filtreleri; filtrelerin session'da korunması
+- Depo ve şube onay akışları
+- Fabrika siparişleri ve raporlar
+- Ürün Excel toplu yükleme: önizleme, uygulama, uyarı ve işlem logu
+- Seçili tablolar için admin SQL yedekleme ve geri yükleme
+- Soft-delete ve hareket logu
+## Teknoloji
+
+| Katman | Teknoloji |
+| Uygulama | ASP.NET Core MVC 9.0 |
+| Dil | C# / Razor |
+| Veritabanı | MySQL 8+ |
+| Veritabanı erişimi | MySqlConnector; sınırlı EF Core paketleri |
+| Arayüz | Razor Views, Bootstrap 5, özel CSS |
+| Excel | EPPlus 7.0.7, ClosedXML |
+| Raporlama | FastReport OpenSource 2026.2.3, `.frx` şablonları |
+| Kimlik doğrulama | Session tabanlı mevcut uygulama akışı |
+| E-posta | SMTP ve arka plan kuyruk servisi |
+
+## Proje Yapısı
+```text
+Controllers/
+├── PRS/                  # Personel, mesai, puantaj ve ödeme işlemleri
+├── STS/                  # Eksik, sevkiyat, sipariş ve rapor işlemleri
+├── AccountController.cs  # PRS/STS giriş ve kayıt akışları
+└── AdminController.cs    # Admin operasyonları
+Models/
+├── PRS/
+└── STS/
+Services/                 # Veritabanı, ödeme, e-posta ve sistem servisleri
+Views/                    # Razor görünümleri
+Reports/                  # FastReport .frx şablonları
+sql/                      # Şema ve migration betikleri
+wwwroot/                  # CSS, JavaScript ve FastReport varlıkları
+Program.cs                # Servis kayıtları ve HTTP pipeline
+```
+
+## Roller
+### PRS
+
+- `admin`: tüm PRS işlemleri
+- `birim_amiri`: kendi birimiyle sınırlı personel ve mesai işlemleri
+### STS
+
+- `SubePersoneli`: kendi şubesinin eksik kayıtları ve şube onay akışı
+- `DepoSorumlusu`: merkezi sevkiyat, sipariş ve onay işlemleri
+- `Admin`: tüm STS işlemleri, sistem yönetimi ve veritabanı araçları
+Yetkilendirme ayrıntıları için [ROL_VE_YETKILENDIRME_RAPORU.md](ROL_VE_YETKILENDIRME_RAPORU.md) ve [DEPO_SORUMLUSU_ROL_DEGISIKLIK_OZETI.md](DEPO_SORUMLUSU_ROL_DEGISIKLIK_OZETI.md) dosyalarına bakın.
+
+## Gereksinimler
+- .NET SDK 9.0+
+- MySQL 8.0+
+- PowerShell 5.1 veya üzeri
+- Geliştirme için Visual Studio Code veya Visual Studio
+
+## Yerel Kurulum
+1. Veritabanını oluşturun ve temel şemayı uygulayın:
+
+```powershell
+mysql -u root -p < sql/sqltasarim.sql
+mysql -u root -p < sql/sqltasarim_sts.sql
+```
+
+2. İhtiyaca göre migration betiklerini tarihsel sırayla uygulayın. Güncel migration listesi için [sql](sql) klasörünü ve [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) dosyasını kontrol edin.
+3. Bağlantı ve SMTP bilgilerini `appsettings.Development.json`, User Secrets veya ortam değişkenleriyle sağlayın. Gerçek parola ve SMTP sırlarını kaynak koda yazmayın.
+
+4. Paketleri yükleyip uygulamayı başlatın:
+```powershell
+dotnet restore
+dotnet build
+dotnet run --environment Development --urls http://localhost:5010
+```
+
+Geliştirme yardımcıları kullanılacaksa:
+```powershell
+.\dev-tools.ps1 -Action stop
+.\dev-tools.ps1 -Action rebuild
+.\dev-tools.ps1 -Action run -Port 5010
+```
+
+## Başlıca URL'ler
+| Alan | URL |
+|---|---|
+| Ana sayfa | `/` |
+| PRS giriş | `/Account/Login` |
+| STS giriş | `/Account/StsLogin` |
+| Hızlı mesai | `/HizliMesaiGirisi/Index` |
+| Sevkiyat merkezi | `/Sevkiyat/Index` |
+| Bekleyen eksikler | `/Sevkiyat/SevkBekleyenEksikler` |
+| Sevkiyat geçmişi | `/Sevkiyat/Gecmis` |
+| Ödeme talimatı raporu | `/OdemeTalimat/Rapor/{id}` |
+
+## Build, Yayınlama ve Yedekleme
+```powershell
+# Release yayınlama
+dotnet publish -c Release -o publish
+
+# Uygulama kilidi varsa
+Get-Process gamabelmvc -ErrorAction SilentlyContinue | Stop-Process -Force
+# Kaynak yedeği
+.\source-backup.ps1
+```
+
+Üretim dağıtımı, migration sırası, IIS/Linux seçenekleri ve geri dönüş prosedürü için [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) dosyasını kullanın.
+## Güvenlik ve Üretim Öncesi Kontrol
+
+Bu uygulamada parametrik SQL sorguları, rol kontrolleri, BCrypt desteği, soft-delete ve hareket logları bulunmaktadır. Buna rağmen üretim öncesi aşağıdaki konular kapatılmalıdır:
+- `appsettings.json` içindeki bağlantı ve SMTP sırları secret/env yapılandırmasına taşınmalı ve açığa çıktıysa döndürülmelidir.
+- Tüm POST işlemlerinde antiforgery koruması standartlaştırılmalıdır.
+- Eski düz metin parola desteği tamamen kaldırılmalı; parola politikası ve brute-force koruması eklenmelidir.
+- `Html.Raw` kullanımları ve hata mesajlarının dışarı sızması denetlenmelidir.
+- Session tabanlı yetkilendirme zaman içinde `[Authorize]` ve merkezi policy yapısına taşınmalıdır.
+
+Detaylı bulgular için [PROJECT_ANALYSIS_TR.md](PROJECT_ANALYSIS_TR.md), açık teknik borçlar için [sorunlar.md](sorunlar.md) dosyasına bakın.
+## Test Durumu
+
+Projede otomatik unit, integration ve E2E test paketi bulunmamaktadır. `package.json` içindeki test komutu yalnızca placeholder'dır. Bu nedenle release doğrulaması şu an build ve manuel senaryolara dayanır.
+
+Minimum doğrulama:
+```powershell
+dotnet build
+```
+
+Hızlı mesai senaryosu için [HIZLI_MESAI_GIRISI_KILAVUZ.md](HIZLI_MESAI_GIRISI_KILAVUZ.md), sevkiyat senaryosu için [FASE_2_SEVKIYAT_YONETIMI_TR.md](FASE_2_SEVKIYAT_YONETIMI_TR.md) kullanılmalıdır.
+
+## Dokümantasyon Haritası
+| Dosya | İçerik |
+|---|---|
+| [CHANGELOG_TR.md](CHANGELOG_TR.md) | Sürümler ve son değişiklikler |
+| [TECHNICAL_DOCUMENTATION.md](TECHNICAL_DOCUMENTATION.md) | Mimari, modüller ve veritabanı |
+| [IMPLEMENTATION_SUMMARY_TR.md](IMPLEMENTATION_SUMMARY_TR.md) | Uygulama değişikliklerinin ayrıntıları |
+| [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) | Kurulum, migration, yayınlama ve rollback |
+| [CSS_DESIGN_SYSTEM.md](CSS_DESIGN_SYSTEM.md) | CSS dosyaları ve arayüz standartları |
+| [FILTER_FEATURE_DOCUMENTATION.md](FILTER_FEATURE_DOCUMENTATION.md) | Sevkiyat filtreleri ve session davranışı |
+| [fastreport.md](fastreport.md) | FastReport entegrasyonu ve sorun giderme |
+| [ödememail.md](%C3%B6dememail.md) | Ödeme talimatı e-posta kuyruğu notları |
+| [sorunlar.md](sorunlar.md) | Açık uyarılar ve teknik borçlar |
+## Öncelikli 5 Öneri
+
+1. **Sırlar ve kimlik bilgileri:** Bağlantı/SMTP sırlarını derhal döndürün; User Secrets, ortam değişkeni veya secret manager kullanın.
+2. **Web güvenliği standardı:** Antiforgery token, merkezi authorization policy, session timeout ve rate limiting'i tüm yazma uçlarına uygulayın.
+3. **Test otomasyonu:** PRS, STS ve ödeme talimatı için xUnit integration testleri; kritik akışlar için Playwright E2E testleri ekleyin.
+4. **Veri erişim katmanı:** Controller içindeki tekrar eden SQL'i servis/repository katmanına taşıyın; ViewBag/dynamic yerine güçlü ViewModel kullanın.
+5. **Teknik borç ve gözlemlenebilirlik:** NU1903/nullable uyarılarını kapatın, yapılandırılmış logging ve health check ekleyin; build'i CI'da warnings-as-errors hedefiyle izleyin.
+## Lisans ve Katkı
+
+Bu depo için ayrıca bir lisans veya katkı politikası tanımlanmamıştır. Kurum içi kullanım ve dağıtım kararları proje sahibi tarafından belirlenmelidir.
+# 🏢 GAMABEL MVC
 
 Gamabel MVC, iki ana alan içeren ASP.NET Core 9.0 uygulamasıdır:
 - **PRS** (Personel / Mesai / Puantaj Yönetimi)
@@ -393,6 +559,8 @@ Dynamic object binding hatası -> Null check ekle
 **Durum**: ✅ Üretim'de
 
 
-#   g a m a b e l  
- #   g a m a b e l v 2  
+#   g a m a b e l 
+ 
+ #   g a m a b e l v 2 
+ 
  

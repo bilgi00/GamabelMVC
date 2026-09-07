@@ -45,3 +45,23 @@ Bugunku FastReport calismalarinda Odeme Talimati raporunun onizleme, yazdirma ve
 ## Not
 
 Proje `FineReport` degil `FastReport` kullaniyor. Bu nedenle mevcut cikti FastReport'un `.frx` rapor tasarimina dayanir; gercek FineReport `.cpt` formati bu calismanin kapsaminda degildir.
+
+## Son Duzeltmeler
+
+- `Rapor.cshtml` icindeki `ViewBag.WebReport.GetHtml()` cagrisi kaldirildi. Controller `WebReport` nesnesini model olarak gonderdigi icin rapor artik yalnizca `@await Model.Render()` ile olusturuluyor. Bu degisiklik `RuntimeBinderException: Cannot perform runtime binding on a null reference` hatasini giderdi.
+- `OdemeTalimatController.Rapor` action'inda FastReport toolbar ayarlari acikca etkinlestirildi: `Toolbar.Show`, `Toolbar.ShowPrint`, `Toolbar.Exports.Show` ve `Toolbar.Exports.ShowPreparedReport`.
+- FastReport paketinde bulunmayan web assetleri `wwwroot/_content/FastReport.Web/` altina yerlestirildi. Blazor'a ozel `Toolbar.razor.js` dosyasi MVC derlemesinde `BLAZOR106` hatasi verdigi icin dahil edilmedi.
+- Son derleme gecici cikti klasorunde basarili oldu. Calisan uygulama eski DLL'yi kullaniyorsa uygulama yeniden baslatilmali ve tarayici `Ctrl + F5` ile yenilenmelidir.
+
+## Sorun Teshisi ve Son Duzeltme
+
+- Rapor sayfasi tarayicida acildiginda yalnizca siyah yukleme daireleri goruldu. Oturum acilmis tarayici ile `http://localhost:5010/OdemeTalimat/Rapor/54` adresi test edildi.
+- Tarayici gelistirici olaylarinda su iki istegin `404 Not Found` dondugu tespit edildi:
+    - `/_content/FastReport.Web/css/styles.min.css`
+    - `/_content/FastReport.Web/js/webreport-script.bundle.min.js`
+- Bu dosyalarin `FastReport.OpenSource.Web 2026.2.3` NuGet paketinin icinde bulunmadigi, paketin yalnizca DLL ve XML dosyalari icerdigi kontrol edildi.
+- Eksik FastReport web asset'leri `wwwroot/_content/FastReport.Web/` altinda servis edilecek sekilde projeye eklendi. Bu kaynaklar yuklenmeden toolbar ve rapor sayfasi JavaScript'i calismadigi icin onizleme bos kaliyor.
+- `UseFastReport()` middleware'inin gorevi yalnizca route eklemek degil; `WebReport.ResourceLoader` ve FastReport internal controller yapisini da baslatmaktir. Bu nedenle `AddFastReport()` sonrasinda `UseFastReport()` mutlaka pipeline'a eklenmelidir.
+- Paylasilan eski MVC makalesindeki `WebReportGlobals.Scripts()`, `WebReportGlobals.Styles()`, `GetHtml()`, `ReportFile`, `ShowToolbar`, `Server.MapPath()` ve `PDFExport` API'leri bu OpenSource 2026.2.3 projesine uygulanmadi. Guncel kullanim `new WebReport`, `Report.Load(...)`, `@await Model.Render()` ve `UseFastReport()` seklindedir.
+- Rapor view'i genel layout'tan bagimsiz tutuldu; boyutlari controller'da `Width = "100%"`, `Height = "calc(100vh - 24px)"` ve `Inline = false` olarak ayarlandi.
+- Son derlemede kaynak ve Razor compile basarili oldu. Normal `dotnet build` sirasinda onceki gecici cikti klasorlerinin ic ice kopyalanmasindan kaynaklanan dosya kopyalama hatasi gorulebildigi icin temiz bir cikti klasoru veya `dotnet msbuild /t:Compile` kullanilmalidir.
