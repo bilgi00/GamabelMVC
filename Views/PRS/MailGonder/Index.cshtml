@@ -221,7 +221,15 @@
                                 </div>
                             </div>
 
+<<<<<<< Updated upstream
                             @if (firmaGruplari.Any())
+=======
+                            <!-- Firmaları açıklamaya göre grupla -->
+                            @{
+                                var firmaGruplari = firmalar.GroupBy(f => string.IsNullOrWhiteSpace(f.Aciklama) ? "Diğer" : f.Aciklama).OrderBy(g => g.Key);
+                            }
+                            @foreach (var grup in firmaGruplari)
+>>>>>>> Stashed changes
                             {
                                 <div class="firma-list">
                                     @foreach (var grup in firmaGruplari)
