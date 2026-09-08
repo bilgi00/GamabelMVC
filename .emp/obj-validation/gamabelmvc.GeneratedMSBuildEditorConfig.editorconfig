@@ -1,0 +1,261 @@
+is_global = true
+build_property.TargetFramework = net9.0
+build_property.TargetPlatformMinVersion = 
+build_property.UsingMicrosoftNETSdkWeb = true
+build_property.ProjectTypeGuids = 
+build_property.InvariantGlobalization = 
+build_property.PlatformNeutralAssembly = 
+build_property.EnforceExtendedAnalyzerRules = 
+build_property._SupportedPlatformList = Linux,macOS,Windows
+build_property.RootNamespace = gamabelmvc
+build_property.RootNamespace = gamabelmvc
+build_property.ProjectDir = D:\GamabelMVC\
+build_property.EnableComHosting = 
+build_property.EnableGeneratedComInterfaceComImportInterop = 
+build_property.RazorLangVersion = 9.0
+build_property.SupportLocalizedComponentNames = 
+build_property.GenerateRazorMetadataSourceChecksumAttributes = 
+build_property.MSBuildProjectDirectory = D:\GamabelMVC
+build_property._RazorSourceGeneratorDebug = 
+build_property.EffectiveAnalysisLevelStyle = 9.0
+build_property.EnableCodeStyleSeverity = 
+
+[D:/GamabelMVC/Views/Account/Login.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWNjb3VudFxMb2dpbi5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/GamabelMVC/Views/Account/Register.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWNjb3VudFxSZWdpc3Rlci5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/GamabelMVC/Views/Account/StsLogin.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWNjb3VudFxTdHNMb2dpbi5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/GamabelMVC/Views/Account/_ViewImports.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWNjb3VudFxfVmlld0ltcG9ydHMuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/GamabelMVC/Views/Dokumantasyon/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcRG9rdW1hbnRhc3lvblxJbmRleC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/GamabelMVC/Views/Home/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSG9tZVxJbmRleC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/GamabelMVC/Views/Home/Privacy.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSG9tZVxQcml2YWN5LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/GamabelMVC/Views/PRS/Kullanici/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUFJTXEt1bGxhbmljaVxJbmRleC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/GamabelMVC/Views/PRS/Kullanici/Liste2.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUFJTXEt1bGxhbmljaVxMaXN0ZTIuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/GamabelMVC/Views/PRS/Kullanici/Profil.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUFJTXEt1bGxhbmljaVxQcm9maWwuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/GamabelMVC/Views/PRS/Kullanici/Yetkilendirme.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUFJTXEt1bGxhbmljaVxZZXRraWxlbmRpcm1lLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/GamabelMVC/Views/PRS/MailGonder/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUFJTXE1haWxHb25kZXJcSW5kZXguY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/GamabelMVC/Views/PRS/MailGonder/Rapor.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUFJTXE1haWxHb25kZXJcUmFwb3IuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/GamabelMVC/Views/PRS/Mesai/HizliMesaiGirisi/Admin.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUFJTXE1lc2FpXEhpemxpTWVzYWlHaXJpc2lcQWRtaW4uY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/GamabelMVC/Views/PRS/Mesai/HizliMesaiGirisi/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUFJTXE1lc2FpXEhpemxpTWVzYWlHaXJpc2lcSW5kZXguY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/GamabelMVC/Views/PRS/Mesai/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUFJTXE1lc2FpXEluZGV4LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/GamabelMVC/Views/PRS/Mesai/MesaiOdemesi.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUFJTXE1lc2FpXE1lc2FpT2RlbWVzaS5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/GamabelMVC/Views/PRS/OdemeTalimat/Bankalar.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUFJTXE9kZW1lVGFsaW1hdFxCYW5rYWxhci5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/GamabelMVC/Views/PRS/OdemeTalimat/Detay.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUFJTXE9kZW1lVGFsaW1hdFxEZXRheS5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/GamabelMVC/Views/PRS/OdemeTalimat/FaturaSecim.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUFJTXE9kZW1lVGFsaW1hdFxGYXR1cmFTZWNpbS5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/GamabelMVC/Views/PRS/OdemeTalimat/Firmalar.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUFJTXE9kZW1lVGFsaW1hdFxGaXJtYWxhci5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/GamabelMVC/Views/PRS/OdemeTalimat/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUFJTXE9kZW1lVGFsaW1hdFxJbmRleC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/GamabelMVC/Views/PRS/Puantaj/Cikti.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUFJTXFB1YW50YWpcQ2lrdGkuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/GamabelMVC/Views/PRS/Puantaj/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUFJTXFB1YW50YWpcSW5kZXguY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/GamabelMVC/Views/PRS/Rapor/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUFJTXFJhcG9yXEluZGV4LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/GamabelMVC/Views/PRS/ResmiTatil/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUFJTXFJlc21pVGF0aWxcSW5kZXguY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/GamabelMVC/Views/PRS/RolYetki/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUFJTXFJvbFlldGtpXEluZGV4LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/GamabelMVC/Views/PRS/Sikayet/Admin.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUFJTXFNpa2F5ZXRcQWRtaW4uY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/GamabelMVC/Views/PRS/Sikayet/Ekle.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUFJTXFNpa2F5ZXRcRWtsZS5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/GamabelMVC/Views/PRS/Sikayet/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUFJTXFNpa2F5ZXRcSW5kZXguY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/GamabelMVC/Views/PRS/_ViewImports.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcUFJTXF9WaWV3SW1wb3J0cy5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/GamabelMVC/Views/Shared/Error.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXEVycm9yLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/GamabelMVC/Views/Shared/_ValidationScriptsPartial.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9WYWxpZGF0aW9uU2NyaXB0c1BhcnRpYWwuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/GamabelMVC/Views/STS/Admin/KullaniciDuzenle.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU1RTXEFkbWluXEt1bGxhbmljaUR1emVubGUuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/GamabelMVC/Views/STS/Admin/KullaniciEkle.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU1RTXEFkbWluXEt1bGxhbmljaUVrbGUuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/GamabelMVC/Views/STS/Admin/Kullanicilar.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU1RTXEFkbWluXEt1bGxhbmljaWxhci5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/GamabelMVC/Views/STS/Admin/SubeEkle.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU1RTXEFkbWluXFN1YmVFa2xlLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/GamabelMVC/Views/STS/Admin/Subeler.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU1RTXEFkbWluXFN1YmVsZXIuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/GamabelMVC/Views/STS/Admin/UrunEkle.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU1RTXEFkbWluXFVydW5Fa2xlLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/GamabelMVC/Views/STS/Admin/Urunler.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU1RTXEFkbWluXFVydW5sZXIuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/GamabelMVC/Views/STS/Admin/UrunTopluYukle.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU1RTXEFkbWluXFVydW5Ub3BsdVl1a2xlLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/GamabelMVC/Views/STS/Admin/VeritabaniYedekleme.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU1RTXEFkbWluXFZlcml0YWJhbmlZZWRla2xlbWUuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/GamabelMVC/Views/STS/Eksik/Ekle.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU1RTXEVrc2lrXEVrbGUuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/GamabelMVC/Views/STS/Eksik/Gecmis.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU1RTXEVrc2lrXEdlY21pcy5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/GamabelMVC/Views/STS/Eksik/SubeListe.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU1RTXEVrc2lrXFN1YmVMaXN0ZS5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/GamabelMVC/Views/STS/Eksik/TopluYukle.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU1RTXEVrc2lrXFRvcGx1WXVrbGUuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/GamabelMVC/Views/STS/Eksik/TumEksikler.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU1RTXEVrc2lrXFR1bUVrc2lrbGVyLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/GamabelMVC/Views/STS/Home/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU1RTXEhvbWVcSW5kZXguY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/GamabelMVC/Views/STS/RaporSts/DetailedRapor.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU1RTXFJhcG9yU3RzXERldGFpbGVkUmFwb3IuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/GamabelMVC/Views/STS/RaporSts/GeçmisHareketler.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU1RTXFJhcG9yU3RzXEdlw6dtaXNIYXJla2V0bGVyLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/GamabelMVC/Views/STS/RaporSts/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU1RTXFJhcG9yU3RzXEluZGV4LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/GamabelMVC/Views/STS/Sevkiyat/Index.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU1RTXFNldmtpeWF0XEluZGV4LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/GamabelMVC/Views/STS/Sevkiyat/SevkBekleyenEksikler.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU1RTXFNldmtpeWF0XFNldmtCZWtsZXllbkVrc2lrbGVyLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/GamabelMVC/Views/STS/Sevkiyat/SevkiyatGecmisi.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU1RTXFNldmtpeWF0XFNldmtpeWF0R2VjbWlzaS5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/GamabelMVC/Views/STS/Sevkiyat/SubeOnay.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU1RTXFNldmtpeWF0XFN1YmVPbmF5LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/GamabelMVC/Views/STS/Siparis/FabrikaListe.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU1RTXFNpcGFyaXNcRmFicmlrYUxpc3RlLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/GamabelMVC/Views/STS/_ViewImports.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU1RTXF9WaWV3SW1wb3J0cy5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/GamabelMVC/Views/_ViewImports.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcX1ZpZXdJbXBvcnRzLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/GamabelMVC/Views/_ViewStart.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcX1ZpZXdTdGFydC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/GamabelMVC/Views/Shared/_Layout.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9MYXlvdXQuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = b-joad9g5tig

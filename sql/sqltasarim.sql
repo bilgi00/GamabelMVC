@@ -64,13 +64,12 @@ CREATE TABLE birimler (
 
 IF OBJECT_ID('personeller', 'U') IS NULL
 CREATE TABLE personeller (
-    id INT IDENTITY(1,1) PRIMARY KEY,
-    per_no NVARCHAR(50) NULL,
+    id INT IDENTITY(1,1),
+    per_no NVARCHAR(50) NOT NULL PRIMARY KEY,
     ad NVARCHAR(100) NULL,
     soyad NVARCHAR(100) NULL,
     birim_adi NVARCHAR(255) NULL,
     per_statu NVARCHAR(100) NULL,
-    CONSTRAINT uq_per_no UNIQUE (per_no)
 );
 
 -- Mevcut tabloya per_no eklemek için:
@@ -120,7 +119,7 @@ CREATE TABLE personeller (
 IF OBJECT_ID('puantaj_izin', 'U') IS NULL
 CREATE TABLE puantaj_izin (
     id INT IDENTITY(1,1) PRIMARY KEY,
-    personel_id INT NOT NULL,
+    personel_id NVARCHAR(50) NOT NULL,
     yil INT NOT NULL,
     ay INT NOT NULL,
     gun INT NOT NULL,
@@ -130,7 +129,7 @@ CREATE TABLE puantaj_izin (
     CONSTRAINT uq_personel_gun UNIQUE (personel_id, yil, ay, gun),
     INDEX idx_yil_ay (yil, ay),
     INDEX idx_personel (personel_id),
-    CONSTRAINT fk_puantaj_personel FOREIGN KEY (personel_id) REFERENCES personeller(id) ON DELETE CASCADE
+    CONSTRAINT fk_puantaj_personel FOREIGN KEY (personel_id) REFERENCES personeller(per_no) ON DELETE CASCADE
 );
 
 
@@ -147,7 +146,7 @@ CREATE TABLE puantaj_izin (
 
 -- [PuantajController - GetIzinler]
 -- Belirli ay/yıl için izin kayıtlarını getir
--- SELECT id, personel_id, gun, izin_tipi, aciklama FROM puantaj_izin
+-- SELECT personel_id, gun, izin_tipi, aciklama FROM puantaj_izin
 -- WHERE yil = @yil AND ay = @ay;
 
 -- [PuantajController - KaydetIzin]
@@ -204,7 +203,7 @@ CREATE TABLE puantaj_izin (
 IF OBJECT_ID('mesai_kayitlari', 'U') IS NULL
 CREATE TABLE mesai_kayitlari (
     id INT IDENTITY(1,1) PRIMARY KEY,
-    personel_id INT NOT NULL,
+    personel_id NVARCHAR(50) NOT NULL,
     tarih DATE NOT NULL,
     gorev NVARCHAR(100) NULL,
     baslangic TIME NOT NULL,
@@ -217,7 +216,7 @@ CREATE TABLE mesai_kayitlari (
     kayit_tarihi DATETIME DEFAULT GETDATE(),
     INDEX idx_personel (personel_id),
     INDEX idx_tarih (tarih),
-    FOREIGN KEY (personel_id) REFERENCES personeller(id) ON DELETE CASCADE
+    FOREIGN KEY (personel_id) REFERENCES personeller(per_no) ON DELETE CASCADE
 );
 
 
@@ -248,7 +247,7 @@ CREATE TABLE mesaisaat (
 --        mk.tarih, mk.gorev, mk.baslangic, mk.bitis,
 --        mk.fiili_saat, mk.zam01_saat, mk.zam05_saat, mk.toplam_saat, mk.aciklama
 -- FROM mesai_kayitlari mk
--- INNER JOIN personeller p ON p.id = mk.personel_id
+-- INNER JOIN personeller p ON p.per_no = mk.personel_id
 -- WHERE p.birim_adi = @birim AND YEAR(mk.tarih) = @yil AND MONTH(mk.tarih) = @ay
 -- ORDER BY mk.tarih, p.ad, p.soyad;
 

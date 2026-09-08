@@ -163,7 +163,7 @@
                 body += '<tr>';
                 body += '<td class="personel-info">'+p.ad+' '+p.soyad+'</td>';
                 for (var gun=1;gun<=gunSayisi;gun++) {
-                    var durum = (calismaVerileri[p.id] && calismaVerileri[p.id][gun]) || 'X';
+                    var durum = (calismaVerileri[p.perNo] && calismaVerileri[p.perNo][gun]) || 'X';
                     var disp = getDurumDisplay(durum);
                     var bg = getDurumBgColor(durum);
                     if (durum==='X') tX++;
@@ -172,7 +172,7 @@
                     var wk = isWeekend(currentYear,currentMonth,gun);
                     body += '<td class="'+(wk?'weekend':'')+'" style="background-color:'+bg+'">'+disp+'</td>';
                 }
-                var hak = calculateHakkedis(p.id);
+                var hak = calculateHakkedis(p.perNo);
                 body += '<td class="total-cell">'+tX+'</td>';
                 body += '<td class="total-cell">'+tI+'</td>';
                 body += '<td class="total-cell">'+tH+'</td>';

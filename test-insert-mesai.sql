@@ -6,7 +6,7 @@ INSERT IGNORE INTO personeller (ad, soyad, birim_adi, per_statu)
 VALUES ('Test', 'Kişi', 'AÇIK PAZAR', 'aktif');
 
 -- Eklenen personelin ID'sini al
-SET @personel_id = (SELECT id FROM personeller WHERE ad = 'Test' AND soyad = 'Kişi' LIMIT 1);
+SET @personel_id = (SELECT per_no FROM personeller WHERE ad = 'Test' AND soyad = 'Kişi' LIMIT 1);
 
 -- Mesai kaydı ekle (Temmuz 2026)
 INSERT INTO mesai_kayitlari (personel_id, tarih, toplam_saat, not)

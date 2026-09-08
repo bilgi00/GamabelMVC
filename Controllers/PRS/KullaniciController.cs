@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using MySqlConnector;
+using ClosedXML.Excel;
 using gamabelmvc.Models.PRS;
 
 namespace gamabelmvc.Controllers.PRS;
@@ -150,7 +151,7 @@ public class KullaniciController : Controller
             await connection.OpenAsync();
 
             await using var command = new MySqlCommand(
-                "SELECT ad, soyad, per_statu FROM personeller WHERE birim_adi = @birim ORDER BY ad, soyad", connection);
+                "SELECT per_no, ad, soyad, per_statu FROM personeller WHERE birim_adi = @birim ORDER BY ad, soyad", connection);
             command.Parameters.AddWithValue("@birim", birim);
             await using var reader = await command.ExecuteReaderAsync();
 
@@ -158,9 +159,10 @@ public class KullaniciController : Controller
             {
                 personeller.Add(new PersonelModel
                 {
-                    Ad = reader.IsDBNull(0) ? null : reader.GetString(0),
-                    Soyad = reader.IsDBNull(1) ? null : reader.GetString(1),
-                    PerStatu = reader.IsDBNull(2) ? null : reader.GetString(2)
+                    PerNo = reader.IsDBNull(0) ? null : reader.GetString(0),
+                    Ad = reader.IsDBNull(1) ? null : reader.GetString(1),
+                    Soyad = reader.IsDBNull(2) ? null : reader.GetString(2),
+                    PerStatu = reader.IsDBNull(3) ? null : reader.GetString(3)
                 });
             }
         }
@@ -185,11 +187,143 @@ public class KullaniciController : Controller
             return Json(new { basarili = false, mesaj = "Lütfen bir Excel dosyası seçin." });
 
         var ext = Path.GetExtension(excelFile.FileName).ToLowerInvariant();
-        if (ext != ".xlsx" && ext != ".xls")
-            return Json(new { basarili = false, mesaj = "Sadece .xlsx veya .xls dosyaları kabul edilir." });
+        if (ext != ".xlsx")
+            return Json(new { basarili = false, mesaj = "ClosedXML nedeniyle sadece .xlsx dosyaları kabul edilir." });
 
-        // Excel import özelliği devre dışı - placeholder
-        return Json(new { basarili = false, mesaj = "Excel import özelliği şu anda devre dışıdır. Lütfen personel bilgilerini manuel olarak sisteme ekleyiniz." });
+        try
+        {
+            await using var stream = new MemoryStream();
+            await excelFile.CopyToAsync(stream);
+            stream.Position = 0;
+
+            using var workbook = new XLWorkbook(stream);
+            var worksheet = workbook.Worksheets.FirstOrDefault();
+            if (worksheet == null || worksheet.LastRowUsed() == null)
+                return Json(new { basarili = false, mesaj = "Excel dosyasında okunabilir veri bulunamadı." });
+
+            var lastColumn = worksheet.LastColumnUsed()?.ColumnNumber() ?? 0;
+            if (lastColumn < 5)
+                return Json(new { basarili = false, mesaj = "Excel dosyası en az 5 sütun içermelidir." });
+
+            var beklenenBasliklar = new[] { "KODU", "ADI", "SOYADI", "BİRİM ADI", "MESLEĞİ GÖREVİ" };
+            for (var column = 1; column <= beklenenBasliklar.Length; column++)
+            {
+                var baslik = worksheet.Cell(1, column).GetString().Trim();
+                if (!string.Equals(baslik, beklenenBasliklar[column - 1], StringComparison.OrdinalIgnoreCase))
+                {
+                    return Json(new
+                    {
+                        basarili = false,
+                        mesaj = $"{column}. sütun başlığı '{beklenenBasliklar[column - 1]}' olmalıdır. Okunan başlık: '{baslik}'."
+                    });
+                }
+            }
+
+            var mevcutKayitlar = new List<object>();
+            var yeniEklenenler = new List<object>();
+            var hataliSatirlar = new List<string>();
+            var dosyadakiKodlar = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            await using var connection = new MySqlConnection(_connectionString);
+            await connection.OpenAsync();
+            await using var transaction = await connection.BeginTransactionAsync();
+
+            try
+            {
+                var lastRow = worksheet.LastRowUsed()!.RowNumber();
+                for (var row = 2; row <= lastRow; row++)
+                {
+                    var perNo = worksheet.Cell(row, 1).GetString().Trim();
+                    var ad = worksheet.Cell(row, 2).GetString().Trim();
+                    var soyad = worksheet.Cell(row, 3).GetString().Trim();
+                    var birim = worksheet.Cell(row, 4).GetString().Trim();
+                    var statu = worksheet.Cell(row, 5).GetString().Trim();
+
+                    if (string.IsNullOrWhiteSpace(perNo) && string.IsNullOrWhiteSpace(ad) && string.IsNullOrWhiteSpace(soyad))
+                        continue;
+
+                    if (string.IsNullOrWhiteSpace(ad) || string.IsNullOrWhiteSpace(soyad))
+                    {
+                        hataliSatirlar.Add($"{row}. satır: ADI ve SOYADI boş olamaz.");
+                        continue;
+                    }
+
+                    var personel = new
+                    {
+                        perNo,
+                        ad,
+                        soyad,
+                        birim,
+                        statu
+                    };
+
+                    if (!string.IsNullOrWhiteSpace(perNo) && !dosyadakiKodlar.Add(perNo))
+                    {
+                        mevcutKayitlar.Add(personel);
+                        continue;
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(perNo))
+                    {
+                        await using var mevcutCommand = new MySqlCommand(
+                            "SELECT ad, soyad, birim_adi, per_statu FROM personeller WHERE per_no = @perNo LIMIT 1",
+                            connection, transaction);
+                        mevcutCommand.Parameters.AddWithValue("@perNo", perNo);
+                        await using var reader = await mevcutCommand.ExecuteReaderAsync();
+                        if (await reader.ReadAsync())
+                        {
+                            mevcutKayitlar.Add(new
+                            {
+                                perNo,
+                                ad = reader.IsDBNull(0) ? string.Empty : reader.GetString(0),
+                                soyad = reader.IsDBNull(1) ? string.Empty : reader.GetString(1),
+                                birim = reader.IsDBNull(2) ? string.Empty : reader.GetString(2),
+                                statu = reader.IsDBNull(3) ? string.Empty : reader.GetString(3)
+                            });
+                            continue;
+                        }
+                    }
+
+                    await using var insertCommand = new MySqlCommand(@"
+                        INSERT IGNORE INTO personeller (per_no, ad, soyad, birim_adi, per_statu)
+                        VALUES (@perNo, @ad, @soyad, @birim, @statu)", connection, transaction);
+                    insertCommand.Parameters.AddWithValue("@perNo", string.IsNullOrWhiteSpace(perNo) ? DBNull.Value : perNo);
+                    insertCommand.Parameters.AddWithValue("@ad", ad);
+                    insertCommand.Parameters.AddWithValue("@soyad", soyad);
+                    insertCommand.Parameters.AddWithValue("@birim", string.IsNullOrWhiteSpace(birim) ? DBNull.Value : birim);
+                    insertCommand.Parameters.AddWithValue("@statu", string.IsNullOrWhiteSpace(statu) ? DBNull.Value : statu);
+
+                    if (await insertCommand.ExecuteNonQueryAsync() > 0)
+                        yeniEklenenler.Add(personel);
+                    else
+                        mevcutKayitlar.Add(personel);
+                }
+
+                await transaction.CommitAsync();
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+
+            var mesaj = $"Aktarım tamamlandı. {yeniEklenenler.Count} yeni kayıt eklendi, {mevcutKayitlar.Count} mevcut kayıt atlandı.";
+            if (hataliSatirlar.Count > 0)
+                mesaj += $" {hataliSatirlar.Count} hatalı satır işlenmedi.";
+
+            return Json(new
+            {
+                basarili = true,
+                mesaj,
+                mevcutKayitlar,
+                yeniEklenenler,
+                hataliSatirlar
+            });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { basarili = false, mesaj = "Excel aktarımı sırasında hata oluştu: " + ex.Message });
+        }
     }
 
     /// <summary>

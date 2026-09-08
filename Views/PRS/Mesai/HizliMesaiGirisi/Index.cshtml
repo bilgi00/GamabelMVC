@@ -4,7 +4,7 @@
     // TÜM değişkenleri burada tanımla
     var birimler = (ViewBag.Birimler as List<string>) ?? new List<string>();
     var personeller = (ViewBag.Personeller as List<dynamic>) ?? new List<dynamic>();
-    var personelMesaiVerileri = (ViewBag.PersonelMesaiVerileri as Dictionary<int, Dictionary<string, dynamic>>) ?? new Dictionary<int, Dictionary<string, dynamic>>();
+    var personelMesaiVerileri = (ViewBag.PersonelMesaiVerileri as Dictionary<string, Dictionary<string, dynamic>>) ?? new Dictionary<string, Dictionary<string, dynamic>>();
     var secilenYil = (int?)ViewBag.SecilenYil ?? DateTime.Now.Year;
     var secilenAy = (int?)ViewBag.SecilenAy ?? DateTime.Now.Month;
     var secilenBirim = (string?)ViewBag.SecilenBirim ?? "";
@@ -804,13 +804,13 @@
                                         var haftaSinif = isWeekend ? (tarih.DayOfWeek == DayOfWeek.Saturday ? "weekend-sat-col" : "weekend-sun-col") : "";
                                         var bugunMu = tarih.Date == DateTime.Now.Date;
 
-                                        if (personelMesaiVerileri.ContainsKey(personel.Id) &&
-                                            personelMesaiVerileri[personel.Id].ContainsKey(gun.ToString()))
+                                        if (personelMesaiVerileri.ContainsKey(personel.PerNo) &&
+                                            personelMesaiVerileri[personel.PerNo].ContainsKey(gun.ToString()))
                                         {
-                                            var mesai = personelMesaiVerileri[personel.Id][gun.ToString()];
+                                            var mesai = personelMesaiVerileri[personel.PerNo][gun.ToString()];
                                             var saatStr = FormatSaatDakika(mesai.ToplamSaat);
                                             <td class="@haftaSinif @(bugunMu ? "cell-today" : "")" data-gun="@gun" data-saat="@mesai.ToplamSaat.ToString(System.Globalization.CultureInfo.InvariantCulture)" style="padding:1px;">
-                                                <div class="mesai-cell" onclick="mesaiDetay(@personel.Id, @gun, @mesai.Id)" oncontextmenu="silMesai(event, @personel.Id, @gun, @mesai.Id)" title="Tıkla düzenle, Sağ tık sil" data-bs-toggle="tooltip" style="min-height:30px; font-size:11px;">
+                                                <div class="mesai-cell" onclick="mesaiDetay('@personel.PerNo', @gun, @mesai.Id)" oncontextmenu="silMesai(event, '@personel.PerNo', @gun, @mesai.Id)" title="Tıkla düzenle, Sağ tık sil" data-bs-toggle="tooltip" style="min-height:30px; font-size:11px;">
                                                     <span class="badge-pill" style="font-size:10px; padding:2px 8px;">@saatStr</span>
                                                 </div>
                                             </td>
@@ -818,17 +818,17 @@
                                         else
                                         {
                                             <td class="@haftaSinif @(bugunMu ? "cell-today" : "")" data-gun="@gun" data-saat="0" style="padding:1px;">
-                                                <div class="mesai-cell" onclick="yeniMesaiEkle(@personel.Id, @gun)" title="Mesai Gir" data-bs-toggle="tooltip" style="min-height:30px;">
+                                                <div class="mesai-cell" onclick="yeniMesaiEkle('@personel.PerNo', @gun)" title="Mesai Gir" data-bs-toggle="tooltip" style="min-height:30px;">
                                                     <span class="empty-plus" style="font-size:16px;">+</span>
                                                 </div>
                                             </td>
                                         }
                                     }
-                                    <td class="personel-toplam" data-personel-id="@personel.Id" style="font-size:11px; padding:3px 4px;">
-                                        <span id="toplam-@personel.Id">00:00</span>
+                                    <td class="personel-toplam" data-personel-id="@personel.PerNo" style="font-size:11px; padding:3px 4px;">
+                                        <span id="toplam-@personel.PerNo">00:00</span>
                                     </td>
-                                    <td class="personel-toplam-detay" data-personel-id="@personel.Id" style="font-size:10px; padding:3px 4px;">
-                                        <span id="toplamDetay-@personel.Id">
+                                    <td class="personel-toplam-detay" data-personel-id="@personel.PerNo" style="font-size:10px; padding:3px 4px;">
+                                        <span id="toplamDetay-@personel.PerNo">
                                             <span class="normal-saat">00:00</span><br/>
                                             <span class="ekstra-saat">+0</span><br/>
                                             <span class="toplam-saat">00:00</span>
@@ -891,16 +891,16 @@
                 <div class="modal-body" style="padding:16px;">
                     <div class="mb-2">
                         <label class="form-label fw-semibold" style="font-size:13px;"><i class="bi bi-calendar3 me-2"></i>Tarih</label>
-                        <input id="mesaiTarih" type="text" class="form-control" readonly style="font-size:13px; padding:8px 12px;" />
+                        <input id="mesaiTarih" type="text" class="form-control" readonly style="font-size:13px; padding:8px 16px;" />
                     </div>
                     <div class="row g-2">
                         <div class="col-6">
                             <label class="form-label fw-semibold" style="font-size:13px;"><i class="bi bi-clock me-2"></i>Başlangıç</label>
-                            <input id="mesaiBaslangic" type="time" class="form-control" style="font-size:13px; padding:8px 12px;" />
+                            <input id="mesaiBaslangic" type="time" class="form-control" style="font-size:13px; padding:8px 16px;" />
                         </div>
                         <div class="col-6">
                             <label class="form-label fw-semibold" style="font-size:13px;"><i class="bi bi-clock me-2"></i>Bitiş</label>
-                            <input id="mesaiBitis" type="time" class="form-control" style="font-size:13px; padding:8px 12px;" />
+                            <input id="mesaiBitis" type="time" class="form-control" style="font-size:13px; padding:8px 16px;" />
                         </div>
                     </div>
                     <div class="row g-2 mt-2">
@@ -945,7 +945,7 @@
                             <option value="">-- Personel Seçiniz --</option>
                             @foreach (var personel in personeller)
                             {
-                                <option value="@personel.Id">@personel.AdSoyad</option>
+                                <option value="@personel.PerNo">@personel.AdSoyad</option>
                             }
                         </select>
                     </div>
@@ -1333,7 +1333,7 @@
             bilgiEl.textContent = 'Süre: ' + saat + ' saat ' + dakika + ' dk';
 
             // Aylık 88 saat kontrolü
-            if (seciliHucre.personelId > 0) {
+            if (seciliHucre.personelId) {
                 const toplamSpan = document.querySelector('.personel-toplam[data-personel-id="' + seciliHucre.personelId + '"] span');
                 if (toplamSpan) {
                     const txt = toplamSpan.textContent.trim();
@@ -1488,7 +1488,7 @@
             }
 
             // 88 saat aylık kontrolü
-            if (seciliHucre.personelId > 0) {
+            if (seciliHucre.personelId) {
                 const toplamSpan = document.querySelector('.personel-toplam[data-personel-id="' + seciliHucre.personelId + '"] span');
                 if (toplamSpan) {
                     const txt = toplamSpan.textContent.trim();
@@ -1616,7 +1616,7 @@
             for (const day of selectedDays) {
                 const tarih = `${@secilenYil}-${String(@secilenAy).padStart(2, '0')}-${String(day.gun).padStart(2, '0')}`;
                 const payload = {
-                    personelId: parseInt(personelId),
+                    personelId: personelId,
                     tarih: tarih,
                     baslangicSaati: day.start,
                     bitisSaati: day.end,

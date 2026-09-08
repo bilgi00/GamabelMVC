@@ -1,0 +1,52 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Report ScriptLanguage="CSharp" ReportInfo.Created="2026-08-23" ReportInfo.Modified="08/24/2026 03:48:03" ReportInfo.CreatorVersion="2026.2.0.0">
+  <Dictionary>
+    <TableDataSource Name="OdemeTalimat" ReferenceName="OdemeTalimat" DataType="System.Int32" Enabled="true">
+      <Column Name="Sira" DataType="System.Int32"/>
+      <Column Name="FirmaOdemeIsmi" DataType="System.String"/>
+      <Column Name="FirmaIBAN" DataType="System.String"/>
+      <Column Name="Aciklama" DataType="System.String"/>
+      <Column Name="Tutar" DataType="System.Decimal"/>
+    </TableDataSource>
+    <Parameter Name="TalimatNo" DataType="System.String" AsString=""/>
+    <Parameter Name="Tarih" DataType="System.String" AsString=""/>
+    <Parameter Name="BankaIBAN" DataType="System.String" AsString=""/>
+    <Parameter Name="BankaSubeAdi" DataType="System.String" AsString=""/>
+    <Parameter Name="ToplamAdet" DataType="System.Int32" AsString=""/>
+    <Parameter Name="ToplamTutar" DataType="System.String" AsString=""/>
+  </Dictionary>
+  <ReportPage Name="Page1" LeftMargin="12" TopMargin="12" RightMargin="12" BottomMargin="12" Watermark.Font="Arial, 60pt">
+    <ReportTitleBand Name="ReportTitle1" Width="703.08" Height="126.63">
+      <TextObject Name="Kurum" Width="702.54" Height="28.35" Text="GAMABEL YATIRIM LTD" HorzAlign="Center" VertAlign="Center" Font="Arial, 14pt, style=Bold" TextFill.Color="30, 60, 114"/>
+      <TextObject Name="Baslik" Top="28.35" Width="702.54" Height="25.51" Text="ÖDEME TALİMATI" HorzAlign="Center" VertAlign="Center" Font="Arial, 11pt, style=Bold" TextFill.Color="108, 117, 125"/>
+      <ShapeObject Name="BaslikCizgisi" Top="53.86" Width="702.54" Height="1.89" Fill.Color="13, 110, 253"/>
+      <TextObject Name="TalimatBilgi" Top="62.37" Width="702.54" Height="22.68" Border.Lines="All" Fill.Color="248, 249, 250" Text="Talimat No: [TalimatNo]" VertAlign="Center" Font="Arial, 9pt, style=Bold"/>
+      <TextObject Name="Aciklama" Top="88.73" Width="702.54" Height="37.8" Text="Şubenizde bulunan şirketimize ait [BankaIBAN] numaralı hesabımızdan aşağıda bilgileri yazılı alıcılara EFT/Havale yapılmasını talep ederiz." Font="Arial, 8pt"/>
+      <TextObject Name="Text1" Left="595.35" Top="66.15" Width="94.5" Height="18.9" Text="Tarih: [Tarih]" Font="Arial, 10pt"/>
+    </ReportTitleBand>
+    <PageHeaderBand Name="PageHeader1" Top="130.63" Width="703.08" Height="28.35">
+      <TextObject Name="H1" Width="28.35" Height="28.35" Border.Lines="All" Fill.Color="13, 110, 253" HorzAlign="Center" VertAlign="Center" Font="Arial, 8pt, style=Bold" TextFill.Color="White"/>
+      <TextObject Name="H2" Left="28.35" Width="170.08" Height="28.35" Border.Lines="All" Fill.Color="13, 110, 253" Text="Alıcı İsmi" VertAlign="Center" Font="Arial, 8pt, style=Bold" TextFill.Color="White"/>
+      <TextObject Name="H3" Left="198.43" Width="189.92" Height="28.35" Border.Lines="All" Fill.Color="13, 110, 253" Text="IBAN" VertAlign="Center" Font="Arial, 8pt, style=Bold" TextFill.Color="White"/>
+      <TextObject Name="H4" Left="388.35" Width="198.43" Height="28.35" Border.Lines="All" Fill.Color="13, 110, 253" Text="Açıklama" VertAlign="Center" Font="Arial, 8pt, style=Bold" TextFill.Color="White"/>
+      <TextObject Name="H5" Left="586.78" Width="115.76" Height="28.35" Border.Lines="All" Fill.Color="13, 110, 253" Text="Tutar (TL)" HorzAlign="Right" VertAlign="Center" Font="Arial, 8pt, style=Bold" TextFill.Color="White"/>
+    </PageHeaderBand>
+    <DataBand Name="Data1" Top="162.98" Width="703.08" Height="24.57" CanGrow="true" KeepChild="true" DataSource="OdemeTalimat">
+      <TextObject Name="D1" Width="28.35" Height="24.57" Border.Lines="All" ShiftMode="WhenOverlapped" Text="[OdemeTalimat.Sira]" HorzAlign="Center" VertAlign="Center" Font="Arial, 8pt"/>
+      <TextObject Name="D2" Left="28.35" Width="170.08" Height="24.57" Border.Lines="All" ShiftMode="WhenOverlapped" Text="[OdemeTalimat.FirmaOdemeIsmi]" VertAlign="Center" Font="Arial, 8pt"/>
+      <TextObject Name="D3" Left="198.43" Width="189.92" Height="24.57" Border.Lines="All" ShiftMode="WhenOverlapped" Text="[OdemeTalimat.FirmaIBAN]" VertAlign="Center" Font="Arial, 8pt"/>
+      <TextObject Name="D4" Left="388.35" Width="198.43" Height="24.57" Border.Lines="All" ShiftMode="WhenOverlapped" Text="[OdemeTalimat.Aciklama]" VertAlign="Center" Font="Arial, 8pt" Clip="false"/>
+      <TextObject Name="D5" Left="586.78" Width="115.76" Height="24.57" Border.Lines="All" ShiftMode="WhenOverlapped" Text="[OdemeTalimat.Tutar]" Format="Number" Format.UseLocale="true" Format.DecimalDigits="2" HorzAlign="Right" VertAlign="Center" Font="Arial, 8pt, style=Bold"/>
+    </DataBand>
+    <ReportSummaryBand Name="ReportSummary1" Top="191.55" Width="703.08" Height="188.99">
+      <TextObject Name="Toplam" Top="14.17" Width="702.54" Height="56.7" Border.Lines="All" Fill.Color="248, 249, 250" Text="[ToplamAdet] Adet EFT/Havale yapılmasını ve oluşacak ücret, masraf ve vergilerin [BankaIBAN] numaralı hesabımızdan tahsili için gereğinin yapılmasını arz ederiz.&#13;&#10;&#13;&#10;Genel Toplam: [ToplamTutar] TL" HorzAlign="Center" VertAlign="Center" Font="Arial, 8pt, style=Bold"/>
+      <TextObject Name="Hazirlayan" Left="28.35" Top="103.94" Width="283.46" Height="18.9" Text="HAZIRLAYAN" HorzAlign="Center" Font="Arial, 9pt, style=Bold" TextFill.Color="108, 117, 125"/>
+      <TextObject Name="HazirlayanCizgi" Left="56.7" Top="151.18" Width="226.77" Height="1.89" Fill.Color="222, 226, 230" Font="Arial, 10pt"/>
+      <TextObject Name="Onaylayan" Left="390.73" Top="103.94" Width="283.46" Height="18.9" Text="ONAYLAYAN" HorzAlign="Center" Font="Arial, 9pt, style=Bold" TextFill.Color="108, 117, 125"/>
+      <TextObject Name="OnaylayanCizgi" Left="418.58" Top="151.18" Width="226.77" Height="1.89" Fill.Color="222, 226, 230" Font="Arial, 10pt"/>
+    </ReportSummaryBand>
+    <PageFooterBand Name="PageFooter1" Top="384.54" Width="703.08" Height="18.9">
+      <TextObject Name="Footer" Width="702.54" Height="18.9" Text="FRM.01 v3    1                                  [DateTime.Now]                                      Sayfa [PageN] / [TotalPages]" Font="Arial, 7pt" TextFill.Color="108, 117, 125"/>
+    </PageFooterBand>
+  </ReportPage>
+</Report>

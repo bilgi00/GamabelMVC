@@ -1,0 +1,29 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+  <metadata>
+    <id>FastReport.OpenSource.Web</id>
+    <version>2026.2.3</version>
+    <authors>Fast Reports Inc.</authors>
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
+    <license type="file">FastReport MIT license.md</license>
+    <licenseUrl>https://aka.ms/deprecateLicenseUrl</licenseUrl>
+    <icon>frlogo192.png</icon>
+    <projectUrl>https://www.fast-report.com/en/product/fast-report-net</projectUrl>
+    <description>Package Description</description>
+    <copyright>Fast Reports Inc.</copyright>
+    <tags>reporting, reports, pdf, html, mvc, core</tags>
+    <repository type="git" url="https://github.com/FastReports/FastReport" branch="refs/heads/master" commit="1fd45174a0cb9c7abeee8010f72f470426e37ac9" />
+    <dependencies>
+      <group targetFramework="net6.0" />
+      <group targetFramework="net6.0-windows7.0" />
+    </dependencies>
+    <frameworkReferences>
+      <group targetFramework="net6.0">
+        <frameworkReference name="Microsoft.AspNetCore.App" />
+      </group>
+      <group targetFramework="net6.0-windows7.0">
+        <frameworkReference name="Microsoft.AspNetCore.App" />
+      </group>
+    </frameworkReferences>
+  </metadata>
+</package>

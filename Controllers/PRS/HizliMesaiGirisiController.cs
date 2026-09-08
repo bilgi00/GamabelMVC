@@ -68,11 +68,11 @@ public class HizliMesaiGirisiController : Controller
             ViewBag.Rol = rol;
 
             var personeller = new List<dynamic>();
-            var personelMesaiVerileri = new Dictionary<int, Dictionary<string, dynamic>>();
+            var personelMesaiVerileri = new Dictionary<string, Dictionary<string, dynamic>>();
 
             if (!string.IsNullOrEmpty(birim))
             {
-                var personelQuery = "SELECT id, ad, soyad, per_statu FROM personeller WHERE birim_adi = @birim ORDER BY ad, soyad";
+                var personelQuery = "SELECT per_no, ad, soyad, per_statu FROM personeller WHERE birim_adi = @birim ORDER BY ad, soyad";
 
                 try
                 {
@@ -88,7 +88,7 @@ public class HizliMesaiGirisiController : Controller
                                 
                                 personeller.Add(new
                                 {
-                                    Id = reader.GetInt32("id"),
+                                    PerNo = reader.GetString("per_no"),
                                     Ad = ad,
                                     Soyad = soyad,
                                     AdSoyad = ad + " " + soyad,
@@ -108,9 +108,8 @@ public class HizliMesaiGirisiController : Controller
                            mk.toplam_saat, mk.aciklama,
                            mk.baslangic, mk.bitis
                     FROM mesai_kayitlari mk
-                    WHERE mk.personel_id IN (
-                        SELECT id FROM personeller WHERE birim_adi = @birim
-                    )
+                    INNER JOIN personeller p ON p.per_no = mk.personel_id
+                    WHERE p.birim_adi = @birim
                     AND YEAR(mk.tarih) = @Yil 
                     AND MONTH(mk.tarih) = @Ay
                     ORDER BY mk.tarih ASC";
@@ -127,7 +126,7 @@ public class HizliMesaiGirisiController : Controller
                         {
                             while (await reader.ReadAsync())
                             {
-                                var personelId = reader.GetInt32("personel_id");
+                                var personelNo = reader.GetString("personel_id");
                                 var tarihStr = reader["tarih"]?.ToString() ?? "";
                                 
                                 if (!DateTime.TryParse(tarihStr, out var tarih))
@@ -138,13 +137,13 @@ public class HizliMesaiGirisiController : Controller
                                 
                                 var gun = tarih.Day;
 
-                                if (!personelMesaiVerileri.ContainsKey(personelId))
-                                    personelMesaiVerileri[personelId] = new Dictionary<string, dynamic>();
+                                if (!personelMesaiVerileri.ContainsKey(personelNo))
+                                    personelMesaiVerileri[personelNo] = new Dictionary<string, dynamic>();
 
                                 var toplamSaat = Convert.ToDecimal(reader["toplam_saat"]);
                                 var toplamSaatStr = toplamSaat.ToString(CultureInfo.InvariantCulture);
 
-                                personelMesaiVerileri[personelId][gun.ToString()] = new
+                                personelMesaiVerileri[personelNo][gun.ToString()] = new
                                 {
                                     Id = reader.GetInt32("id"),
                                     BaslangicSaati = reader["baslangic"]?.ToString() ?? "",
@@ -192,8 +191,8 @@ public class HizliMesaiGirisiController : Controller
             return BadRequest("Geçersiz istek verisi");
 
         // 2. Personel ID kontrolü
-        if (model.PersonelId <= 0)
-            return BadRequest("Geçersiz personel ID");
+        if (string.IsNullOrWhiteSpace(model.PersonelId))
+            return BadRequest("Geçersiz personel per_no");
 
         // 3. Tarih kontrolü
         if (string.IsNullOrEmpty(model.Tarih))
@@ -597,7 +596,7 @@ public class HizliMesaiGirisiController : Controller
                        p.birim_adi AS SubeAdi,
                        mk.tarih, mk.baslangic, mk.bitis, mk.toplam_saat, mk.aciklama
                 FROM mesai_kayitlari mk
-                LEFT JOIN personeller p ON mk.personel_id = p.id
+                LEFT JOIN personeller p ON mk.personel_id = p.per_no
                 WHERE 1=1";
 
             if (!string.IsNullOrWhiteSpace(subeAdi))
@@ -655,7 +654,7 @@ public class HizliMesaiGirisiController : Controller
     // ============================================================
     public class MesaiKayitModel
     {
-        public int PersonelId { get; set; }
+        public string PersonelId { get; set; } = "";
         public string Tarih { get; set; } = string.Empty;
         public string BaslangicSaati { get; set; } = string.Empty;
         public string BitisSaati { get; set; } = string.Empty;
