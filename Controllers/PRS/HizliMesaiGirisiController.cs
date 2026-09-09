@@ -25,11 +25,14 @@ public class HizliMesaiGirisiController : Controller
         var rol = HttpContext.Session.GetString("Rol") ?? "birim_amiri";
         var kullaniciBirim = HttpContext.Session.GetString("Birim") ?? "";
 
+        yil ??= DateTime.Now.Year;
+        ay ??= DateTime.Now.Month;
+
+        if (yil < 1 || ay < 1 || ay > 12)
+            return BadRequest("Geçersiz yıl veya ay.");
+
         try
         {
-            yil = yil ?? DateTime.Now.Year;
-            ay = ay ?? DateTime.Now.Month;
-
             var birimler = new List<string>();
             await using var conn = await _dbFactory.CreateConnectionAsync();
             

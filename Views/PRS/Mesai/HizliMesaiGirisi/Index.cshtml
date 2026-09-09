@@ -8,7 +8,7 @@
     var secilenYil = (int?)ViewBag.SecilenYil ?? DateTime.Now.Year;
     var secilenAy = (int?)ViewBag.SecilenAy ?? DateTime.Now.Month;
     var secilenBirim = (string?)ViewBag.SecilenBirim ?? "";
-    var gunSayisi = (int)ViewBag.GunSayisi;
+    var gunSayisi = (int?)ViewBag.GunSayisi ?? DateTime.DaysInMonth(secilenYil, secilenAy);
     var rol = ViewBag.Rol ?? "";
     var kullaniciBirim = ViewBag.KullaniciBirim ?? "";
     var isAdmin = ViewBag.Rol == "admin";

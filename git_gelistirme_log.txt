@@ -31,3 +31,4 @@
 [2026-09-07 22:18:04] Uygulama calistirildi: D:\GamabelMVC\gamabelmvc.csproj
 [2026-09-07 23:10:29] GAMABEL MVC Gelistirme Merkezi baslatildi.
 >>>>>>> ddeb1c09e8df6ffe9de04f8b2ba13cad0ecf1bb9
+[2026-09-09 16:31:20] GAMABEL MVC Gelistirme Merkezi baslatildi.
