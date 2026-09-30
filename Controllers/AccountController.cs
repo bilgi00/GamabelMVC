@@ -1,11 +1,16 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using MySqlConnector;
 using gamabelmvc.Models;
 using gamabelmvc.Models.PRS;
 using gamabelmvc.Services;
+using System.Security.Claims;
 
 namespace gamabelmvc.Controllers;
 
+[AllowAnonymous]
 public class AccountController : Controller
 {
     private readonly string _connectionString;
@@ -57,14 +62,19 @@ public class AccountController : Controller
 
                 var personelId = reader.GetInt32(0);
                 var roleName = reader.IsDBNull(2) ? "birim_amiri" : reader.GetString(2);
+                var birim = reader.IsDBNull(1) ? "" : reader.GetString(1);
+                var email = reader.IsDBNull(4) ? "" : reader.GetString(4);
+                await reader.DisposeAsync();
+                HttpContext.Session.Clear();
                 HttpContext.Session.SetInt32("PersonelId", personelId);
                 HttpContext.Session.SetString("KullaniciAdi", model.KullaniciAdi);
-                HttpContext.Session.SetString("Birim", reader.IsDBNull(1) ? "" : reader.GetString(1));
+                HttpContext.Session.SetString("Birim", birim);
                 HttpContext.Session.SetString("Rol", roleName);
-                HttpContext.Session.SetString("KullaniciEmail", reader.IsDBNull(4) ? "" : reader.GetString(4));
+                HttpContext.Session.SetString("KullaniciEmail", email);
                 HttpContext.Session.SetString("ActiveModule", "Personel");
 
                 await LoadAndSetRolePermissionsAsync(connection, roleName);
+                await SignInUserAsync("Personel", roleName, model.KullaniciAdi, personelId, null, birim);
 
                 return RedirectToAction("Index", "Kullanici");
             }
@@ -81,10 +91,16 @@ public class AccountController : Controller
         }
     }
 
-    public IActionResult Logout()
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Logout()
     {
+        var activeModule = HttpContext.Session.GetString("ActiveModule");
         HttpContext.Session.Clear();
-        return RedirectToAction("Login");
+        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        return activeModule == "STS"
+            ? RedirectToAction("StsLogin")
+            : RedirectToAction("Login");
     }
 
     private static async Task EnsureUserEmailColumnAsync(MySqlConnection connection)
@@ -231,6 +247,14 @@ public class AccountController : Controller
             HttpContext.Session.SetInt32("SubeId", Convert.ToInt32(reader["SubeId"]));
             HttpContext.Session.SetString("KullaniciAdi", reader["KullaniciAdi"]?.ToString() ?? model.KullaniciAdi);
             HttpContext.Session.SetString("Rol", reader["Rol"]?.ToString() ?? "SubePersoneli");
+            await SignInUserAsync(
+                "STS",
+                reader["Rol"]?.ToString() ?? "SubePersoneli",
+                reader["KullaniciAdi"]?.ToString() ?? model.KullaniciAdi,
+                null,
+                kullaniciId,
+                null,
+                Convert.ToInt32(reader["SubeId"]));
 
             // Giriş işlemini günlüğe kaydet
             _ = LogUserLogin(kullaniciId, true);
@@ -242,6 +266,56 @@ public class AccountController : Controller
             ViewBag.Hata = "STS giriş hatası: " + ex.Message;
             return View(model);
         }
+    }
+
+    private async Task SignInUserAsync(
+        string module,
+        string role,
+        string username,
+        int? personelId,
+        int? kullaniciId,
+        string? birim,
+        int? subeId = null)
+    {
+        var claims = new List<Claim>
+        {
+            new(ClaimTypes.Name, username),
+            new(ClaimTypes.Role, role),
+            new("app_module", module),
+            new("auth_time", DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString())
+        };
+
+        if (personelId.HasValue)
+            claims.Add(new Claim("personel_id", personelId.Value.ToString()));
+        if (kullaniciId.HasValue)
+            claims.Add(new Claim("kullanici_id", kullaniciId.Value.ToString()));
+        if (!string.IsNullOrEmpty(birim))
+            claims.Add(new Claim("birim", birim));
+        if (subeId.HasValue)
+            claims.Add(new Claim("sube_id", subeId.Value.ToString()));
+
+        foreach (var menu in new[]
+        {
+            "Menu_KullaniciYonetimi", "Menu_Personel", "Menu_Puantaj", "Menu_Rapor", "Menu_Mesai",
+            "Menu_Tatiller", "Menu_OdemeTalimat", "Menu_FirmaYonetimi", "Menu_BankaYonetimi",
+            "Menu_Yetkilendirme", "Menu_Dokumantasyon", "Menu_SikayetAdmin"
+        })
+        {
+            if (HttpContext.Session.GetString(menu) == "1")
+                claims.Add(new Claim(menu.Replace("Menu_", "menu_", StringComparison.Ordinal).ToLowerInvariant(), "1"));
+        }
+
+        var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+        await HttpContext.SignInAsync(
+            CookieAuthenticationDefaults.AuthenticationScheme,
+            new ClaimsPrincipal(identity),
+            new AuthenticationProperties
+            {
+                IsPersistent = false,
+                IssuedUtc = DateTimeOffset.UtcNow,
+                ExpiresUtc = DateTimeOffset.UtcNow.AddMinutes(15),
+                AllowRefresh = true
+            });
     }
 
     /// <summary>

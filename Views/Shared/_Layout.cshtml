@@ -408,7 +408,11 @@
                                         <li><a class="dropdown-item" href="/Home/Index">📦 STS Dashboard</a></li>
                                     }
                                     <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item text-danger" asp-area="" asp-controller="Account" asp-action="Logout">🚪 Çıkış Yap</a></li>
+                                    <li>
+                                        <form asp-area="" asp-controller="Account" asp-action="Logout" method="post">
+                                            <button type="submit" class="dropdown-item text-danger">🚪 Çıkış Yap</button>
+                                        </form>
+                                    </li>
                                 </ul>
                             </li>
                         }

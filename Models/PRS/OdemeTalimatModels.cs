@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace gamabelmvc.Models.PRS;
 
@@ -91,4 +92,30 @@ public class OtTalimatSatiri
     public string Aciklama { get; set; } = string.Empty;
     public decimal Tutar { get; set; }
     public List<int> AcikFaturaIdleri { get; set; } = new();
+}
+
+public class ManuelTalimatModel
+{
+    [Required(ErrorMessage = "Talimat tarihi zorunludur.")]
+    public DateTime? TalimatTarihi { get; set; }
+
+    [Range(1, int.MaxValue, ErrorMessage = "Geçerli bir banka seçin.")]
+    public int BankaId { get; set; }
+
+    [MinLength(1, ErrorMessage = "En az bir fatura satırı ekleyin.")]
+    public List<ManuelTalimatSatiriModel> Satirlar { get; set; } = new() { new() };
+}
+
+public class ManuelTalimatSatiriModel
+{
+    [Range(1, int.MaxValue, ErrorMessage = "Her satır için bir firma seçin.")]
+    public int FirmaId { get; set; }
+
+    [Required(ErrorMessage = "Fatura adı zorunludur.")]
+    [StringLength(200, ErrorMessage = "Fatura adı en fazla 200 karakter olabilir.")]
+    public string FaturaAdi { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Tutar zorunludur.")]
+    [RegularExpression(@"^\d{1,16}([.,]\d{1,2})?$", ErrorMessage = "Tutar en fazla iki ondalık basamak içerebilir.")]
+    public string Tutar { get; set; } = string.Empty;
 }

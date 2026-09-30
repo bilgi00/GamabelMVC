@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using gamabelmvc.Services;
 using MySqlConnector;
 
 namespace gamabelmvc.Controllers.STS;
 
+[Authorize(Policy = "StsWarehouse")]
 public class RaporStsController : Controller
 {
     private readonly DbConnectionFactory _dbFactory;

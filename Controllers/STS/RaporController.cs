@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using MySqlConnector;
 
 namespace gamabelmvc.Controllers.STS;
 
+[Authorize(Policy = "PrsMenuRapor")]
 public class RaporController : Controller
 {
     private readonly string _connectionString;

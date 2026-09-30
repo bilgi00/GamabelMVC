@@ -32,3 +32,9 @@
 [2026-09-07 23:10:29] GAMABEL MVC Gelistirme Merkezi baslatildi.
 >>>>>>> ddeb1c09e8df6ffe9de04f8b2ba13cad0ecf1bb9
 [2026-09-09 16:31:20] GAMABEL MVC Gelistirme Merkezi baslatildi.
+[2026-09-09 16:33:20] Lokal -> GitHub push basarili. Branch: main | Commit: Mesa grs ekran kod duzeltmes
+[2026-09-09 17:31:17] Gelistirme Merkezi kapatildi.
+[2026-09-14 09:02:58] GAMABEL MVC Gelistirme Merkezi baslatildi.
+[2026-09-17 15:59:10] GAMABEL MVC Gelistirme Merkezi baslatildi.
+[2026-09-17 15:59:14] Gelistirme Merkezi kapatildi.
+[2026-09-29 13:41:03] GAMABEL MVC Gelistirme Merkezi baslatildi.

@@ -238,6 +238,22 @@ public async Task<List<OtFaturaViewModel>> GetTumAcikFaturalarWithFirmaAsync()
     // -----------------------------------------------------------------------
     // TALİMAT OLUŞTUR - GEÇİCİ (VERİTABANINA KAYIT YOK)
     // -----------------------------------------------------------------------
+    public async Task<string> GetSonrakiTalimatNoAsync()
+    {
+        var yil = DateTime.Now.Year;
+        await using var connection = new MySqlConnection(_connectionString);
+        await connection.OpenAsync();
+
+        await using var command = new MySqlCommand(
+            "SELECT son_sira FROM prs_ot_talimat_siralari WHERE yil = @yil",
+            connection);
+        command.Parameters.AddWithValue("@yil", yil);
+        var result = await command.ExecuteScalarAsync();
+        var sonSira = result == null || result == DBNull.Value ? 0 : Convert.ToInt32(result);
+
+        return $"G{DateTime.Now:yy}/{sonSira + 1}";
+    }
+
     public OtTalimat? TalimatOlusturGecici(
         List<int> secilenFaturaIdleri,
         int bankaId,
@@ -392,7 +408,8 @@ public async Task<List<OtFaturaViewModel>> GetTumAcikFaturalarWithFirmaAsync()
         if (geciciTalimat == null)
             throw new InvalidOperationException("Geçersiz talimat verisi.");
 
-        if (secilenFaturaIdleri == null || secilenFaturaIdleri.Count == 0)
+        if (secilenFaturaIdleri == null ||
+            (secilenFaturaIdleri.Count == 0 && (geciciTalimat.Satirlar == null || geciciTalimat.Satirlar.Count == 0)))
             throw new InvalidOperationException("Ödemeye dahil edilecek fatura seçilmedi.");
 
         await using var connection = new MySqlConnection(_connectionString);
@@ -401,36 +418,39 @@ public async Task<List<OtFaturaViewModel>> GetTumAcikFaturalarWithFirmaAsync()
 
         try
         {
-            var inClause = string.Join(",", secilenFaturaIdleri.Select((_, i) => $"@fid{i}"));
-            string faturaSql;
-            if (batchId > 0)
-                faturaSql = $"SELECT id, cari_kart, fatura_no, bakiye FROM prs_ot_acik_faturalar WHERE import_batch_id = @batchId AND id IN ({inClause}) FOR UPDATE";
-            else
-                faturaSql = $"SELECT id, cari_kart, fatura_no, bakiye FROM prs_ot_acik_faturalar WHERE id IN ({inClause}) FOR UPDATE";
-
-            var faturaCmd = new MySqlCommand(faturaSql, connection, tx);
-            if (batchId > 0)
-                faturaCmd.Parameters.AddWithValue("@batchId", batchId);
-            for (int i = 0; i < secilenFaturaIdleri.Count; i++)
-                faturaCmd.Parameters.AddWithValue($"@fid{i}", secilenFaturaIdleri[i]);
-
             var faturalar = new List<OtAcikFatura>();
-            using (var r = await faturaCmd.ExecuteReaderAsync())
+            if (secilenFaturaIdleri.Count > 0)
             {
-                while (await r.ReadAsync())
-                {
-                    faturalar.Add(new OtAcikFatura
-                    {
-                        Id = r.GetInt32(0),
-                        CariKart = r.GetString(1),
-                        FaturaNo = r.GetString(2),
-                        Bakiye = r.GetDecimal(3)
-                    });
-                }
-            }
+                var inClause = string.Join(",", secilenFaturaIdleri.Select((_, i) => $"@fid{i}"));
+                string faturaSql;
+                if (batchId > 0)
+                    faturaSql = $"SELECT id, cari_kart, fatura_no, bakiye FROM prs_ot_acik_faturalar WHERE import_batch_id = @batchId AND id IN ({inClause}) FOR UPDATE";
+                else
+                    faturaSql = $"SELECT id, cari_kart, fatura_no, bakiye FROM prs_ot_acik_faturalar WHERE id IN ({inClause}) FOR UPDATE";
 
-            if (faturalar.Count != secilenFaturaIdleri.Count)
-                throw new InvalidOperationException("Seçilen faturalar bulunamadı.");
+                var faturaCmd = new MySqlCommand(faturaSql, connection, tx);
+                if (batchId > 0)
+                    faturaCmd.Parameters.AddWithValue("@batchId", batchId);
+                for (int i = 0; i < secilenFaturaIdleri.Count; i++)
+                    faturaCmd.Parameters.AddWithValue($"@fid{i}", secilenFaturaIdleri[i]);
+
+                using (var r = await faturaCmd.ExecuteReaderAsync())
+                {
+                    while (await r.ReadAsync())
+                    {
+                        faturalar.Add(new OtAcikFatura
+                        {
+                            Id = r.GetInt32(0),
+                            CariKart = r.GetString(1),
+                            FaturaNo = r.GetString(2),
+                            Bakiye = r.GetDecimal(3)
+                        });
+                    }
+                }
+
+                if (faturalar.Count != secilenFaturaIdleri.Count)
+                    throw new InvalidOperationException("Seçilen faturalar bulunamadı.");
+            }
 
             var yil = DateTime.Now.Year;
             var siraBaslatCmd = new MySqlCommand(

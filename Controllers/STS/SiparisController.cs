@@ -1,10 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using gamabelmvc.Services;
 using MySqlConnector;
 using System.Text.Json;
 
 namespace gamabelmvc.Controllers.STS;
 
+[Authorize(Policy = "StsWarehouse")]
 public class SiparisController : Controller
 {
     private readonly DbConnectionFactory _dbFactory;

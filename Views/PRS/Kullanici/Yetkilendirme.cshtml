@@ -8,7 +8,9 @@
     <h3>Yetkilendirme Yönetimi</h3>
     <div>
         <span class="badge bg-secondary me-2">Hoş geldin, @ViewBag.KullaniciAdi</span>
-        <a asp-controller="Account" asp-action="Logout" class="btn btn-outline-danger btn-sm">Çıkış Yap</a>
+        <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
+            <button type="submit" class="btn btn-outline-danger btn-sm">Çıkış Yap</button>
+        </form>
     </div>
 </div>
 

@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using FastReport;
 using FastReport.Export.PdfSimple;
 using FastReport.Web;
@@ -6,9 +7,11 @@ using gamabelmvc.Services;
 using gamabelmvc.Models.PRS;
 using System.Text.Json;
 using System.Data;
+using System.Globalization;
 
 namespace gamabelmvc.Controllers.PRS;
 
+[Authorize(Policy = "PrsAdmin")]
 public class OdemeTalimatController : Controller
 {
     private readonly OdemeFaturaImportService _importService;
@@ -179,6 +182,112 @@ public class OdemeTalimatController : Controller
         }
 
         return View();
+    }
+
+    // -----------------------------------------------------------------------
+    // MANUEL KAYIT
+    // -----------------------------------------------------------------------
+    [HttpGet]
+    public async Task<IActionResult> ManuelKayit()
+    {
+        if (!IsLoggedIn()) return RedirectToAction("Login", "Account");
+        if (!IsAdmin()) return Forbid();
+
+        await ManuelKayitSecenekleriniYukle();
+        return View(new ManuelTalimatModel { TalimatTarihi = DateTime.Today });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ManuelTalimatOlustur(ManuelTalimatModel model)
+    {
+        if (!IsLoggedIn()) return RedirectToAction("Login", "Account");
+        if (!IsAdmin()) return Forbid();
+        if (model == null) return BadRequest();
+
+        if (model.Satirlar == null || model.Satirlar.Count == 0)
+            ModelState.AddModelError(nameof(model.Satirlar), "En az bir fatura satırı ekleyin.");
+
+        var bankalar = await _talimatService.GetBankalarAsync();
+        var firmalar = await _talimatService.GetFirmalarAsync();
+        var banka = bankalar.FirstOrDefault(b => b.Id == model.BankaId);
+        var firmaById = firmalar.ToDictionary(f => f.Id);
+
+        if (banka == null)
+            ModelState.AddModelError(nameof(model.BankaId), "Seçilen banka bulunamadı.");
+
+        var satirlar = model.Satirlar ?? new List<ManuelTalimatSatiriModel>();
+        var tutarBySatir = new Dictionary<ManuelTalimatSatiriModel, decimal>();
+        for (var i = 0; i < satirlar.Count; i++)
+        {
+            var satir = satirlar[i];
+            if (!firmaById.ContainsKey(satir.FirmaId))
+                ModelState.AddModelError(nameof(model.Satirlar), "Bir veya daha fazla satırda geçersiz firma seçildi.");
+
+            var tutarText = (satir.Tutar ?? string.Empty).Replace(',', '.');
+            if (decimal.TryParse(tutarText, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var tutar) &&
+                tutar >= 0.01m && tutar <= 9999999999999999.99m)
+            {
+                tutarBySatir[satir] = tutar;
+            }
+            else
+            {
+                ModelState.AddModelError($"Satirlar[{i}].Tutar", "Tutar 0,01 ile 9.999.999.999.999.999,99 arasında olmalıdır.");
+            }
+        }
+
+        if (!ModelState.IsValid)
+        {
+            ViewBag.Bankalar = bankalar;
+            ViewBag.Firmalar = firmalar;
+            return View("ManuelKayit", model);
+        }
+
+        var talimatSatirlari = satirlar
+            .GroupBy(s => s.FirmaId)
+            .Select(grup =>
+            {
+                var firma = firmaById[grup.Key];
+                return new OtTalimatSatiri
+                {
+                    FirmaId = firma.Id,
+                    FirmaOdemeIsmi = firma.OdemeIsmi,
+                    FirmaIBAN = firma.IBAN,
+                    Aciklama = string.Join(", ", grup.Select(s => "FATURA: " + s.FaturaAdi.Trim())),
+                    Tutar = grup.Sum(s => tutarBySatir[s]),
+                    AcikFaturaIdleri = new List<int>()
+                };
+            })
+            .ToList();
+
+        var geciciTalimat = new OtTalimat
+        {
+            Id = 0,
+            TalimatNo = await _talimatService.GetSonrakiTalimatNoAsync(),
+            Tarih = model.TalimatTarihi!.Value.Date,
+            BankaId = banka!.Id,
+            BankaSubeAdi = banka.SubeAdi,
+            BankaIBAN = banka.IBAN,
+            ToplamTutar = talimatSatirlari.Sum(s => s.Tutar),
+            ToplamAdet = talimatSatirlari.Count,
+            HazirlayanKullanici = KullaniciAdi(),
+            Durum = "beklemede",
+            Satirlar = talimatSatirlari
+        };
+
+        var jsonOptions = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+        HttpContext.Session.SetString("GeciciTalimat", JsonSerializer.Serialize(geciciTalimat, jsonOptions));
+        HttpContext.Session.SetString("GeciciFaturaIdleri", JsonSerializer.Serialize(new List<int>()));
+        HttpContext.Session.SetInt32("GeciciBatchId", 0);
+
+        TempData["Bilgi"] = "Manuel talimat oluşturuldu. Kaydetmek için 'Talimatı Kaydet' butonuna tıklayın.";
+        return RedirectToAction("Detay", new { id = 0 });
+    }
+
+    private async Task ManuelKayitSecenekleriniYukle()
+    {
+        ViewBag.Bankalar = await _talimatService.GetBankalarAsync();
+        ViewBag.Firmalar = await _talimatService.GetFirmalarAsync();
     }
 
     // -----------------------------------------------------------------------

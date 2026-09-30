@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using gamabelmvc.Models;
 using gamabelmvc.Models.STS;
 using gamabelmvc.Services;
@@ -10,6 +11,7 @@ using System.Text.RegularExpressions;
 
 namespace gamabelmvc.Controllers;
 
+[Authorize(Policy = "StsAdmin")]
 public class AdminController : Controller
 {
     private readonly DbConnectionFactory _dbFactory;

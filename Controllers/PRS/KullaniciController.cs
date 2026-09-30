@@ -1,10 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using MySqlConnector;
 using ClosedXML.Excel;
 using gamabelmvc.Models.PRS;
 
 namespace gamabelmvc.Controllers.PRS;
 
+[Authorize(Policy = "PrsMenuPersonel")]
 public class KullaniciController : Controller
 {
     private readonly string _connectionString;

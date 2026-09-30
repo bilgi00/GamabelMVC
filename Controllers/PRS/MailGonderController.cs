@@ -1,11 +1,13 @@
 // Controllers/PRS/MailGonderController.cs
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using MySqlConnector;
 using gamabelmvc.Services;
 using gamabelmvc.Models.PRS;
 
 namespace gamabelmvc.Controllers.PRS;
 
+[Authorize(Policy = "PrsMailAdmin")]
 public class MailGonderController : Controller
 {
     private readonly OdemeTalimatService _talimatService;

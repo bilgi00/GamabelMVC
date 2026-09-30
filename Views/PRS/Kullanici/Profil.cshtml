@@ -14,7 +14,9 @@
     <!-- User Info & Logout -->
     <div class="mb-4 d-flex justify-content-end gap-2">
         <span class="badge bg-info text-dark" style="height: fit-content;">Hoş geldin, <strong>@ViewBag.KullaniciAdi</strong></span>
-        <a asp-controller="Account" asp-action="Logout" class="btn btn-outline-danger btn-sm">🚪 Çıkış Yap</a>
+        <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
+            <button type="submit" class="btn btn-outline-danger btn-sm">🚪 Çıkış Yap</button>
+        </form>
     </div>
 
 

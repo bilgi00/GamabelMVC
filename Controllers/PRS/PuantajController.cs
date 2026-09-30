@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using MySqlConnector;
 using gamabelmvc.Models.PRS;
 
 namespace gamabelmvc.Controllers.PRS;
 
+[Authorize(Policy = "PrsMenuPuantaj")]
 public class PuantajController : Controller
 {
     private readonly string _connectionString;
@@ -77,8 +79,8 @@ public class PuantajController : Controller
             await connection.OpenAsync();
 
             var sql = (rol == "admin" && birim == "all")
-                ? "SELECT per_no, ad, soyad, birim_adi FROM personeller ORDER BY birim_adi, ad, soyad"
-                : "SELECT per_no, ad, soyad, birim_adi FROM personeller WHERE birim_adi = @birim ORDER BY ad, soyad";
+                ? "SELECT per_no, ad, soyad, birim_adi, per_statu FROM personeller ORDER BY birim_adi, ad, soyad"
+                : "SELECT per_no, ad, soyad, birim_adi, per_statu FROM personeller WHERE birim_adi = @birim ORDER BY ad, soyad";
 
             await using var cmd = new MySqlCommand(sql, connection);
             if (!(rol == "admin" && birim == "all"))
@@ -92,7 +94,8 @@ public class PuantajController : Controller
                     perNo = reader.IsDBNull(0) ? "" : reader.GetString(0),
                     ad = reader.IsDBNull(1) ? "" : reader.GetString(1),
                     soyad = reader.IsDBNull(2) ? "" : reader.GetString(2),
-                    birim = reader.IsDBNull(3) ? "" : reader.GetString(3)
+                    birim = reader.IsDBNull(3) ? "" : reader.GetString(3),
+                    statu = reader.IsDBNull(4) ? "" : reader.GetString(4)
                 });
             }
         }

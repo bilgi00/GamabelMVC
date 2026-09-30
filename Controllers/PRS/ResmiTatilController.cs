@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using MySqlConnector;
 
 namespace gamabelmvc.Controllers.PRS;
 
+[Authorize(Policy = "PrsMenuTatil")]
 public class ResmiTatilController : Controller
 {
     private readonly string _connectionString;

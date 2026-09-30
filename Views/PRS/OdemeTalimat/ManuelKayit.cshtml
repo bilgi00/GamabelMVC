@@ -1,0 +1,232 @@
+@model gamabelmvc.Models.PRS.ManuelTalimatModel
+@using gamabelmvc.Models.PRS
+
+@{
+    ViewData["Title"] = "Manuel Kayıt";
+    var bankalar = ViewBag.Bankalar as List<OtBanka> ?? new List<OtBanka>();
+    var firmalar = ViewBag.Firmalar as List<OtFirma> ?? new List<OtFirma>();
+}
+
+<style>
+    .ot-header { background: linear-gradient(135deg, #1e3c72, #2a5298); color: white; padding: 20px 24px; border-radius: 12px 12px 0 0; }
+    .ot-card { background: white; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); margin-bottom: 24px; overflow: visible; }
+    .ot-card-body { padding: 20px; }
+    .ot-btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 22px; font-size: 14px; font-weight: 600; border-radius: 8px; text-decoration: none; border: none; cursor: pointer; transition: all 0.2s; }
+    .ot-btn-primary { background: linear-gradient(135deg, #1e3c72, #2a5298); color: white; }
+    .ot-btn-primary:hover { opacity: 0.9; color: white; transform: translateY(-1px); }
+    .ot-btn-secondary { background: #6c757d; color: white; }
+    .ot-btn-secondary:hover { opacity: 0.9; color: white; }
+    .ot-btn-success { background: #198754; color: white; }
+    .ot-btn-success:hover { opacity: 0.9; color: white; }
+    .form-panel { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; margin-bottom: 18px; }
+    .manuel-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .manuel-table th { background: #f1f5f9; padding: 9px 10px; text-align: left; font-weight: 600; border-bottom: 2px solid #dee2e6; }
+    .manuel-table td { padding: 8px 6px; border-bottom: 1px solid #e9edf4; vertical-align: middle; }
+    .alert-hata { background: #fee2e2; border: 1px solid #fca5a5; color: #991b1b; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; }
+    .alert-bilgi { background: #dbeafe; border: 1px solid #93c5fd; color: #1e40af; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; }
+    .sticky-bar { position: sticky; bottom: 12px; margin-top: 20px; background: rgba(255,255,255,0.97); backdrop-filter: blur(8px); border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 -6px 20px rgba(15, 23, 42, 0.08); padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; gap: 12px; z-index: 20; }
+    .tutar-ozet { font-size: 15px; font-weight: 700; color: #1e3c72; }
+    .remove-row { width: 36px; height: 36px; border: 1px solid #fecaca; border-radius: 7px; color: #b91c1c; background: #fff; font-size: 18px; cursor: pointer; }
+    @@media (max-width: 768px) {
+        .manuel-table, .manuel-table tbody, .manuel-table tr, .manuel-table td { display: block; width: 100%; }
+        .manuel-table thead { display: none; }
+        .manuel-table tr { border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px; margin-bottom: 10px; background: white; }
+        .manuel-table td { border: 0; padding: 5px 0; }
+        .manuel-table td:last-child { text-align: right; }
+        .sticky-bar { align-items: stretch; flex-direction: column; }
+        .sticky-bar > div:last-child { display: flex; }
+        .sticky-bar .ot-btn { justify-content: center; flex: 1; }
+    }
+</style>
+
+<div class="ot-card">
+    <div class="ot-header">
+        <h3>✍️ Manuel Kayıt</h3>
+        <p style="opacity:0.85; margin:0; font-size:13px;">Fatura bilgilerini elle girerek ödeme talimatı oluşturun.</p>
+    </div>
+    <div class="ot-card-body">
+        @if (TempData["Hata"] != null)
+        {
+            <div class="alert-hata">❌ @TempData["Hata"]</div>
+        }
+        @if (TempData["Bilgi"] != null)
+        {
+            <div class="alert-bilgi">ℹ️ @TempData["Bilgi"]</div>
+        }
+        <div asp-validation-summary="ModelOnly" class="alert-hata"></div>
+
+        @if (!firmalar.Any())
+        {
+            <div class="alert-hata">
+                Ödeme alıcısı tanımlı firma bulunamadı. Önce <a href="/OdemeTalimat/Firmalar">Firma Yönetimi</a> bölümünden firma ve IBAN bilgisi ekleyin.
+            </div>
+        }
+        @if (!bankalar.Any())
+        {
+            <div class="alert-hata">
+                Ödeme hesabı tanımlı banka bulunamadı. Önce <a href="/OdemeTalimat/Bankalar">Banka Yönetimi</a> bölümünden banka ekleyin.
+            </div>
+        }
+
+        <form method="post" asp-controller="OdemeTalimat" asp-action="ManuelTalimatOlustur" id="manuelTalimatForm">
+            <div class="form-panel">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-6">
+                        <label asp-for="TalimatTarihi" class="form-label fw-semibold">Talimat tarihi</label>
+                        <input asp-for="TalimatTarihi" type="date" class="form-control" required />
+                        <span asp-validation-for="TalimatTarihi" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="BankaId" class="form-label fw-semibold">Ödemenin yapılacağı hesap</label>
+                        <select asp-for="BankaId" class="form-select" required>
+                            <option value="0">Banka seçin</option>
+                            @foreach (var banka in bankalar)
+                            {
+                                <option value="@banka.Id">@banka.SubeAdi — @banka.IBAN</option>
+                            }
+                        </select>
+                        <span asp-validation-for="BankaId" class="text-danger small"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap mb-2">
+                <h5 class="mb-0" style="color:#1e3c72;">Fatura satırları</h5>
+                <button type="button" class="ot-btn ot-btn-success" style="padding:7px 14px; font-size:13px;" id="addRowBtn">＋ Fatura Ekle</button>
+            </div>
+
+            <div class="table-responsive">
+                <table class="manuel-table">
+                    <thead>
+                        <tr>
+                            <th style="width:28%;">Ödeme yapılacak firma</th>
+                            <th>Fatura adı / numarası</th>
+                            <th style="width:20%; text-align:right;">Tutar (TL)</th>
+                            <th style="width:48px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="invoiceRows">
+                        @for (var i = 0; i < Model.Satirlar.Count; i++)
+                        {
+                            <tr class="invoice-row">
+                                <td>
+                                    <select name="Satirlar[@i].FirmaId" class="form-select" required>
+                                        <option value="0">Firma seçin</option>
+                                        @foreach (var firma in firmalar)
+                                        {
+                                            if (firma.Id == Model.Satirlar[i].FirmaId)
+                                            {
+                                                <option value="@firma.Id" selected>@firma.CariIsmi — @firma.OdemeIsmi</option>
+                                            }
+                                            else
+                                            {
+                                                <option value="@firma.Id">@firma.CariIsmi — @firma.OdemeIsmi</option>
+                                            }
+                                        }
+                                    </select>
+                                </td>
+                                <td>
+                                    <input name="Satirlar[@i].FaturaAdi" value="@Model.Satirlar[i].FaturaAdi" class="form-control" maxlength="200" placeholder="Fatura adı veya numarası" required />
+                                </td>
+                                <td>
+                                    <input name="Satirlar[@i].Tutar" value="@Model.Satirlar[i].Tutar" type="number" class="form-control text-end amount-input" min="0.01" max="9999999999999999.99" step="0.01" placeholder="0,00" required />
+                                </td>
+                                <td><button type="button" class="remove-row" title="Fatura satırını kaldır" aria-label="Fatura satırını kaldır">×</button></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <span asp-validation-for="Satirlar" class="text-danger small"></span>
+
+            <div class="sticky-bar">
+                <div>
+                    <div class="tutar-ozet" id="toplamTutar">Toplam: 0,00 TL</div>
+                    <div class="text-muted small" id="faturaSayisi">0 fatura</div>
+                </div>
+                <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                    <a href="/OdemeTalimat" class="ot-btn ot-btn-secondary">← Geri</a>
+                    <button type="submit" class="ot-btn ot-btn-primary" @(!bankalar.Any() || !firmalar.Any() ? "disabled" : "")>💳 Talimat Oluştur</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<template id="invoiceRowTemplate">
+    <tr class="invoice-row">
+        <td>
+            <select name="Satirlar[__index__].FirmaId" class="form-select" required>
+                <option value="0">Firma seçin</option>
+                @foreach (var firma in firmalar)
+                {
+                    <option value="@firma.Id">@firma.CariIsmi — @firma.OdemeIsmi</option>
+                }
+            </select>
+        </td>
+        <td><input name="Satirlar[__index__].FaturaAdi" class="form-control" maxlength="200" placeholder="Fatura adı veya numarası" required /></td>
+        <td><input name="Satirlar[__index__].Tutar" type="number" class="form-control text-end amount-input" min="0.01" max="9999999999999999.99" step="0.01" placeholder="0,00" required /></td>
+        <td><button type="button" class="remove-row" title="Fatura satırını kaldır" aria-label="Fatura satırını kaldır">×</button></td>
+    </tr>
+</template>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var rows = document.getElementById('invoiceRows');
+            var template = document.getElementById('invoiceRowTemplate');
+
+            function updateSummary() {
+                var amounts = Array.from(rows.querySelectorAll('.amount-input'));
+                var total = 0;
+                var count = 0;
+                amounts.forEach(function (input) {
+                    var amount = Number(input.value);
+                    var invoiceName = input.closest('tr').querySelector('input[name$=".FaturaAdi"]').value.trim();
+                    var firmId = input.closest('tr').querySelector('select').value;
+                    if (invoiceName && firmId !== '0' && amount > 0 && Number.isFinite(amount)) {
+                        total += amount;
+                        count++;
+                    }
+                });
+                document.getElementById('toplamTutar').textContent = 'Toplam: ' + total.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' TL';
+                document.getElementById('faturaSayisi').textContent = count + (count === 1 ? ' fatura' : ' fatura');
+            }
+
+            function reindexRows() {
+                rows.querySelectorAll('.invoice-row').forEach(function (row, index) {
+                    row.querySelectorAll('[name]').forEach(function (input) {
+                        input.name = input.name.replace(/Satirlar\[\d+\]/, 'Satirlar[' + index + ']');
+                    });
+                });
+            }
+
+            document.getElementById('addRowBtn').addEventListener('click', function () {
+                var html = template.innerHTML.replaceAll('__index__', rows.querySelectorAll('.invoice-row').length);
+                rows.insertAdjacentHTML('beforeend', html);
+                updateSummary();
+            });
+
+            rows.addEventListener('click', function (event) {
+                var button = event.target.closest('.remove-row');
+                if (!button) return;
+                if (rows.querySelectorAll('.invoice-row').length === 1) {
+                    var row = button.closest('.invoice-row');
+                    row.querySelector('select').value = '0';
+                    row.querySelector('input[name$=".FaturaAdi"]').value = '';
+                    row.querySelector('.amount-input').value = '';
+                } else {
+                    button.closest('.invoice-row').remove();
+                    reindexRows();
+                }
+                updateSummary();
+            });
+
+            rows.addEventListener('input', updateSummary);
+            rows.addEventListener('change', updateSummary);
+            updateSummary();
+        });
+    </script>
+}

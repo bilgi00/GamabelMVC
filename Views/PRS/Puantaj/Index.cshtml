@@ -77,6 +77,9 @@
 
     .date-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
     .date-controls .form-select { width: auto; }
+    .employee-filter-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .employee-filter-controls #statuSelect { min-width: 170px; }
+    .employee-filter-controls #personelArama { min-width: 220px; }
     .action-buttons { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 
     .birim-badge {
@@ -116,6 +119,8 @@
     .legend-color.lv { background: #e2d9f3; }
     .legend-color.loz { background: #f8d7e6; }
     .legend-color.lh { background: #f8d7da; }
+    .legend-color.lsi { background: #dbeafe; }
+    .legend-color.lodi { background: #e0e7ff; }
 
     .btn-legend-toggle {
         background: transparent;
@@ -249,6 +254,8 @@
     .durum-vi { background: #e2d9f3; color: #4a2f8d; }
     .durum-oi { background: #f8d7e6; color: #a12a6e; }
     .durum-h { background: #f8d7da; color: #721c24; }
+    .durum-si { background: #dbeafe; color: #1e40af; }
+    .durum-odi { background: #e0e7ff; color: #3730a3; }
 
     /* Hafta Sonu */
     .durum-cell.weekend { opacity: 0.6; }
@@ -403,6 +410,7 @@
     @@media (max-width: 992px) {
         .controls { flex-direction: column; align-items: stretch; gap: 10px; }
         .date-controls { justify-content: center; flex-wrap: wrap; }
+        .employee-filter-controls { justify-content: center; }
         .action-buttons { justify-content: center; }
         .legend { justify-content: center; }
         .puantaj-table .col-personel { width: 160px; min-width: 120px; max-width: 180px; }
@@ -485,6 +493,15 @@
             <button class="btn-puantaj btn-primary-puantaj" id="loadBtn"><i class="fas fa-sync-alt me-1"></i>Yükle</button>
         </div>
 
+        <div class="employee-filter-controls">
+            <label class="visually-hidden" for="statuSelect">Personel Statüsü</label>
+            <select id="statuSelect" class="form-select" aria-label="Personel Statüsü">
+                <option value="__TUMU__">Tüm Personeller</option>
+            </select>
+            <label class="visually-hidden" for="personelArama">Personel Ara</label>
+            <input id="personelArama" type="search" class="form-control" placeholder="Personel ara..." autocomplete="off" />
+        </div>
+
         <div class="action-buttons">
             <button class="btn-puantaj btn-warning-puantaj" id="batchIzinBtn"><i class="fas fa-users me-1"></i>Toplu İzin</button>
             <button class="btn-puantaj btn-outline-puantaj" id="autoSaveBtn"><i class="fas fa-clock me-1"></i>Oto Kayıt: Kapalı</button>
@@ -503,6 +520,8 @@
                 <div class="legend-item"><span class="legend-color lv"></span>Vİ</div>
                 <div class="legend-item"><span class="legend-color loz"></span>Öİ</div>
                 <div class="legend-item"><span class="legend-color lh"></span>H</div>
+                <div class="legend-item"><span class="legend-color lsi"></span>Sİ</div>
+                <div class="legend-item"><span class="legend-color lodi"></span>ÖDİ</div>
             </div>
         </div>
     </div>
@@ -539,6 +558,8 @@
                 <option value="Vİ">🟣 Vefat İzni (Vİ)</option>
                 <option value="Öİ">🔴 Özel İzin (Öİ)</option>
                 <option value="H">🔴 Hastalık (H)</option>
+                <option value="Sİ">🔵 Seferberlik İzni (Sİ)</option>
+                <option value="ÖDİ">🔷 Ödeneksiz İzin (ÖDİ)</option>
             </select>
         </div>
         <div class="mb-3">
@@ -579,6 +600,8 @@
                 <option value="Vİ">🟣 Vefat İzni (Vİ)</option>
                 <option value="Öİ">🔴 Özel İzin (Öİ)</option>
                 <option value="H">🔴 Hastalık (H)</option>
+                <option value="Sİ">🔵 Seferberlik İzni (Sİ)</option>
+                <option value="ÖDİ">🔷 Ödeneksiz İzin (ÖDİ)</option>
             </select>
         </div>
         <div class="mb-3">
@@ -611,12 +634,14 @@
     // ============================================================
     // KONFIGÜRASYON
     // ============================================================
-    var izinTurleri = ['İ', 'Gİ', 'ÇH', 'Vİ', 'Öİ', 'H'];
+    var izinTurleri = ['İ', 'Gİ', 'ÇH', 'Vİ', 'Öİ', 'H', 'Sİ', 'ÖDİ'];
     var personeller = [];
     var calismaVerileri = {};
     var degisenler = {};
     var currentYear = 2026;
     var currentMonth = 3;
+    var seciliStatu = '__TUMU__';
+    var personelAramaMetni = '';
     var kullaniciRol = '@(ViewBag.Rol ?? "birim_amiri")';
     var kullaniciBirim = '@(ViewBag.KullaniciBirim ?? "")';
     var seciliBirim = kullaniciRol === 'admin' ? 'all' : kullaniciBirim;
@@ -629,10 +654,34 @@
     // ============================================================
     function getMonthName(m) { return ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'][m-1]; }
     function isWeekend(y, m, d) { var dt = new Date(y, m-1, d); return dt.getDay()===0 || dt.getDay()===6; }
-    function getDurumClass(d) { return {'X':'x','İ':'i','Gİ':'gi','ÇH':'ch','Vİ':'vi','Öİ':'oi','H':'h'}[d]||'x'; }
-    function getDurumDisplay(d) { return {'X':'X','İ':'İ','Gİ':'Gİ','ÇH':'ÇH','Vİ':'Vİ','Öİ':'Öİ','H':'H'}[d]||'X'; }
+    function getDurumClass(d) { return {'X':'x','İ':'i','Gİ':'gi','ÇH':'ch','Vİ':'vi','Öİ':'oi','H':'h','Sİ':'si','ÖDİ':'odi'}[d]||'x'; }
+    function getDurumDisplay(d) { return {'X':'X','İ':'İ','Gİ':'Gİ','ÇH':'ÇH','Vİ':'Vİ','Öİ':'Öİ','H':'H','Sİ':'Sİ','ÖDİ':'ÖDİ'}[d]||'X'; }
     function getPersonelAdi(pid) { var p = personeller.find(function(x){return x.perNo===pid;}); return p ? p.ad+' '+p.soyad : ''; }
-    function getFilteredPersoneller() { return personeller; }
+    function getFilteredPersoneller() {
+        var arama = personelAramaMetni.trim().toLocaleLowerCase('tr-TR');
+        return personeller.filter(function(p) {
+            var statuEslesiyor = seciliStatu === '__TUMU__' || p.statu === seciliStatu;
+            var adSoyad = (p.ad + ' ' + p.soyad).toLocaleLowerCase('tr-TR');
+            return statuEslesiyor && (!arama || adSoyad.indexOf(arama) >= 0);
+        });
+    }
+
+    function populateStatuOptions() {
+        var select = document.getElementById('statuSelect');
+        var statuler = Array.from(new Set(personeller.map(function(p) { return (p.statu || '').trim(); }).filter(Boolean)));
+        statuler.sort(function(a, b) { return a.localeCompare(b, 'tr-TR'); });
+
+        select.innerHTML = '<option value="__TUMU__">Tüm Personeller</option>';
+        statuler.forEach(function(statu) {
+            var option = document.createElement('option');
+            option.value = statu;
+            option.textContent = statu;
+            select.appendChild(option);
+        });
+
+        if (statuler.indexOf(seciliStatu) === -1) seciliStatu = '__TUMU__';
+        select.value = seciliStatu;
+    }
 
     function calculateHakkedis(pid) {
         var izinGunleri = 0, data = calismaVerileri[pid] || {};
@@ -677,6 +726,7 @@
             .then(function(data){
                 if (data.hata) { showToast('Hata: '+data.hata,'error'); return; }
                 personeller = data;
+                populateStatuOptions();
                 loadIzinler();
             })
             .catch(function(){ showToast('Personel verisi alınamadı','error'); });
@@ -1006,6 +1056,15 @@
     document.getElementById('birimSelect')?.addEventListener('change', function(e) {
         seciliBirim = e.target.value;
         loadPersoneller();
+    });
+
+    document.getElementById('statuSelect').addEventListener('change', function(e) {
+        seciliStatu = e.target.value;
+        renderTable();
+    });
+    document.getElementById('personelArama').addEventListener('input', function(e) {
+        personelAramaMetni = e.target.value;
+        renderTable();
     });
 
     document.getElementById('saveBtn').addEventListener('click', function(){ saveChanges(true); });

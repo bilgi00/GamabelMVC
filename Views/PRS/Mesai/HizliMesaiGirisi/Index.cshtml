@@ -3,11 +3,13 @@
     
     // TÜM değişkenleri burada tanımla
     var birimler = (ViewBag.Birimler as List<string>) ?? new List<string>();
+    var personelStatuleri = (ViewBag.PersonelStatuleri as List<string>) ?? new List<string>();
     var personeller = (ViewBag.Personeller as List<dynamic>) ?? new List<dynamic>();
     var personelMesaiVerileri = (ViewBag.PersonelMesaiVerileri as Dictionary<string, Dictionary<string, dynamic>>) ?? new Dictionary<string, Dictionary<string, dynamic>>();
     var secilenYil = (int?)ViewBag.SecilenYil ?? DateTime.Now.Year;
     var secilenAy = (int?)ViewBag.SecilenAy ?? DateTime.Now.Month;
     var secilenBirim = (string?)ViewBag.SecilenBirim ?? "";
+    var secilenStatu = (string?)ViewBag.SecilenStatu ?? "__TUMU__";
     var gunSayisi = (int?)ViewBag.GunSayisi ?? DateTime.DaysInMonth(secilenYil, secilenAy);
     var rol = ViewBag.Rol ?? "";
     var kullaniciBirim = ViewBag.KullaniciBirim ?? "";
@@ -547,7 +549,7 @@
         .personel-toplam {
             min-width: 50px;
             position: sticky;
-            right: 0;
+            right: 70px;
             background: #F8FAFC;
             border-left: 2px solid #E2E8F0;
             font-weight: 700;
@@ -743,6 +745,37 @@
                     </select>
                 </div>
                 <div class="col-md-3">
+                    <label class="form-label fw-semibold text-secondary" style="font-size:13px;">Personel Statüsü</label>
+                    <select id="statuSelect" class="form-select form-select-sm rounded-3 border-0 bg-light" style="font-size:13px; padding:6px 12px;" onchange="statuSecildi()">
+                        @if (secilenStatu == "__TUMU__")
+                        {
+                            <option value="__TUMU__" selected>-- Tüm Personeller --</option>
+                        }
+                        else
+                        {
+                            <option value="__TUMU__">-- Tüm Personeller --</option>
+                        }
+                        @foreach (var statu in personelStatuleri)
+                        {
+                            if (statu == secilenStatu)
+                            {
+                                <option value="@statu" selected>@statu</option>
+                            }
+                            else
+                            {
+                                <option value="@statu">@statu</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold text-secondary" for="personelArama" style="font-size:13px;">Personel Ara</label>
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-light border-0"><i class="bi bi-search"></i></span>
+                        <input id="personelArama" type="search" class="form-control border-0 bg-light" placeholder="Ad veya soyad yazın..." autocomplete="off" oninput="personelAra(this.value)" />
+                    </div>
+                </div>
+                <div class="col-md-3">
                     <label class="form-label fw-semibold text-secondary" style="font-size:13px;">Ay &amp; Yıl</label>
                     <div class="d-flex align-items-center gap-2">
                         <button class="btn btn-outline-primary rounded-3 px-3 no-print" style="font-size:13px; padding:4px 12px;" onclick="ayDegistir(-1)">←</button>
@@ -793,7 +826,7 @@
                         <tbody>
                             @foreach (var personel in personeller)
                             {
-                                <tr>
+                                <tr data-personel-adi="@personel.AdSoyad">
                                     <td class="sticky-personel" style="font-size:11px; padding:3px 8px;">
                                         <i class="bi bi-person-circle" style="font-size:13px;"></i> @personel.AdSoyad
                                     </td>
@@ -945,7 +978,7 @@
                             <option value="">-- Personel Seçiniz --</option>
                             @foreach (var personel in personeller)
                             {
-                                <option value="@personel.PerNo">@personel.AdSoyad</option>
+                                <option value="@personel.PerNo" data-personel-adi="@personel.AdSoyad">@personel.AdSoyad</option>
                             }
                         </select>
                     </div>
@@ -958,7 +991,7 @@
                                 var isWeekend = tarih.DayOfWeek == DayOfWeek.Saturday || tarih.DayOfWeek == DayOfWeek.Sunday;
                                 var gunAdi = tarih.ToString("ddd", new System.Globalization.CultureInfo("tr-TR"));
                                 <div class="batch-day-item" style="padding:6px 10px; border:1px solid #E2E8F0; border-radius:8px; margin-bottom:6px; display:flex; align-items:center; gap:10px; font-size:13px; @(isWeekend ? "background:#FDE2E4;" : "")">
-                                    <input type="checkbox" class="batch-day-check" value="@gun" @(isWeekend ? "disabled" : "") />
+                                    <input type="checkbox" class="batch-day-check" value="@gun" />
                                     <div class="day-info" style="flex:1;">
                                         <strong>@gun</strong> - @gunAdi
                                         @if (isWeekend)
@@ -967,9 +1000,9 @@
                                         }
                                     </div>
                                     <div class="time-inputs" style="display:flex; gap:8px; align-items:center;">
-                                        <input type="time" class="batch-start" value="08:00" style="width:100px; padding:4px 8px; border:1px solid #E2E8F0; border-radius:6px; font-size:12px;" @(isWeekend ? "disabled" : "") />
+                                        <input type="time" class="batch-start" value="08:00" style="width:100px; padding:4px 8px; border:1px solid #E2E8F0; border-radius:6px; font-size:12px;" />
                                         <span style="font-size:12px; color:#94A3B8;">-</span>
-                                        <input type="time" class="batch-end" value="17:00" style="width:100px; padding:4px 8px; border:1px solid #E2E8F0; border-radius:6px; font-size:12px;" @(isWeekend ? "disabled" : "") />
+                                        <input type="time" class="batch-end" value="13:00" style="width:100px; padding:4px 8px; border:1px solid #E2E8F0; border-radius:6px; font-size:12px;" />
                                     </div>
                                 </div>
                             }
@@ -1048,7 +1081,6 @@
     </div>
 
     <!-- SCRIPTS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <script>
@@ -1071,11 +1103,14 @@
             const reportModalEl = document.getElementById('reportModal');
             reportModalInstance = new bootstrap.Modal(reportModalEl);
 
+            document.getElementById('mesaiBaslangic').addEventListener('input', hesaplaSure);
+            document.getElementById('mesaiBitis').addEventListener('input', hesaplaSure);
+            document.getElementById('mesaiBaslangic').addEventListener('change', hesaplaSure);
+            document.getElementById('mesaiBitis').addEventListener('change', hesaplaSure);
+
             // Modal açıldığında verileri yükle
             modalEl.addEventListener('show.bs.modal', function() {
-                if (seciliHucre.mode === 'edit' && seciliKayitId > 0) {
-                    mesaiVerileriniGetir(seciliKayitId);
-                }
+                if (seciliHucre.mode === 'new') hesaplaSure();
             });
 
             hesaplaToplamlar();
@@ -1089,6 +1124,20 @@
 
             sabitTabloBasliginiOlustur();
         });
+
+        function personelAra(aramaMetni) {
+            const arama = (aramaMetni || '').trim().toLocaleLowerCase('tr-TR');
+
+            document.querySelectorAll('#mesaiTable tbody tr').forEach(row => {
+                const personelAdi = (row.dataset.personelAdi || '').toLocaleLowerCase('tr-TR');
+                row.hidden = arama !== '' && !personelAdi.includes(arama);
+            });
+
+            document.querySelectorAll('#batchPersonel option[data-personel-adi]').forEach(option => {
+                const personelAdi = (option.dataset.personelAdi || '').toLocaleLowerCase('tr-TR');
+                option.hidden = arama !== '' && !personelAdi.includes(arama);
+            });
+        }
 
         function sabitTabloBasliginiOlustur() {
             const tableWrap = document.querySelector('.table-wrap');
@@ -1139,15 +1188,9 @@
                 const response = await fetch('/HizliMesaiGirisi/GetMesaiDetay?kayitId=' + kayitId);
                 if (response.ok) {
                     const data = await response.json();
-                    if (data.baslangic) {
-                        document.getElementById('mesaiBaslangic').value = data.baslangic;
-                    }
-                    if (data.bitis) {
-                        document.getElementById('mesaiBitis').value = data.bitis;
-                    }
-                    if (data.aciklama) {
-                        document.getElementById('mesaiAciklama').value = data.aciklama;
-                    }
+                    document.getElementById('mesaiBaslangic').value = data.baslangic || '';
+                    document.getElementById('mesaiBitis').value = data.bitis || '';
+                    document.getElementById('mesaiAciklama').value = data.aciklama || '';
                     // Sil butonunu göster
                     document.getElementById('btnSilMesai').style.display = 'inline-block';
                     hesaplaSure();
@@ -1161,15 +1204,15 @@
         function hesaplaToplamlar() {
             const rows = document.querySelectorAll('tbody tr');
             rows.forEach(row => {
-                let toplam = 0;
+                let toplamDakika = 0;
                 const cells = row.querySelectorAll('td[data-saat]');
                 cells.forEach(cell => {
                     const val = parseFloat(cell.getAttribute('data-saat')) || 0;
-                    toplam += val;
+                    toplamDakika += Math.round(val * 60);
                 });
                 const toplamCell = row.querySelector('.personel-toplam span');
                 if (toplamCell) {
-                    toplamCell.textContent = formatSaatDakika(toplam);
+                    toplamCell.textContent = formatDakika(toplamDakika);
                 }
             });
         }
@@ -1178,23 +1221,23 @@
         function hesaplaDetayliToplamlar() {
             const rows = document.querySelectorAll('tbody tr');
             rows.forEach(row => {
-                let normalToplam = 0;
-                let haftaSonuToplam = 0;
-                let toplam = 0;
+                let normalToplamDakika = 0;
+                let haftaSonuToplamDakika = 0;
+                let toplamDakika = 0;
                 const cells = row.querySelectorAll('td[data-saat]');
-                const gunIndex = 0;
                 cells.forEach(cell => {
                     const val = parseFloat(cell.getAttribute('data-saat')) || 0;
+                    const dakika = Math.round(val * 60);
                     const gun = parseInt(cell.getAttribute('data-gun'));
-                    toplam += val;
+                    toplamDakika += dakika;
                     
                     // Hafta sonu kontrolü
                     const tarih = new Date(@secilenYil, @secilenAy - 1, gun);
                     const isWeekend = tarih.getDay() === 0 || tarih.getDay() === 6;
                     if (isWeekend) {
-                        haftaSonuToplam += val;
+                        haftaSonuToplamDakika += dakika;
                     } else {
-                        normalToplam += val;
+                        normalToplamDakika += dakika;
                     }
                 });
                 
@@ -1204,11 +1247,16 @@
                     const ekstraSpan = detayCell.querySelector('.ekstra-saat');
                     const toplamSpan = detayCell.querySelector('.toplam-saat');
                     
-                    if (normalSpan) normalSpan.textContent = formatSaatDakika(normalToplam);
-                    if (ekstraSpan) ekstraSpan.textContent = '+' + formatSaatDakika(haftaSonuToplam);
-                    if (toplamSpan) toplamSpan.textContent = formatSaatDakika(toplam);
+                    if (normalSpan) normalSpan.textContent = formatDakika(normalToplamDakika);
+                    if (ekstraSpan) ekstraSpan.textContent = '+' + formatDakika(haftaSonuToplamDakika);
+                    if (toplamSpan) toplamSpan.textContent = formatDakika(toplamDakika);
                 }
             });
+        }
+
+        function formatDakika(toplamDakika) {
+            const dakika = Math.max(0, Math.round(Number(toplamDakika) || 0));
+            return Math.floor(dakika / 60) + ':' + String(dakika % 60).padStart(2, '0');
         }
 
         function formatSaatDakika(saat) {
@@ -1359,7 +1407,16 @@
         function birimSecildi() {
             const birim = document.getElementById('subeSelect').value;
             if (birim) {
-                window.location.href = `/HizliMesaiGirisi/Index?birim=${encodeURIComponent(birim)}&yil=@secilenYil&ay=@secilenAy`;
+                const statu = document.getElementById('statuSelect')?.value || '__TUMU__';
+                window.location.href = `/HizliMesaiGirisi/Index?birim=${encodeURIComponent(birim)}&statu=${encodeURIComponent(statu)}&yil=@secilenYil&ay=@secilenAy`;
+            }
+        }
+
+        function statuSecildi() {
+            const birim = document.getElementById('subeSelect').value;
+            const statu = document.getElementById('statuSelect').value;
+            if (birim) {
+                window.location.href = `/HizliMesaiGirisi/Index?birim=${encodeURIComponent(birim)}&statu=${encodeURIComponent(statu)}&yil=@secilenYil&ay=@secilenAy`;
             }
         }
 
@@ -1370,7 +1427,8 @@
             else if (ay < 1) { ay = 12; yil--; }
             const birim = document.getElementById('subeSelect').value;
             if (birim) {
-                window.location.href = `/HizliMesaiGirisi/Index?birim=${encodeURIComponent(birim)}&yil=${yil}&ay=${ay}`;
+                const statu = document.getElementById('statuSelect')?.value || '__TUMU__';
+                window.location.href = `/HizliMesaiGirisi/Index?birim=${encodeURIComponent(birim)}&statu=${encodeURIComponent(statu)}&yil=${yil}&ay=${ay}`;
             }
         }
 
@@ -1383,12 +1441,13 @@
             document.getElementById('mesaiModalTitle').textContent = 'Mesai Girişi';
             document.getElementById('mesaiModalMsg').textContent = '';
             document.getElementById('mesaiBaslangic').value = '08:00';
-            document.getElementById('mesaiBitis').value = '17:00';
+            document.getElementById('mesaiBitis').value = '13:00';
             document.getElementById('mesaiAciklama').value = '';
             document.getElementById('mesaiSureBilgi').textContent = 'Süre: —';
             document.getElementById('mesaiSureBilgi').style.color = '#475569';
             document.getElementById('mesaiAylikUyari').style.display = 'none';
             document.getElementById('btnSilMesai').style.display = 'none';
+            hesaplaSure();
             modalInstance.show();
         }
 

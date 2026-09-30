@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using MySqlConnector;
 using FastReport;
 using FastReport.Export.PdfSimple;
@@ -9,6 +10,7 @@ using System.Drawing;
 
 namespace gamabelmvc.Controllers.PRS;
 
+[Authorize(Policy = "PrsMenuMesai")]
 public class MesaiController : Controller
 {
     private readonly string _connectionString;

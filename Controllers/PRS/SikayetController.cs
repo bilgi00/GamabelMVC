@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using gamabelmvc.Models.PRS;
 using System;
 using System.Collections.Generic;
@@ -74,6 +75,7 @@ namespace gamabelmvc.Controllers.PRS
         }
 
         // Admin: Şikayetleri yönet
+        [Authorize(Policy = "ComplaintAdmin")]
         public IActionResult Admin()
         {
             // Admin yetkisi kontrolü eklenmeli
@@ -105,6 +107,7 @@ namespace gamabelmvc.Controllers.PRS
 
         // Admin: Sonuç kaydet
         [HttpPost]
+        [Authorize(Policy = "ComplaintAdmin")]
         public IActionResult SonucKaydet(int id, string sonuc, string durum)
         {
             // Admin yetkisi kontrolü eklenmeli

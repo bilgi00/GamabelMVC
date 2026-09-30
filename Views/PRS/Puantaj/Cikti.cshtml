@@ -91,7 +91,7 @@
         </div>
 
         <div class="legend-print" id="legendArea" style="display:none;">
-            <div style="font-size: 8pt;">Açıklamalar: Çalıştı (X), Yıllık İzin (İ), Görev İzni (Gİ), Çocuk Hastalık (ÇH), Vefat İzni (Vİ), Özel İzin (Öİ), Hastalık (H) - 30 Gün Bazlı Hakediş Hesaplanmıştır</div>
+            <div style="font-size: 8pt;">Açıklamalar: Çalıştı (X), Yıllık İzin (İ), Görev İzni (Gİ), Çocuk Hastalık (ÇH), Vefat İzni (Vİ), Özel İzin (Öİ), Hastalık (H), Seferberlik İzni (Sİ), Ödeneksiz İzin (ÖDİ) - 30 Gün Bazlı Hakediş Hesaplanmıştır</div>
         </div>
     </div>
 
@@ -99,7 +99,7 @@
         var currentYear = @yil;
         var currentMonth = @ay;
         var seciliBirim = '@Html.Raw(birim ?? "all")';
-        var izinTurleri = ['İ', 'Gİ', 'ÇH', 'Vİ', 'Öİ', 'H'];
+        var izinTurleri = ['İ', 'Gİ', 'ÇH', 'Vİ', 'Öİ', 'H', 'Sİ', 'ÖDİ'];
         var personeller = [];
         var calismaVerileri = {};
 
@@ -107,9 +107,9 @@
             return ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'][m-1];
         }
         function isWeekend(y, m, d) { var dt = new Date(y, m-1, d); return dt.getDay()===0||dt.getDay()===6; }
-        function getDurumDisplay(d) { return {'X':'X','İ':'İ','Gİ':'Gİ','ÇH':'ÇH','Vİ':'Vİ','Öİ':'Öİ','H':'H'}[d]||'X'; }
+        function getDurumDisplay(d) { return {'X':'X','İ':'İ','Gİ':'Gİ','ÇH':'ÇH','Vİ':'Vİ','Öİ':'Öİ','H':'H','Sİ':'Sİ','ÖDİ':'ÖDİ'}[d]||'X'; }
         function getDurumBgColor(d) {
-            return {'X':'#d4edda','İ':'#fff3cd','Gİ':'#ffe5d0','ÇH':'#d1f7e9','Vİ':'#e2d9f3','Öİ':'#f8d7e6','H':'#f8d7da'}[d]||'white';
+            return {'X':'#d4edda','İ':'#fff3cd','Gİ':'#ffe5d0','ÇH':'#d1f7e9','Vİ':'#e2d9f3','Öİ':'#f8d7e6','H':'#f8d7da','Sİ':'#dbeafe','ÖDİ':'#e0e7ff'}[d]||'white';
         }
         function calculateHakkedis(pid) {
             var toplamIzin=0, data=calismaVerileri[pid]||{};

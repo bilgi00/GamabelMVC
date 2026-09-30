@@ -1,10 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using gamabelmvc.Services;
 using MySqlConnector;
 using System.Globalization;
 
 namespace gamabelmvc.Controllers.PRS;
 
+[Authorize(Policy = "PrsMenuMesai")]
 public class HizliMesaiGirisiController : Controller
 {
     private readonly DbConnectionFactory _dbFactory;
@@ -16,10 +18,22 @@ public class HizliMesaiGirisiController : Controller
         _logger = logger;
     }
 
+    private static (decimal FiiliSaat, decimal Zam01Saat, decimal Zam05Saat, decimal ToplamSaat)
+        HesaplaMesai(DateTime tarih, TimeSpan baslangic, TimeSpan bitis)
+    {
+        var fiiliSaat = Math.Round((decimal)(bitis - baslangic).TotalHours, 2);
+        var haftaSonu = tarih.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday;
+        var zam01Saat = haftaSonu ? 0m : Math.Round(fiiliSaat * 0.10m, 2);
+        var zam05Saat = haftaSonu ? Math.Round(fiiliSaat * 0.50m, 2) : 0m;
+        var toplamSaat = Math.Round(fiiliSaat + zam01Saat + zam05Saat, 2);
+
+        return (fiiliSaat, zam01Saat, zam05Saat, toplamSaat);
+    }
+
     // ============================================================
     // GET: HizliMesaiGirisi/Index - Ana takvim sayfası
     // ============================================================
-    public async Task<IActionResult> Index(int? yil = null, int? ay = null, string? birim = null)
+    public async Task<IActionResult> Index(int? yil = null, int? ay = null, string? birim = null, string? statu = null)
     {
         var kullaniciId = HttpContext.Session.GetInt32("PersonelId") ?? HttpContext.Session.GetInt32("KullaniciId") ?? 1;
         var rol = HttpContext.Session.GetString("Rol") ?? "birim_amiri";
@@ -72,16 +86,44 @@ public class HizliMesaiGirisiController : Controller
 
             var personeller = new List<dynamic>();
             var personelMesaiVerileri = new Dictionary<string, Dictionary<string, dynamic>>();
+            var personelStatuleri = new List<string>();
 
             if (!string.IsNullOrEmpty(birim))
             {
-                var personelQuery = "SELECT per_no, ad, soyad, per_statu FROM personeller WHERE birim_adi = @birim ORDER BY ad, soyad";
+                var statuQuery = "SELECT DISTINCT per_statu FROM personeller WHERE birim_adi = @birim AND NULLIF(TRIM(per_statu), '') IS NOT NULL ORDER BY per_statu";
+
+                try
+                {
+                    using (var cmd = new MySqlCommand(statuQuery, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@birim", birim);
+                        using (var reader = await cmd.ExecuteReaderAsync())
+                        {
+                            while (await reader.ReadAsync())
+                            {
+                                if (!reader.IsDBNull(0))
+                                    personelStatuleri.Add(reader.GetString(0));
+                            }
+                        }
+                    }
+                }
+                catch (MySqlException ex)
+                {
+                    _logger.LogWarning($"Personel statüleri sorgusu başarısız: {ex.Message}");
+                }
+
+                var personelQuery = @"SELECT per_no, ad, soyad, per_statu
+                                      FROM personeller
+                                      WHERE birim_adi = @birim
+                                        AND (@statu = '' OR per_statu = @statu)
+                                      ORDER BY ad, soyad";
 
                 try
                 {
                     using (var cmd = new MySqlCommand(personelQuery, conn))
                     {
                         cmd.Parameters.AddWithValue("@birim", birim);
+                        cmd.Parameters.AddWithValue("@statu", statu == "__TUMU__" ? "" : (statu ?? ""));
                         using (var reader = await cmd.ExecuteReaderAsync())
                         {
                             while (await reader.ReadAsync())
@@ -107,9 +149,10 @@ public class HizliMesaiGirisiController : Controller
                 }
 
                 var mesaiQuery = @"
-                    SELECT mk.id, mk.personel_id, mk.tarih, 
-                           mk.toplam_saat, mk.aciklama,
-                           mk.baslangic, mk.bitis
+                          SELECT mk.id, mk.personel_id, mk.tarih, mk.gorev,
+                              mk.baslangic, mk.bitis, mk.fiili_saat,
+                              mk.zam01_saat, mk.zam05_saat, mk.toplam_saat,
+                              mk.aciklama, mk.kayit_tarihi
                     FROM mesai_kayitlari mk
                     INNER JOIN personeller p ON p.per_no = mk.personel_id
                     WHERE p.birim_adi = @birim
@@ -144,15 +187,19 @@ public class HizliMesaiGirisiController : Controller
                                     personelMesaiVerileri[personelNo] = new Dictionary<string, dynamic>();
 
                                 var toplamSaat = Convert.ToDecimal(reader["toplam_saat"]);
-                                var toplamSaatStr = toplamSaat.ToString(CultureInfo.InvariantCulture);
 
                                 personelMesaiVerileri[personelNo][gun.ToString()] = new
                                 {
                                     Id = reader.GetInt32("id"),
                                     BaslangicSaati = reader["baslangic"]?.ToString() ?? "",
                                     BitisSaati = reader["bitis"]?.ToString() ?? "",
+                                    Gorev = reader["gorev"]?.ToString() ?? "",
+                                    FiiliSaat = Convert.ToDecimal(reader["fiili_saat"]),
+                                    Zam01Saat = Convert.ToDecimal(reader["zam01_saat"]),
+                                    Zam05Saat = Convert.ToDecimal(reader["zam05_saat"]),
                                     ToplamSaat = toplamSaat,
-                                    Notlar = reader["aciklama"]?.ToString() ?? ""
+                                    Notlar = reader["aciklama"]?.ToString() ?? "",
+                                    KayitTarihi = reader["kayit_tarihi"]?.ToString() ?? ""
                                 };
                             }
                         }
@@ -167,6 +214,8 @@ public class HizliMesaiGirisiController : Controller
             int gunSayisi = DateTime.DaysInMonth(yil.Value, ay.Value);
 
             ViewBag.Personeller = personeller;
+            ViewBag.PersonelStatuleri = personelStatuleri;
+            ViewBag.SecilenStatu = statu ?? "__TUMU__";
             ViewBag.PersonelMesaiVerileri = personelMesaiVerileri;
             ViewBag.SecilenYil = yil;
             ViewBag.SecilenAy = ay;
@@ -255,11 +304,13 @@ public class HizliMesaiGirisiController : Controller
                 return BadRequest("Bu tarihte zaten mesai kaydı var");
 
             // Yeni kayıt ekle
-            var toplamSaat = Math.Round((decimal)(bitis - baslangic).TotalHours, 2);
+            var hesap = HesaplaMesai(tarih, baslangic, bitis);
 
             var insertQuery = @"
-                INSERT INTO mesai_kayitlari (personel_id, tarih, baslangic, bitis, toplam_saat, aciklama)
-                VALUES (@PersonelId, @Tarih, @Baslangic, @Bitis, @ToplamSaat, @Aciklama)";
+                INSERT INTO mesai_kayitlari
+                    (personel_id, tarih, baslangic, bitis, fiili_saat, zam01_saat, zam05_saat, toplam_saat, aciklama)
+                VALUES
+                    (@PersonelId, @Tarih, @Baslangic, @Bitis, @FiiliSaat, @Zam01Saat, @Zam05Saat, @ToplamSaat, @Aciklama)";
 
             using (var cmd = new MySqlCommand(insertQuery, conn))
             {
@@ -267,7 +318,10 @@ public class HizliMesaiGirisiController : Controller
                 cmd.Parameters.AddWithValue("@Tarih", tarih.Date);
                 cmd.Parameters.AddWithValue("@Baslangic", baslangic.ToString(@"hh\:mm"));
                 cmd.Parameters.AddWithValue("@Bitis", bitis.ToString(@"hh\:mm"));
-                cmd.Parameters.AddWithValue("@ToplamSaat", toplamSaat);
+                cmd.Parameters.AddWithValue("@FiiliSaat", hesap.FiiliSaat);
+                cmd.Parameters.AddWithValue("@Zam01Saat", hesap.Zam01Saat);
+                cmd.Parameters.AddWithValue("@Zam05Saat", hesap.Zam05Saat);
+                cmd.Parameters.AddWithValue("@ToplamSaat", hesap.ToplamSaat);
                 cmd.Parameters.AddWithValue("@Aciklama", model.Notlar ?? "");
 
                 await cmd.ExecuteNonQueryAsync();
@@ -305,18 +359,35 @@ public class HizliMesaiGirisiController : Controller
 
             await using var conn = await _dbFactory.CreateConnectionAsync();
 
-            var toplamSaat = Math.Round((decimal)(bitis - baslangic).TotalHours, 2);
+            var hesap = (FiiliSaat: 0m, Zam01Saat: 0m, Zam05Saat: 0m, ToplamSaat: 0m);
             var updateQuery = @"
                 UPDATE mesai_kayitlari 
-                SET baslangic = @Baslangic, bitis = @Bitis, toplam_saat = @ToplamSaat, aciklama = @Aciklama
+                SET baslangic = @Baslangic, bitis = @Bitis,
+                    fiili_saat = @FiiliSaat, zam01_saat = @Zam01Saat,
+                    zam05_saat = @Zam05Saat, toplam_saat = @ToplamSaat,
+                    aciklama = @Aciklama
                 WHERE id = @Id";
+
+            const string tarihQuery = "SELECT tarih FROM mesai_kayitlari WHERE id = @Id";
+            using (var tarihCmd = new MySqlCommand(tarihQuery, conn))
+            {
+                tarihCmd.Parameters.AddWithValue("@Id", model.Id);
+                var kayitTarihi = await tarihCmd.ExecuteScalarAsync();
+                if (kayitTarihi == null || kayitTarihi == DBNull.Value)
+                    return NotFound("Mesai kaydı bulunamadı");
+
+                hesap = HesaplaMesai(Convert.ToDateTime(kayitTarihi), baslangic, bitis);
+            }
 
             using (var cmd = new MySqlCommand(updateQuery, conn))
             {
                 cmd.Parameters.AddWithValue("@Id", model.Id);
                 cmd.Parameters.AddWithValue("@Baslangic", baslangic.ToString(@"hh\:mm"));
                 cmd.Parameters.AddWithValue("@Bitis", bitis.ToString(@"hh\:mm"));
-                cmd.Parameters.AddWithValue("@ToplamSaat", toplamSaat);
+                cmd.Parameters.AddWithValue("@FiiliSaat", hesap.FiiliSaat);
+                cmd.Parameters.AddWithValue("@Zam01Saat", hesap.Zam01Saat);
+                cmd.Parameters.AddWithValue("@Zam05Saat", hesap.Zam05Saat);
+                cmd.Parameters.AddWithValue("@ToplamSaat", hesap.ToplamSaat);
                 cmd.Parameters.AddWithValue("@Aciklama", model.Notlar ?? "");
 
                 await cmd.ExecuteNonQueryAsync();
@@ -361,14 +432,52 @@ public class HizliMesaiGirisiController : Controller
     }
 
     // ============================================================
+    // GET: HizliMesaiGirisi/GetMesaiDetay - Düzenleme modalı
+    // ============================================================
+    [HttpGet]
+    public async Task<IActionResult> GetMesaiDetay(int kayitId)
+    {
+        if (kayitId <= 0)
+            return BadRequest("Geçersiz kayıt ID");
+
+        await using var conn = await _dbFactory.CreateConnectionAsync();
+        const string query = @"
+            SELECT id, tarih, gorev, baslangic, bitis, fiili_saat,
+                   zam01_saat, zam05_saat, toplam_saat, aciklama, kayit_tarihi
+            FROM mesai_kayitlari
+            WHERE id = @Id";
+
+        using var cmd = new MySqlCommand(query, conn);
+        cmd.Parameters.AddWithValue("@Id", kayitId);
+        using var reader = await cmd.ExecuteReaderAsync();
+        if (!await reader.ReadAsync())
+            return NotFound("Mesai kaydı bulunamadı");
+
+        return Json(new
+        {
+            id = reader.GetInt32("id"),
+            tarih = Convert.ToDateTime(reader["tarih"]).ToString("yyyy-MM-dd"),
+            gorev = reader["gorev"]?.ToString() ?? "",
+            baslangic = reader.GetTimeSpan("baslangic").ToString(@"hh\:mm"),
+            bitis = reader.GetTimeSpan("bitis").ToString(@"hh\:mm"),
+            fiiliSaat = Convert.ToDecimal(reader["fiili_saat"]),
+            zam01Saat = Convert.ToDecimal(reader["zam01_saat"]),
+            zam05Saat = Convert.ToDecimal(reader["zam05_saat"]),
+            toplamSaat = Convert.ToDecimal(reader["toplam_saat"]),
+            aciklama = reader["aciklama"]?.ToString() ?? "",
+            kayitTarihi = reader["kayit_tarihi"]?.ToString() ?? ""
+        });
+    }
+
+    // ============================================================
     // GET: HizliMesaiGirisi/GetAyVerileri - AJAX için ay verileri
     // ============================================================
     [HttpGet]
-    public async Task<IActionResult> GetAyVerileri(int yil, int ay, int? personelId = null)
+    public async Task<IActionResult> GetAyVerileri(int yil, int ay, string? personelId = null)
     {
-        var pid = personelId ?? HttpContext.Session.GetInt32("PersonelId") ?? HttpContext.Session.GetInt32("KullaniciId") ?? 0;
+        var pid = personelId ?? (HttpContext.Session.GetInt32("PersonelId") ?? HttpContext.Session.GetInt32("KullaniciId"))?.ToString();
 
-        if (pid == 0)
+        if (string.IsNullOrWhiteSpace(pid))
             return Unauthorized("Personel bilgisi bulunamadı");
 
         try
@@ -378,7 +487,9 @@ public class HizliMesaiGirisiController : Controller
             await using var conn = await _dbFactory.CreateConnectionAsync();
 
             var query = @"
-                SELECT mk.id, mk.tarih, mk.baslangic, mk.bitis, mk.toplam_saat, mk.aciklama
+                  SELECT mk.id, mk.tarih, mk.gorev, mk.baslangic, mk.bitis,
+                      mk.fiili_saat, mk.zam01_saat, mk.zam05_saat,
+                      mk.toplam_saat, mk.aciklama, mk.kayit_tarihi
                 FROM mesai_kayitlari mk
                 WHERE mk.personel_id = @PersonelId 
                 AND YEAR(mk.tarih) = @Yil 
@@ -408,8 +519,13 @@ public class HizliMesaiGirisiController : Controller
                             Tarih = tarih.ToString("yyyy-MM-dd"),
                             BaslangicSaati = reader["baslangic"]?.ToString() ?? "",
                             BitisSaati = reader["bitis"]?.ToString() ?? "",
+                            Gorev = reader["gorev"]?.ToString() ?? "",
+                            FiiliSaat = Convert.ToDecimal(reader["fiili_saat"]),
+                            Zam01Saat = Convert.ToDecimal(reader["zam01_saat"]),
+                            Zam05Saat = Convert.ToDecimal(reader["zam05_saat"]),
                             ToplamSaat = toplamSaat.ToString(CultureInfo.InvariantCulture),
-                            Notlar = reader["aciklama"]?.ToString() ?? ""
+                            Notlar = reader["aciklama"]?.ToString() ?? "",
+                            KayitTarihi = reader["kayit_tarihi"]?.ToString() ?? ""
                         };
                     }
                 }
@@ -428,11 +544,11 @@ public class HizliMesaiGirisiController : Controller
     // GET: HizliMesaiGirisi/GetAyToplami - Ay toplamı ve limit kontrolü
     // ============================================================
     [HttpGet]
-    public async Task<IActionResult> GetAyToplami(int yil, int ay, int? personelId = null)
+    public async Task<IActionResult> GetAyToplami(int yil, int ay, string? personelId = null)
     {
-        var pid = personelId ?? HttpContext.Session.GetInt32("PersonelId") ?? HttpContext.Session.GetInt32("KullaniciId") ?? 0;
+        var pid = personelId ?? (HttpContext.Session.GetInt32("PersonelId") ?? HttpContext.Session.GetInt32("KullaniciId"))?.ToString();
 
-        if (pid == 0)
+        if (string.IsNullOrWhiteSpace(pid))
             return Unauthorized("Personel bilgisi bulunamadı");
 
         try
@@ -476,9 +592,9 @@ public class HizliMesaiGirisiController : Controller
     [HttpPost]
     public async Task<IActionResult> ImportExcel(IFormFile file)
     {
-        var personelId = HttpContext.Session.GetInt32("PersonelId") ?? HttpContext.Session.GetInt32("KullaniciId") ?? 0;
+            var personelId = (HttpContext.Session.GetInt32("PersonelId") ?? HttpContext.Session.GetInt32("KullaniciId"))?.ToString();
 
-        if (personelId == 0)
+        if (string.IsNullOrWhiteSpace(personelId))
             return Unauthorized("Personel bilgisi bulunamadı");
 
         if (file == null || file.Length == 0)
@@ -521,8 +637,10 @@ public class HizliMesaiGirisiController : Controller
             await using var conn = await _dbFactory.CreateConnectionAsync();
 
             var insertQuery = @"
-                INSERT INTO mesai_kayitlari (personel_id, tarih, baslangic, bitis, toplam_saat, aciklama)
-                VALUES (@PersonelId, @Tarih, @Baslangic, @Bitis, @ToplamSaat, @Aciklama)";
+                INSERT INTO mesai_kayitlari
+                    (personel_id, tarih, baslangic, bitis, fiili_saat, zam01_saat, zam05_saat, toplam_saat, aciklama)
+                VALUES
+                    (@PersonelId, @Tarih, @Baslangic, @Bitis, @FiiliSaat, @Zam01Saat, @Zam05Saat, @ToplamSaat, @Aciklama)";
 
             foreach (var (tarih, baslangic, bitis, notlar) in kayitlar)
             {
@@ -530,13 +648,16 @@ public class HizliMesaiGirisiController : Controller
                 {
                     using (var cmd = new MySqlCommand(insertQuery, conn))
                     {
-                        var toplamSaat = Math.Round((decimal)(bitis - baslangic).TotalHours, 2);
+                        var hesap = HesaplaMesai(tarih, baslangic, bitis);
 
                         cmd.Parameters.AddWithValue("@PersonelId", personelId);
                         cmd.Parameters.AddWithValue("@Tarih", tarih.Date);
                         cmd.Parameters.AddWithValue("@Baslangic", baslangic.ToString(@"hh\:mm"));
                         cmd.Parameters.AddWithValue("@Bitis", bitis.ToString(@"hh\:mm"));
-                        cmd.Parameters.AddWithValue("@ToplamSaat", toplamSaat);
+                        cmd.Parameters.AddWithValue("@FiiliSaat", hesap.FiiliSaat);
+                        cmd.Parameters.AddWithValue("@Zam01Saat", hesap.Zam01Saat);
+                        cmd.Parameters.AddWithValue("@Zam05Saat", hesap.Zam05Saat);
+                        cmd.Parameters.AddWithValue("@ToplamSaat", hesap.ToplamSaat);
                         cmd.Parameters.AddWithValue("@Aciklama", notlar);
 
                         await cmd.ExecuteNonQueryAsync();
@@ -594,10 +715,12 @@ public class HizliMesaiGirisiController : Controller
             }
 
             var query = @"
-                SELECT mk.id, mk.personel_id, 
+                  SELECT mk.id, mk.personel_id, 
                        CONCAT(COALESCE(p.ad, ''), ' ', COALESCE(p.soyad, '')) AS AdSoyad,
                        p.birim_adi AS SubeAdi,
-                       mk.tarih, mk.baslangic, mk.bitis, mk.toplam_saat, mk.aciklama
+                      mk.tarih, mk.gorev, mk.baslangic, mk.bitis,
+                      mk.fiili_saat, mk.zam01_saat, mk.zam05_saat,
+                      mk.toplam_saat, mk.aciklama, mk.kayit_tarihi
                 FROM mesai_kayitlari mk
                 LEFT JOIN personeller p ON mk.personel_id = p.per_no
                 WHERE 1=1";
@@ -624,10 +747,15 @@ public class HizliMesaiGirisiController : Controller
                                 AdSoyad = reader["AdSoyad"]?.ToString() ?? "",
                                 SubeAdi = reader["SubeAdi"]?.ToString() ?? "",
                                 Tarih = Convert.ToDateTime(reader["tarih"]),
+                                Gorev = reader["gorev"]?.ToString() ?? "",
                                 BaslangicSaati = reader["baslangic"]?.ToString() ?? "",
                                 BitisSaati = reader["bitis"]?.ToString() ?? "",
+                                FiiliSaat = Convert.ToDecimal(reader["fiili_saat"]),
+                                Zam01Saat = Convert.ToDecimal(reader["zam01_saat"]),
+                                Zam05Saat = Convert.ToDecimal(reader["zam05_saat"]),
                                 ToplamSaat = Convert.ToDecimal(reader["toplam_saat"]),
-                                Notlar = reader["aciklama"]?.ToString() ?? ""
+                                Notlar = reader["aciklama"]?.ToString() ?? "",
+                                KayitTarihi = reader["kayit_tarihi"]?.ToString() ?? ""
                             });
                         }
                     }

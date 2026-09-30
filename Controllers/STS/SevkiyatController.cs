@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using gamabelmvc.Models.STS;
 using gamabelmvc.Services;
 using MySqlConnector;
@@ -6,6 +7,7 @@ using OfficeOpenXml;
 
 namespace gamabelmvc.Controllers.STS;
 
+[Authorize(Policy = "StsModule")]
 public class SevkiyatController : Controller
 {
     private readonly DbConnectionFactory _dbFactory;

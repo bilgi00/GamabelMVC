@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using gamabelmvc.Models.STS;
 using gamabelmvc.Services;
 using MySqlConnector;
@@ -7,6 +8,7 @@ using System.Text.Json;
 
 namespace gamabelmvc.Controllers.STS
 {
+    [Authorize(Policy = "StsModule")]
     public class EksikController : Controller
     {
         // Toplu kayıt için istek modeli
