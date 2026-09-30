@@ -39,3 +39,5 @@ secrets.json
 
 # Yerel yayın / hata ayıklama meta verileri
 Properties/launchSettings.json
+# GAMABEL otomatik eklenenler
+GamabelMVC_GAMABEL_BACKUPS/

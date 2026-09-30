@@ -1,0 +1,74 @@
+@model gamabelmvc.Models.PRS.MesaiSaatUcretYonetimViewModel
+@using System.Globalization
+@{
+    ViewData["Title"] = "Mesai Saat ve Ücret Yönetimi";
+    Layout = "_Layout";
+    var fields = new[]
+    {
+        ("NetAsgariUcret", "Net Asgari Ücret", Model.NetAsgariUcret),
+        ("BrutAsgariUcret", "Brüt Asgari Ücret", Model.BrutAsgariUcret),
+        ("GunlukBrut", "Günlük Brüt", Model.GunlukBrut),
+        ("HaftalikBrut", "Haftalık Brüt", Model.HaftalikBrut),
+        ("SaatlikBrut", "Saatlik Brüt", Model.SaatlikBrut)
+    };
+}
+
+<style>
+    .mesai-admin { max-width: 900px; margin: 28px auto; }
+    .mesai-admin-header { margin-bottom:18px; }
+    .mesai-admin-header h1 { margin:0; color:#1e3a8a; font-size:24px; font-weight:700; }
+    .mesai-admin-header p { margin:5px 0 0; color:#64748b; font-size:13px; }
+    .mesai-rate-panel { padding:20px; background:#fff; border:1px solid #e2e8f0; border-radius:12px; box-shadow:0 8px 26px rgba(30,58,138,.06); }
+    .mesai-rate-grid { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:16px; }
+    .mesai-admin label { display:block; margin-bottom:5px; color:#475569; font-size:13px; font-weight:600; }
+    .mesai-admin .form-control { min-height:40px; border-color:#dbe3ed; border-radius:9px; font-size:14px; }
+    .mesai-rate-actions { display:flex; justify-content:flex-end; margin-top:18px; }
+    .mesai-rate-actions .btn { min-height:38px; padding:7px 16px; border-radius:9px; font-weight:600; }
+    .mesai-rate-note { margin:0 0 14px; color:#64748b; font-size:12px; }
+    @@media (max-width: 640px) {
+        .mesai-admin { margin:14px auto; }
+        .mesai-admin-header h1 { font-size:20px; }
+        .mesai-rate-panel { padding:14px; }
+        .mesai-rate-grid { grid-template-columns:1fr; gap:12px; }
+        .mesai-rate-actions .btn { width:100%; }
+    }
+</style>
+
+<main class="mesai-admin">
+    <header class="mesai-admin-header">
+        <h1><i class="fas fa-coins me-2"></i>Mesai Saat ve Ücret Yönetimi</h1>
+        <p>mesaisaat tablosundaki güncel ücret bilgileri.</p>
+    </header>
+
+    @if (!string.IsNullOrEmpty(Model.BasariMesaji))
+    {
+        <div class="alert alert-success py-2">@Model.BasariMesaji</div>
+    }
+    @if (!string.IsNullOrEmpty(Model.HataMesaji))
+    {
+        <div class="alert alert-danger py-2">@Model.HataMesaji</div>
+    }
+
+    @if (!Model.KayitId.HasValue && string.IsNullOrEmpty(Model.HataMesaji))
+    {
+        <div class="alert alert-info py-2">Henüz mesaisaat kaydı yok. Değerleri girip kaydettiğinizde ilk kayıt oluşturulur.</div>
+    }
+
+    <form method="post" asp-action="Guncelle" class="mesai-rate-panel">
+        <input type="hidden" asp-for="KayitId" />
+        <p class="mesai-rate-note">Boş bırakılan alanlar NULL olarak saklanır. Tutarlar DECIMAL(10,2) biçiminde kaydedilir.</p>
+        <div class="mesai-rate-grid">
+            @foreach (var field in fields)
+            {
+                var inputId = $"ucret-{field.Item1}";
+                <div>
+                    <label for="@inputId">@field.Item2 (TL)</label>
+                    <input id="@inputId" name="@field.Item1" type="number" min="0" max="99999999.99" step="0.01" class="form-control" value="@(field.Item3?.ToString("0.00", CultureInfo.InvariantCulture) ?? "")" />
+                </div>
+            }
+        </div>
+        <div class="mesai-rate-actions">
+            <button class="btn btn-success" type="submit"><i class="fas fa-save me-1"></i>Değerleri Kaydet</button>
+        </div>
+    </form>
+</main>

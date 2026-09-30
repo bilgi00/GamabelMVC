@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Report ScriptLanguage="CSharp" ReportInfo.Created="2026-09-30" ReportInfo.Modified="2026-09-30" ReportInfo.CreatorVersion="2026.2.3.0">
+  <Dictionary>
+    <TableDataSource Name="Mesai" ReferenceName="Mesai" DataType="System.Int32" Enabled="true">
+      <Column Name="AdSoyad" DataType="System.String"/>
+      <Column Name="Tarih" DataType="System.String"/>
+      <Column Name="Gun" DataType="System.String"/>
+      <Column Name="Baslangic" DataType="System.String"/>
+      <Column Name="Bitis" DataType="System.String"/>
+      <Column Name="FiiliSaat" DataType="System.Decimal"/>
+      <Column Name="Zam01Saat" DataType="System.Decimal"/>
+      <Column Name="Zam05Saat" DataType="System.Decimal"/>
+      <Column Name="ToplamSaat" DataType="System.Decimal"/>
+      <Column Name="Aciklama" DataType="System.String"/>
+    </TableDataSource>
+    <Parameter Name="Birim" DataType="System.String" AsString=""/>
+    <Parameter Name="Ay" DataType="System.String" AsString=""/>
+    <Parameter Name="Yil" DataType="System.Int32" AsString=""/>
+    <Parameter Name="RaporBaslik" DataType="System.String" AsString=""/>
+    <Parameter Name="GenelFiili" DataType="System.Decimal" AsString=""/>
+    <Parameter Name="GenelZam01" DataType="System.Decimal" AsString=""/>
+    <Parameter Name="GenelZam05" DataType="System.Decimal" AsString=""/>
+    <Parameter Name="GenelToplam" DataType="System.Decimal" AsString=""/>
+  </Dictionary>
+  <ReportPage Name="Page1" PaperWidth="297" PaperHeight="210" LeftMargin="10" TopMargin="10" RightMargin="10" BottomMargin="10" Watermark.Font="Arial, 60pt">
+    <ReportTitleBand Name="ReportTitle1" Width="1047.06" Height="65">
+      <TextObject Name="Kurum" Width="1047.06" Height="22" Text="GAMABEL YATIRIM LTD" HorzAlign="Center" VertAlign="Center" Font="Arial, 12pt, style=Bold" TextFill.Color="30, 58, 138"/>
+      <TextObject Name="RaporBaslik" Top="23" Width="1047.06" Height="19" Text="[RaporBaslik]" HorzAlign="Center" VertAlign="Center" Font="Arial, 10pt, style=Bold" TextFill.Color="51, 65, 85"/>
+      <ShapeObject Name="BaslikCizgisi" Top="43" Width="1047.06" Height="1.5" Fill.Color="37, 99, 235"/>
+      <TextObject Name="RaporBilgi" Top="48" Width="1047.06" Height="16" Fill.Color="248, 250, 252" Text="Birim: [Birim]    |    Ay: [Ay]    |    Yıl: [Yil]" HorzAlign="Center" VertAlign="Center" Font="Arial, 8pt" TextFill.Color="51, 65, 85"/>
+    </ReportTitleBand>
+    <PageHeaderBand Name="PageHeader1" Top="69" Width="1047.06" Height="25">
+      <TextObject Name="H_AdSoyad" Width="147.42" Height="25" Border.Lines="All" Fill.Color="30, 58, 138" Text="ADI SOYADI" HorzAlign="Center" VertAlign="Center" Font="Arial, 7pt, style=Bold" TextFill.Color="White"/>
+      <TextObject Name="H_Tarih" Left="147.42" Width="75.6" Height="25" Border.Lines="All" Fill.Color="30, 58, 138" Text="TARİH" HorzAlign="Center" VertAlign="Center" Font="Arial, 7pt, style=Bold" TextFill.Color="White"/>
+      <TextObject Name="H_Gun" Left="223.02" Width="83.16" Height="25" Border.Lines="All" Fill.Color="30, 58, 138" Text="GÜN" HorzAlign="Center" VertAlign="Center" Font="Arial, 7pt, style=Bold" TextFill.Color="White"/>
+      <TextObject Name="H_Baslangic" Left="306.18" Width="71.82" Height="25" Border.Lines="All" Fill.Color="30, 58, 138" Text="BAŞLANGIÇ" HorzAlign="Center" VertAlign="Center" Font="Arial, 7pt, style=Bold" TextFill.Color="White"/>
+      <TextObject Name="H_Bitis" Left="378" Width="71.82" Height="25" Border.Lines="All" Fill.Color="30, 58, 138" Text="BİTİŞ" HorzAlign="Center" VertAlign="Center" Font="Arial, 7pt, style=Bold" TextFill.Color="White"/>
+      <TextObject Name="H_Fiili" Left="449.82" Width="64.26" Height="25" Border.Lines="All" Fill.Color="30, 58, 138" Text="FİİLİ SAAT" HorzAlign="Center" VertAlign="Center" Font="Arial, 7pt, style=Bold" TextFill.Color="White"/>
+      <TextObject Name="H_Zam01" Left="514.08" Width="68.04" Height="25" Border.Lines="All" Fill.Color="30, 58, 138" Text="ZAM 0,1" HorzAlign="Center" VertAlign="Center" Font="Arial, 7pt, style=Bold" TextFill.Color="White"/>
+      <TextObject Name="H_Zam05" Left="582.12" Width="68.04" Height="25" Border.Lines="All" Fill.Color="30, 58, 138" Text="ZAM 0,5" HorzAlign="Center" VertAlign="Center" Font="Arial, 7pt, style=Bold" TextFill.Color="White"/>
+      <TextObject Name="H_Toplam" Left="650.16" Width="68.04" Height="25" Border.Lines="All" Fill.Color="30, 58, 138" Text="TOPLAM" HorzAlign="Center" VertAlign="Center" Font="Arial, 7pt, style=Bold" TextFill.Color="White"/>
+      <TextObject Name="H_Aciklama" Left="718.2" Width="238.14" Height="25" Border.Lines="All" Fill.Color="30, 58, 138" Text="AÇIKLAMA" HorzAlign="Center" VertAlign="Center" Font="Arial, 7pt, style=Bold" TextFill.Color="White"/>
+      <TextObject Name="H_Imza" Left="956.34" Width="90.72" Height="25" Border.Lines="All" Fill.Color="30, 58, 138" Text="İMZA" HorzAlign="Center" VertAlign="Center" Font="Arial, 7pt, style=Bold" TextFill.Color="White"/>
+    </PageHeaderBand>
+    <DataBand Name="Data1" Top="98" Width="1047.06" Height="21" CanGrow="true" DataSource="Mesai">
+      <TextObject Name="D_AdSoyad" Width="147.42" Height="21" Border.Lines="All" Fill.Color="248, 250, 252" Text="[Mesai.AdSoyad]" VertAlign="Center" Font="Arial, 7pt, style=Bold"/>
+      <TextObject Name="D_Tarih" Left="147.42" Width="75.6" Height="21" Border.Lines="All" Text="[Mesai.Tarih]" HorzAlign="Center" VertAlign="Center" Font="Arial, 7pt"/>
+      <TextObject Name="D_Gun" Left="223.02" Width="83.16" Height="21" Border.Lines="All" Text="[Mesai.Gun]" HorzAlign="Center" VertAlign="Center" Font="Arial, 7pt"/>
+      <TextObject Name="D_Baslangic" Left="306.18" Width="71.82" Height="21" Border.Lines="All" Text="[Mesai.Baslangic]" HorzAlign="Center" VertAlign="Center" Font="Arial, 7pt"/>
+      <TextObject Name="D_Bitis" Left="378" Width="71.82" Height="21" Border.Lines="All" Text="[Mesai.Bitis]" HorzAlign="Center" VertAlign="Center" Font="Arial, 7pt"/>
+      <TextObject Name="D_Fiili" Left="449.82" Width="64.26" Height="21" Border.Lines="All" Text="[Mesai.FiiliSaat]" Format="Number" Format.UseLocale="true" Format.DecimalDigits="2" HorzAlign="Right" VertAlign="Center" Font="Arial, 7pt"/>
+      <TextObject Name="D_Zam01" Left="514.08" Width="68.04" Height="21" Border.Lines="All" Text="[Mesai.Zam01Saat]" Format="Number" Format.UseLocale="true" Format.DecimalDigits="2" HorzAlign="Right" VertAlign="Center" Font="Arial, 7pt"/>
+      <TextObject Name="D_Zam05" Left="582.12" Width="68.04" Height="21" Border.Lines="All" Text="[Mesai.Zam05Saat]" Format="Number" Format.UseLocale="true" Format.DecimalDigits="2" HorzAlign="Right" VertAlign="Center" Font="Arial, 7pt"/>
+      <TextObject Name="D_Toplam" Left="650.16" Width="68.04" Height="21" Border.Lines="All" Fill.Color="248, 250, 252" Text="[Mesai.ToplamSaat]" Format="Number" Format.UseLocale="true" Format.DecimalDigits="2" HorzAlign="Right" VertAlign="Center" Font="Arial, 7pt, style=Bold"/>
+      <TextObject Name="D_Aciklama" Left="718.2" Width="238.14" Height="21" Border.Lines="All" Text="[Mesai.Aciklama]" VertAlign="Center" Font="Arial, 7pt" Clip="false"/>
+      <TextObject Name="D_Imza" Left="956.34" Width="90.72" Height="21" Border.Lines="All"/>
+    </DataBand>
+    <ReportSummaryBand Name="ReportSummary1" Top="123" Width="1047.06" Height="32">
+      <TextObject Name="GenelToplam" Width="1047.06" Height="24" Border.Lines="All" Fill.Color="233, 238, 248" Text="GENEL TOPLAM    Fiili: [GenelFiili]    |    Zam 0,1: [GenelZam01]    |    Zam 0,5: [GenelZam05]    |    TOPLAM: [GenelToplam] saat" HorzAlign="Right" VertAlign="Center" Font="Arial, 8pt, style=Bold" TextFill.Color="30, 58, 114"/>
+    </ReportSummaryBand>
+    <PageFooterBand Name="PageFooter1" Top="750" Width="1047.06" Height="14">
+      <TextObject Name="PageNumber" Width="1047.06" Height="14" Text="GAMABEL YATIRIM LTD    [Ay] [Yil]    Sayfa [PageN] / [TotalPages]" HorzAlign="Right" VertAlign="Center" Font="Arial, 7pt" TextFill.Color="100, 116, 139"/>
+    </PageFooterBand>
+  </ReportPage>
+</Report>

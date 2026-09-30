@@ -61,7 +61,17 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         };
         options.Events.OnRedirectToAccessDenied = context =>
         {
-            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            var request = context.Request;
+            var isPageNavigation =
+                (HttpMethods.IsGet(request.Method) || HttpMethods.IsHead(request.Method)) &&
+                request.Headers.Accept.ToString().Contains("text/html", StringComparison.OrdinalIgnoreCase) &&
+                request.Headers.XRequestedWith != "XMLHttpRequest";
+
+            if (isPageNavigation)
+                context.Response.Redirect("/Home/Index");
+            else
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+
             return Task.CompletedTask;
         };
     });

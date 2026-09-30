@@ -25,6 +25,10 @@ public class AccountController : Controller
     [HttpGet]
     public IActionResult Login()
     {
+        var kullaniciAdi = HttpContext.Session.GetString("KullaniciAdi");
+        if (!string.IsNullOrEmpty(kullaniciAdi))
+            return RedirectAfterLogin(HttpContext.Session.GetString("Rol"));
+
         return View();
     }
 
@@ -76,7 +80,7 @@ public class AccountController : Controller
                 await LoadAndSetRolePermissionsAsync(connection, roleName);
                 await SignInUserAsync("Personel", roleName, model.KullaniciAdi, personelId, null, birim);
 
-                return RedirectToAction("Index", "Kullanici");
+                return RedirectAfterLogin(roleName);
             }
             else
             {
@@ -89,6 +93,17 @@ public class AccountController : Controller
             ViewBag.Hata = "Veritabanı bağlantı hatası: " + ex.Message;
             return View(model);
         }
+    }
+
+    private IActionResult RedirectAfterLogin(string? roleName)
+    {
+        if (string.Equals(roleName?.Trim(), "admin", StringComparison.OrdinalIgnoreCase))
+            return RedirectToAction("Index", "Kullanici");
+
+        if (HttpContext.Session.GetString("Menu_Personel") == "1")
+            return RedirectToAction("Liste2", "Kullanici");
+
+        return RedirectToAction("Index", "Home");
     }
 
     [HttpPost]

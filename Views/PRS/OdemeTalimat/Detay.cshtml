@@ -322,6 +322,7 @@
                             <col style="width: 160px;">
                             <col style="width: 150px;">
                             <col style="width: 70px;">
+                            <col style="width: 80px;">
                         </colgroup>
 
                         <thead class="bg-print-primary text-print-white">
@@ -331,6 +332,7 @@
                                 <th>IBAN</th>
                                 <th>Açıklama</th>
                                 <th class="text-end">Tutar (TL)</th>
+                                <th class="text-center">İşlem</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -345,6 +347,12 @@
                                         <td style="font-size: 0.80rem;">@s.FirmaIBAN</td>
                                         <td style="font-size: 0.80rem;">@s.Aciklama</td>
                                         <td class="text-end fw-semibold" style="font-size: 0.80rem;">@s.Tutar.ToString("N2")</td>
+                                        <td class="text-center">
+                                            <form method="post" asp-action="TalimatSatiriSil" asp-route-id="@Model.Id" asp-route-satirId="@s.Id" onsubmit="return confirm('Bu ödeme satırını silmek istediğinize emin misiniz? İlgili faturalar tekrar bekliyor durumuna dönecek.');">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">Sil</button>
+                                            </form>
+                                        </td>
                                     </tr>
                                     sira++;
                                 }
@@ -352,7 +360,7 @@
                             else
                             {
                                 <tr>
-                                    <td colspan="5" class="text-center text-muted py-3">
+                                    <td colspan="6" class="text-center text-muted py-3">
                                         <i class="fas fa-info-circle me-2"></i> Bu talimata ait fatura bulunmamaktadır.
                                     </td>
                                 </tr>

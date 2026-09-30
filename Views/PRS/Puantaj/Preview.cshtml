@@ -1,0 +1,29 @@
+@model FastReport.Web.WebReport
+@{
+    ViewData["Title"] = "Puantaj Rapor Önizleme";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"]</title>
+    <style>
+        html, body { width:100%; min-height:100%; margin:0; background:#f1f5f9; }
+        .preview-header { height:44px; display:flex; align-items:center; justify-content:space-between; padding:0 16px; background:#fff; border-bottom:1px solid #e2e8f0; color:#334155; font:600 13px Arial,sans-serif; box-sizing:border-box; }
+        .preview-header a { color:#2563eb; text-decoration:none; }
+        .preview-report { width:100%; min-height:calc(100vh - 44px); }
+    </style>
+</head>
+<body>
+    <header class="preview-header">
+        <span>Puantaj Rapor Önizleme</span>
+        <a href="javascript:window.close()">Önizlemeyi Kapat</a>
+    </header>
+    <main class="preview-report">
+        @await Model.Render()
+    </main>
+</body>
+</html>

@@ -612,6 +612,133 @@ public async Task<List<OtFaturaViewModel>> GetTumAcikFaturalarWithFirmaAsync()
         return talimat;
     }
 
+    public async Task<OtTalimat?> TalimatSatiriSilAsync(int talimatId, int satirId)
+    {
+        if (talimatId <= 0 || satirId <= 0)
+            throw new InvalidOperationException("Geçersiz talimat veya satır bilgisi.");
+
+        await using var connection = new MySqlConnection(_connectionString);
+        await connection.OpenAsync();
+        await using var tx = await connection.BeginTransactionAsync();
+
+        try
+        {
+            var satirKontrol = new MySqlCommand(
+                "SELECT COUNT(1) FROM prs_ot_talimat_satirlari WHERE id = @satirId AND talimat_id = @talimatId",
+                connection,
+                tx);
+            satirKontrol.Parameters.AddWithValue("@satirId", satirId);
+            satirKontrol.Parameters.AddWithValue("@talimatId", talimatId);
+
+            var satirVarMi = Convert.ToInt32(await satirKontrol.ExecuteScalarAsync());
+            if (satirVarMi == 0)
+                throw new InvalidOperationException("Silinecek ödeme satırı talimata ait değil.");
+
+            var faturaIdList = new List<int>();
+            var faturaIdCmd = new MySqlCommand(
+                "SELECT acik_fatura_id FROM prs_ot_talimat_satiri_faturalari WHERE talimat_satiri_id = @satirId",
+                connection,
+                tx);
+            faturaIdCmd.Parameters.AddWithValue("@satirId", satirId);
+
+            await using (var faturaReader = await faturaIdCmd.ExecuteReaderAsync())
+            {
+                while (await faturaReader.ReadAsync())
+                {
+                    faturaIdList.Add(faturaReader.GetInt32(0));
+                }
+            }
+
+            var deleteMappings = new MySqlCommand(
+                "DELETE FROM prs_ot_talimat_satiri_faturalari WHERE talimat_satiri_id = @satirId",
+                connection,
+                tx);
+            deleteMappings.Parameters.AddWithValue("@satirId", satirId);
+            await deleteMappings.ExecuteNonQueryAsync();
+
+            var deleteSatir = new MySqlCommand(
+                "DELETE FROM prs_ot_talimat_satirlari WHERE id = @satirId AND talimat_id = @talimatId",
+                connection,
+                tx);
+            deleteSatir.Parameters.AddWithValue("@satirId", satirId);
+            deleteSatir.Parameters.AddWithValue("@talimatId", talimatId);
+            await deleteSatir.ExecuteNonQueryAsync();
+
+            if (faturaIdList.Count > 0)
+            {
+                var idClause = string.Join(",", faturaIdList.Select((_, index) => $"@fid{index}"));
+                var remainingCheck = new MySqlCommand(
+                    $@"SELECT DISTINCT acik_fatura_id
+                       FROM prs_ot_talimat_satiri_faturalari
+                       WHERE acik_fatura_id IN ({idClause})",
+                    connection,
+                    tx);
+
+                for (var i = 0; i < faturaIdList.Count; i++)
+                    remainingCheck.Parameters.AddWithValue($"@fid{i}", faturaIdList[i]);
+
+                var remainingIds = new HashSet<int>();
+                await using (var remainingReader = await remainingCheck.ExecuteReaderAsync())
+                {
+                    while (await remainingReader.ReadAsync())
+                    {
+                        remainingIds.Add(remainingReader.GetInt32(0));
+                    }
+                }
+
+                var invoiceToUnmark = faturaIdList
+                    .Where(faturaId => !remainingIds.Contains(faturaId))
+                    .Distinct()
+                    .ToList();
+
+                if (invoiceToUnmark.Count > 0)
+                {
+                    var unmarkClause = string.Join(",", invoiceToUnmark.Select((_, index) => $"@uid{index}"));
+                    var updateInvoices = new MySqlCommand(
+                        $"UPDATE prs_ot_acik_faturalar SET odemeye_dahil_edildi = 0, odeme_durumu = 'bekliyor' WHERE id IN ({unmarkClause})",
+                        connection,
+                        tx);
+
+                    for (var i = 0; i < invoiceToUnmark.Count; i++)
+                        updateInvoices.Parameters.AddWithValue($"@uid{i}", invoiceToUnmark[i]);
+
+                    await updateInvoices.ExecuteNonQueryAsync();
+                }
+            }
+
+            var toplamTutarCmd = new MySqlCommand(
+                "SELECT COALESCE(SUM(tutar), 0) FROM prs_ot_talimat_satirlari WHERE talimat_id = @talimatId",
+                connection,
+                tx);
+            toplamTutarCmd.Parameters.AddWithValue("@talimatId", talimatId);
+            var toplamTutar = Convert.ToDecimal(await toplamTutarCmd.ExecuteScalarAsync());
+
+            var toplamAdetCmd = new MySqlCommand(
+                "SELECT COUNT(1) FROM prs_ot_talimat_satirlari WHERE talimat_id = @talimatId",
+                connection,
+                tx);
+            toplamAdetCmd.Parameters.AddWithValue("@talimatId", talimatId);
+            var toplamAdet = Convert.ToInt32(await toplamAdetCmd.ExecuteScalarAsync());
+
+            var talimatGuncelle = new MySqlCommand(
+                "UPDATE prs_ot_talimatlar SET toplam_tutar = @toplamTutar, toplam_adet = @toplamAdet WHERE id = @talimatId",
+                connection,
+                tx);
+            talimatGuncelle.Parameters.AddWithValue("@toplamTutar", toplamTutar);
+            talimatGuncelle.Parameters.AddWithValue("@toplamAdet", toplamAdet);
+            talimatGuncelle.Parameters.AddWithValue("@talimatId", talimatId);
+            await talimatGuncelle.ExecuteNonQueryAsync();
+
+            await tx.CommitAsync();
+            return await GetTalimatDetayAsync(talimatId);
+        }
+        catch
+        {
+            await tx.RollbackAsync();
+            throw;
+        }
+    }
+
     // -----------------------------------------------------------------------
     // BANKA YÖNETİMİ
     // -----------------------------------------------------------------------

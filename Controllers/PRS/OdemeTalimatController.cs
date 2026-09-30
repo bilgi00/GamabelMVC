@@ -691,6 +691,28 @@ public async Task<IActionResult> Detay(int id)
         return RedirectToAction("Firmalar");
     }
 
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> TalimatSatiriSil(int id, int satirId)
+    {
+        if (!IsLoggedIn()) return RedirectToAction("Login", "Account");
+        if (!IsAdmin()) return Forbid();
+
+        try
+        {
+            var updatedTalimat = await _talimatService.TalimatSatiriSilAsync(id, satirId);
+            TempData["Basarili"] = updatedTalimat != null
+                ? $"Talimat satırı başarıyla silindi. Yeni toplam: {updatedTalimat.ToplamAdet} ödeme / {updatedTalimat.ToplamTutar:N2} TL"
+                : "Talimat satırı silindi.";
+            return RedirectToAction("Detay", new { id });
+        }
+        catch (Exception ex)
+        {
+            TempData["Hata"] = "Ödeme satırı silinemedi: " + ex.Message;
+            return RedirectToAction("Detay", new { id });
+        }
+    }
+
     // -----------------------------------------------------------------------
     // BANKA YÖNETİMİ
     // -----------------------------------------------------------------------

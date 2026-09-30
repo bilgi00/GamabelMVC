@@ -345,19 +345,13 @@ public class MesaiController : Controller
         }
 
         var mesailer = await GetMesaiRaporVerisiAsync(yil, ay, birim, rol == "admin");
-        var reportFileName = personelBazli ? "EkMesaiPersonelBazli.frx" : "EkMesaiCizelgesi.frx";
-        var reportPath = Path.Combine(_environment.ContentRootPath, "Reports", "Mesai", reportFileName);
+        var reportPath = GetMesaiReportPath();
         if (!System.IO.File.Exists(reportPath))
             return NotFound($"FastReport şablonu bulunamadı: {reportPath}");
 
         var webReport = new WebReport();
         webReport.Report.Load(reportPath);
-        webReport.Report.RegisterData(mesailer, "Mesai");
-        webReport.Report.GetDataSource("Mesai")!.Enabled = true;
-        webReport.Report.SetParameterValue("Birim", birim == "all" ? "Tüm Personeller" : birim);
-        webReport.Report.SetParameterValue("Ay", new DateTime(yil, ay, 1).ToString("MMMM", new System.Globalization.CultureInfo("tr-TR")));
-        webReport.Report.SetParameterValue("Yil", yil);
-        webReport.Report.Prepare();
+        PrepareMesaiReport(webReport.Report, mesailer, birim, yil, ay, personelBazli);
         webReport.Toolbar.Show = true;
 
         return View("~/Views/PRS/Mesai/FastReportPreview.cshtml", webReport);
@@ -384,19 +378,13 @@ public class MesaiController : Controller
         }
 
         var mesailer = await GetMesaiRaporVerisiAsync(yil, ay, birim, rol == "admin");
-        var reportFileName = personelBazli ? "EkMesaiPersonelBazli.frx" : "EkMesaiCizelgesi.frx";
-        var reportPath = Path.Combine(_environment.ContentRootPath, "Reports", "Mesai", reportFileName);
+        var reportPath = GetMesaiReportPath();
         if (!System.IO.File.Exists(reportPath))
             return NotFound($"FastReport şablonu bulunamadı: {reportPath}");
 
         using var report = new Report();
         report.Load(reportPath);
-        report.RegisterData(mesailer, "Mesai");
-        report.GetDataSource("Mesai")!.Enabled = true;
-        report.SetParameterValue("Birim", birim == "all" ? "Tüm Personeller" : birim);
-        report.SetParameterValue("Ay", new DateTime(yil, ay, 1).ToString("MMMM", new System.Globalization.CultureInfo("tr-TR")));
-        report.SetParameterValue("Yil", yil);
-        report.Prepare();
+        PrepareMesaiReport(report, mesailer, birim, yil, ay, personelBazli);
 
         await using var stream = new MemoryStream();
         using var export = new PDFSimpleExport();
@@ -452,6 +440,26 @@ public class MesaiController : Controller
         }
 
         return tablo;
+    }
+
+    private string GetMesaiReportPath() =>
+        Path.Combine(_environment.ContentRootPath, "Reports", "Mesai.frx");
+
+    private static void PrepareMesaiReport(Report report, DataTable mesailer, string birim, int yil, int ay, bool personelBazli)
+    {
+        report.RegisterData(mesailer, "Mesai");
+        report.GetDataSource("Mesai")!.Enabled = true;
+        report.SetParameterValue("Birim", birim == "all" ? "Tüm Personeller" : birim);
+        report.SetParameterValue("Ay", new DateTime(yil, ay, 1).ToString("MMMM", new System.Globalization.CultureInfo("tr-TR")));
+        report.SetParameterValue("Yil", yil);
+        report.SetParameterValue("RaporBaslik", personelBazli
+            ? "EK MESAİ ÇİZELGESİ (PERSONEL BAZLI)"
+            : "EK MESAİ ÇİZELGESİ (BİRİM BAZLI)");
+        report.SetParameterValue("GenelFiili", mesailer.AsEnumerable().Sum(row => row.Field<decimal>("FiiliSaat")));
+        report.SetParameterValue("GenelZam01", mesailer.AsEnumerable().Sum(row => row.Field<decimal>("Zam01Saat")));
+        report.SetParameterValue("GenelZam05", mesailer.AsEnumerable().Sum(row => row.Field<decimal>("Zam05Saat")));
+        report.SetParameterValue("GenelToplam", mesailer.AsEnumerable().Sum(row => row.Field<decimal>("ToplamSaat")));
+        report.Prepare();
     }
 
     [System.Runtime.Versioning.SupportedOSPlatform("windows")]
