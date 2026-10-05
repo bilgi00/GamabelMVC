@@ -90,6 +90,27 @@ dotnet build
 dotnet run --environment Development --urls http://localhost:5010
 ```
 
+### OpenRouter anahtarı
+
+OpenRouter anahtarını kaynak dosyalara veya `appsettings*.json` dosyalarına koymayın. Uygulama `OpenRouterOptions` yapılandırmasını `OpenRouter__ApiKey` ortam değişkeninden okur. Yerel geliştirmede, uygulamayı başlatmadan önce PowerShell oturumunda ayarlayın:
+
+```powershell
+$secureKey = Read-Host "OpenRouter API anahtarı" -AsSecureString
+$keyPointer = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secureKey)
+try {
+    $env:OpenRouter__ApiKey = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($keyPointer)
+}
+finally {
+    [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($keyPointer)
+    $secureKey.Dispose()
+}
+dotnet run --environment Development --urls http://localhost:5010
+```
+
+Bu yöntem anahtarı dosyaya veya terminal geçmişine yazmaz; değişken yalnızca geçerli PowerShell oturumu boyunca kullanılabilir. Üretimde anahtarı dağıtım ortamının secret yöneticisinden veya korumalı bir servis ortam değişkeninden sağlayın. Anahtarı loglamayın. Uygulamada henüz OpenRouter API çağrısı bulunmamaktadır.
+
+Infobip WhatsApp mesaj gönderimi için API anahtarını aynı şekilde güvenli olarak alın ve `$env:Infobip__ApiKey` değişkenine atayın. Alıcı, gönderici ve onaylı şablon ayarları `appsettings.json` içindeki `Infobip` bölümündedir; API anahtarını bu dosyaya eklemeyin.
+
 Geliştirme yardımcıları kullanılacaksa:
 ```powershell
 .\dev-tools.ps1 -Action stop

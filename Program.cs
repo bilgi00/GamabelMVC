@@ -1,3 +1,4 @@
+using gamabelmvc.Configuration;
 using gamabelmvc.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -7,6 +8,9 @@ using Microsoft.AspNetCore.WebUtilities;
 using MySqlConnector;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.Configure<OpenRouterOptions>(
+    builder.Configuration.GetSection(OpenRouterOptions.SectionName));
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
