@@ -8,15 +8,25 @@
     "/wwwroot/_content/FastReport.Web/Resources/slash.svg":  "53230619E9A24C57DB35FC6CAB6AE20A",
     "/wwwroot/_content/FastReport.Web/Resources/caret-right.svg.br":  "BC378C78D6F6AE35E2E5EEB93F3070C2",
     "/wwwroot/lib/bootstrap/dist/css/bootstrap.css.map.gz":  "897AD8D1D9B6A4CF1D6D6E491DA39784",
+<<<<<<< Updated upstream
     "/wwwroot/lib/bootstrap/dist/css/bootstrap-grid.css":  "3889C5CD9922F6C9EDF7EB6D26B4A22B",
     "/gamabelmvc.staticwebassets.endpoints.json":  "B219F96B504F7C5791F3D0A916886293",
+=======
+    "/wwwroot/lib/bootstrap/dist/js/bootstrap.esm.min.js.map.gz":  "5E2FB993D836EAA851FF9C88FAAF5D02",
+    "/wwwroot/_content/FastReport.Web/Resources/magnifier.svg":  "90EED8D79C4CB836EE6DF0A08DB651FB",
+    "/gamabelmvc.staticwebassets.endpoints.json":  "BE413A8D5EEFC95F158535555EB64E11",
+>>>>>>> Stashed changes
     "/wwwroot/_content/FastReport.Web/Resources/button-active.svg":  "4ED0944D1054AC0B41304EEE46624FA7",
     "/runtimes/win-x64/native/krb5_64.dll":  "9FA7CC43EF48FFA9D9D6B3EB57FD0057",
     "/wwwroot/_content/FastReport.Web/Resources/spinner.svg":  "D48637B986EE79D0B2CA53895A9E7DB7",
     "/EPPlus.Interfaces.dll":  "B0513B9A5F23F086ECECCD2EB11ABA31",
     "/ru/Microsoft.CodeAnalysis.VisualBasic.resources.dll":  "869CBD215F9D573AF4264F65C8C3588A",
     "/wwwroot/lib/bootstrap/dist/css/bootstrap-reboot.min.css.map":  "77AF365E43D734ADF1CA89BFC1BA5217",
+<<<<<<< Updated upstream
     "/wwwroot/lib/bootstrap/dist/css/bootstrap.rtl.css.br":  "F3BF015D0C9AB95B659B0F0076B4678A",
+=======
+    "/wwwroot/lib/bootstrap/dist/css/bootstrap.rtl.css.br":  "B05258A8BD856E7A5B5F79F556340108",
+>>>>>>> Stashed changes
     "/deploy-manifest.json":  "B06856B6ED7F5AB8D5CA04582E4F1E1C",
     "/wwwroot/lib/bootstrap/dist/js/bootstrap.min.js.map.br":  "E8966A2F1418F0CE74D0FDC9E9F4554B",
     "/wwwroot/lib/bootstrap/dist/css/bootstrap-reboot.rtl.min.css.br":  "84E33DAF1049B0BFE1617DE804D91656",
@@ -96,7 +106,12 @@
     "/wwwroot/lib/jquery/dist/jquery.slim.min.js.br":  "0F530A51C4AEBBAD130434086B550B11",
     "/wwwroot/_content/FastReport.Web/Resources/button-active.svg.gz":  "A9DC0D370F68C0B4207A5551FA53657D",
     "/wwwroot/_content/FastReport.Web/Resources/reload.svg.br":  "488AF048ABD1B8221B2AD0EC9563C111",
+<<<<<<< Updated upstream
     "/gamabelmvc.pdb":  "AE8AFD383BAE4141AE74E77C63E48F90",
+=======
+    "/gamabelmvc.pdb":  "62E717C9CC126441C75453F4B1820A17",
+    "/wwwroot/_content/FastReport.Web/Resources/spinner.svg.br":  "25534348BC631BA0493B58D41553B101",
+>>>>>>> Stashed changes
     "/pl/Microsoft.CodeAnalysis.resources.dll":  "AC31662C95CDC2BFA368ABC06AB8AFE5",
     "/tr/Microsoft.CodeAnalysis.CSharp.resources.dll":  "4AC5260ADC686279AF272B2277410D2A",
     "/wwwroot/_content/FastReport.Web/js/webreport-script.bundle.min.js.br":  "3218182ED6200FAD47025B6CF43380C5",
@@ -281,7 +296,11 @@
     "/wwwroot/lib/jquery-validation-unobtrusive/LICENSE.txt":  "BA2BED45D99B13D4C31485D0631AE675",
     "/K4os.Compression.LZ4.dll":  "0975DE812A41CCB0F266623390AE4061",
     "/pl/Microsoft.CodeAnalysis.VisualBasic.resources.dll":  "74CD3E14DD58BD1E0C3CDC708E027F78",
+<<<<<<< Updated upstream
     "/gamabelmvc.dll":  "03021D8F304217D5CF7DF709A8AF18AE",
+=======
+    "/gamabelmvc.dll":  "61C8317A53B931BF792C648526460F4D",
+>>>>>>> Stashed changes
     "/ja/Microsoft.CodeAnalysis.resources.dll":  "9B05C2A49CE4BD6588AB21D059101622",
     "/Reports/OdemeTalimat/OdemeTalimat.frx":  "AA97B5292CB89BCE996F773A1030FC95",
     "/BCrypt.Net-Next.dll":  "F815B120CF9CEDA09151AF0E842BA18C",

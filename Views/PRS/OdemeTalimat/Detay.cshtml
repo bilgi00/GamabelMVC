@@ -146,6 +146,9 @@
             
             /* Gizlenecek öğeler */
             .no-print { display: none !important; }
+            .table-print th:last-child,
+            .table-print td:last-child,
+            .table-print col:last-child { display: none !important; }
             .navbar, .gbl-navbar, header, footer, .footer { display: none !important; }
             
             /* Konteyner */
@@ -348,7 +351,7 @@
                                         <td style="font-size: 0.80rem;">@s.Aciklama</td>
                                         <td class="text-end fw-semibold" style="font-size: 0.80rem;">@s.Tutar.ToString("N2")</td>
                                         <td class="text-center">
-                                            <form method="post" asp-action="TalimatSatiriSil" asp-route-id="@Model.Id" asp-route-satirId="@s.Id" onsubmit="return confirm('Bu ödeme satırını silmek istediğinize emin misiniz? İlgili faturalar tekrar bekliyor durumuna dönecek.');">
+                                            <form class="no-print" method="post" asp-action="TalimatSatiriSil" asp-route-id="@Model.Id" asp-route-satirId="@s.Id" onsubmit="return confirm('Bu ödeme satırını silmek istediğinize emin misiniz? İlgili faturalar tekrar bekliyor durumuna dönecek.');">
                                                 @Html.AntiForgeryToken()
                                                 <button type="submit" class="btn btn-sm btn-outline-danger">Sil</button>
                                             </form>
