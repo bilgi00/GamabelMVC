@@ -314,6 +314,7 @@
                                         <ul class="dropdown-menu" aria-labelledby="odemeTalimatDropdown">
                                             <li class="menu-group-title">📄 Talimat İşlemleri</li>
                                             <li><a class="dropdown-item" href="/OdemeTalimat">📋 Talimat Ana Sayfa</a></li>
+                                            <li><a class="dropdown-item" href="/OdemeTalimat/FaturaAra">🔎 Fatura Ara</a></li>
                                             <li><a class="dropdown-item" href="/OdemeTalimat/FaturaSecim">📑 Fatura Seçimi</a></li>
                                             <li><a class="dropdown-item" href="/OdemeTalimat/ManuelKayit">📝 Manuel Kayıt</a></li>
                                             <!-- ✅ Yeni Ödeme Oluştur butonu FaturaSecim sayfasına yönlendiriyor -->
@@ -357,6 +358,10 @@
                                             }
                                             @if (isAdmin)
                                             {
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li class="menu-group-title">🏢 Birim ve Personel</li>
+                                                <li><a class="dropdown-item" href="/SistemYonetim/Birimler">🏢 Birim Yönetimi</a></li>
+                                                <li><a class="dropdown-item" href="/SistemYonetim/Personeller">👥 Personel Yönetimi</a></li>
                                                 <li><hr class="dropdown-divider"></li>
                                                 <li class="menu-group-title">⏰ Mesai Yönetimi</li>
                                                 <li><a class="dropdown-item" href="/MesaiYonetim/Index">💰 Mesai Saat ve Ücretleri</a></li>

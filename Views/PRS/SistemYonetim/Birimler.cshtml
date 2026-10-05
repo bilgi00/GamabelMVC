@@ -1,0 +1,82 @@
+@model gamabelmvc.Models.PRS.BirimYonetimViewModel
+
+@{
+    ViewData["Title"] = "Birim Yönetimi";
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+        <div>
+            <h1 class="h3 mb-1">Birim Yönetimi</h1>
+            <p class="text-muted mb-0">Birim ekleyin veya adını düzenleyin. Ad değişikliği personel ve kullanıcı kayıtlarına da uygulanır.</p>
+        </div>
+        <a class="btn btn-outline-secondary" href="@Url.Action("Index", "Home")">Ana sayfa</a>
+    </div>
+
+    @if (TempData["Hata"] is string hata)
+    {
+        <div class="alert alert-danger" role="alert">@hata</div>
+    }
+    @if (TempData["Basari"] is string basari)
+    {
+        <div class="alert alert-success" role="status">@basari</div>
+    }
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header fw-semibold">Yeni Birim Ekle</div>
+        <div class="card-body">
+            <form method="post" asp-controller="SistemYonetim" asp-action="BirimEkle" class="row g-3 align-items-end">
+                @Html.AntiForgeryToken()
+                <div class="col-12 col-md-8">
+                    <label for="yeniBirimAdi" class="form-label">Birim adı</label>
+                    <input id="yeniBirimAdi" name="YeniBirimAdi" class="form-control" maxlength="255" required />
+                </div>
+                <div class="col-12 col-md-4">
+                    <button type="submit" class="btn btn-primary">Birim Ekle ve Kaydet</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header fw-semibold">Kayıtlı Birimler (@Model.Birimler.Count)</div>
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width:100px">ID</th>
+                        <th>Birim Adı</th>
+                        <th style="width:180px">İşlem</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Birimler.Count == 0)
+                    {
+                        <tr><td colspan="3" class="text-center text-muted py-4">Kayıtlı birim bulunamadı.</td></tr>
+                    }
+                    @foreach (var birim in Model.Birimler)
+                    {
+                        <tr>
+                            <td>@birim.Id</td>
+                            <td colspan="2">
+                                <form method="post" asp-controller="SistemYonetim" asp-action="BirimGuncelle"
+                                      class="row g-2 align-items-center">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="Id" value="@birim.Id" />
+                                    <div class="col">
+                                        <label class="visually-hidden" for="birim-@birim.Id">Birim adı</label>
+                                        <input id="birim-@birim.Id" name="BirimAdi" value="@birim.BirimAdi"
+                                               class="form-control" maxlength="255" required />
+                                    </div>
+                                    <div class="col-auto">
+                                        <button type="submit" class="btn btn-outline-primary">Kaydet</button>
+                                    </div>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

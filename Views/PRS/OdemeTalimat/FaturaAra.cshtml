@@ -1,0 +1,133 @@
+@model gamabelmvc.Models.PRS.FaturaAraViewModel
+
+@{
+    ViewData["Title"] = "Fatura Ara";
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <div>
+            <h1 class="h3 mb-1">Fatura Ara</h1>
+            <p class="text-muted mb-0">Fatura numarası veya firma adına göre açık fatura kayıtlarında arama yapın.</p>
+        </div>
+        <a class="btn btn-outline-secondary" href="@Url.Action("Index", "OdemeTalimat")">Ödeme Talimatlarına Dön</a>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" asp-controller="OdemeTalimat" asp-action="FaturaAra" class="row g-3 align-items-end">
+                <div class="col-12 col-md-5">
+                    <label for="faturaNo" class="form-label">Fatura No</label>
+                    <input id="faturaNo" name="faturaNo" value="@Model.FaturaNo" maxlength="100"
+                           class="form-control" autocomplete="off" />
+                </div>
+                <div class="col-12 col-md-5">
+                    <label for="firmaAdi" class="form-label">Firma adı</label>
+                    <input id="firmaAdi" name="firmaAdi" value="@Model.FirmaAdi" maxlength="250"
+                           class="form-control" autocomplete="off" />
+                </div>
+                <div class="col-12 col-md-2 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary flex-grow-1">Ara</button>
+                    <a class="btn btn-outline-secondary" href="@Url.Action("FaturaAra", "OdemeTalimat")" title="Aramayı temizle">Temizle</a>
+                </div>
+            </form>
+            <div class="form-text mt-2">İki alan da doldurulursa sonuçlar her iki ölçüte göre daraltılır.</div>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Model.Hata))
+    {
+        <div class="alert alert-danger" role="alert">@Model.Hata</div>
+    }
+
+    @if (Model.AramaYapildi && string.IsNullOrWhiteSpace(Model.Hata))
+    {
+        @if (Model.Sonuclar.Count == 0)
+        {
+            <div class="alert alert-info" role="status">Arama ölçütleriyle eşleşen fatura bulunamadı.</div>
+        }
+        else
+        {
+            @if (Model.SonucSiniriUlasti)
+            {
+                <div class="alert alert-warning" role="status">
+                    İlk 200 sonuç gösteriliyor. Sonuçları daraltmak için fatura numarası veya firma adını netleştirin.
+                </div>
+            }
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h2 class="h5 mb-0">Eşleşen kayıtlar</h2>
+                <span class="badge text-bg-secondary">@Model.Sonuclar.Count sonuç</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm table-striped table-hover align-middle">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Fatura No</th>
+                            <th>Firma</th>
+                            <th class="text-end">Tutar</th>
+                            <th>Fatura Durumu</th>
+                            <th>Ödeme / Talimat Tarihi</th>
+                            <th>Talimat No</th>
+                            <th>Talimat Durumu</th>
+                            <th>Banka</th>
+                            <th>Talimat Satırı Tutarı</th>
+                            <th>Talimat Detayı</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var sonuc in Model.Sonuclar)
+                        {
+                            <tr>
+                                <td class="fw-semibold">@sonuc.FaturaNo</td>
+                                <td>@sonuc.FirmaAdi</td>
+                                <td class="text-end text-nowrap">@sonuc.Bakiye.ToString("N2")</td>
+                                <td>
+                                    @if (string.Equals(sonuc.OdemeDurumu, "odendi", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        <span class="badge text-bg-success">Ödendi</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge text-bg-secondary">@sonuc.OdemeDurumu</span>
+                                    }
+                                </td>
+                                <td class="text-nowrap">@(sonuc.OdemeTarihi?.ToString("dd.MM.yyyy") ?? "—")</td>
+                                <td>
+                                    @if (sonuc.TalimatId.HasValue)
+                                    {
+                                        <a href="@Url.Action("Detay", "OdemeTalimat", new { id = sonuc.TalimatId.Value })">
+                                            @sonuc.TalimatNo
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <span>—</span>
+                                    }
+                                </td>
+                                <td>@(sonuc.TalimatDurumu ?? "—")</td>
+                                <td>@(sonuc.BankaSubeAdi ?? "—")</td>
+                                <td class="text-end text-nowrap">@(sonuc.TalimatSatirTutari?.ToString("N2") ?? "—")</td>
+                                <td>
+                                    @if (sonuc.TalimatId.HasValue)
+                                    {
+                                        <div class="small">
+                                            <div>Hazırlayan: @(sonuc.HazirlayanKullanici ?? "—")</div>
+                                            @if (sonuc.OnaylayanKullanici != null || sonuc.OnayTarihi.HasValue)
+                                            {
+                                                <div>Onay: @(sonuc.OnaylayanKullanici ?? "—") / @(sonuc.OnayTarihi?.ToString("dd.MM.yyyy HH:mm") ?? "—")</div>
+                                            }
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Talimat kaydı yok</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    }
+</div>

@@ -63,6 +63,42 @@ public class OdemeTalimatController : Controller
         return View();
     }
 
+    [HttpGet]
+    public async Task<IActionResult> FaturaAra(string? faturaNo, string? firmaAdi)
+    {
+        if (!IsLoggedIn()) return RedirectToAction("Login", "Account");
+        if (!IsAdmin()) return Forbid();
+
+        var model = new FaturaAraViewModel
+        {
+            FaturaNo = faturaNo?.Trim() ?? string.Empty,
+            FirmaAdi = firmaAdi?.Trim() ?? string.Empty,
+            AramaYapildi = !string.IsNullOrWhiteSpace(faturaNo) || !string.IsNullOrWhiteSpace(firmaAdi)
+        };
+
+        if (model.FaturaNo.Length > 100 || model.FirmaAdi.Length > 250)
+        {
+            model.Hata = "Fatura numarası en fazla 100, firma adı en fazla 250 karakter olabilir.";
+            return View(model);
+        }
+
+        if (!model.AramaYapildi)
+            return View(model);
+
+        try
+        {
+            var sonuclar = await _talimatService.FaturaAraAsync(model.FaturaNo, model.FirmaAdi);
+            model.SonucSiniriUlasti = sonuclar.Count > 200;
+            model.Sonuclar = sonuclar.Take(200).ToList();
+        }
+        catch (Exception ex)
+        {
+            model.Hata = "Fatura araması yapılamadı: " + ex.Message;
+        }
+
+        return View(model);
+    }
+
     // -----------------------------------------------------------------------
     // EXCEL YÜKLEME
     // -----------------------------------------------------------------------
@@ -647,6 +683,117 @@ public async Task<IActionResult> Detay(int id)
         return View(firmalar);
     }
 
+    [HttpGet]
+    public async Task<IActionResult> FirmalarRapor(string yon = "dikey")
+    {
+        if (!IsLoggedIn()) return RedirectToAction("Login", "Account");
+        if (!IsAdmin()) return Forbid();
+
+        if (!TryGetFirmalarReportOrientation(yon, out var landscape))
+            return BadRequest("Geçersiz rapor yönü. Geçerli değerler: dikey | yatay");
+
+        var reportPath = GetFirmalarReportPath(landscape);
+        if (!System.IO.File.Exists(reportPath))
+            return NotFound("Firma rapor şablonu bulunamadı.");
+
+        var firmalar = await _talimatService.GetFirmalarAsync();
+        var report = CreateFirmalarReport(firmalar, reportPath);
+
+        var webReport = new WebReport { Report = report };
+        webReport.Width = "100%";
+        webReport.Height = "calc(100vh - 48px)";
+        webReport.Inline = false;
+        webReport.Toolbar.Show = true;
+        webReport.Toolbar.ShowPrint = true;
+        webReport.Toolbar.Exports.Show = true;
+        webReport.Toolbar.Exports.ShowPreparedReport = true;
+
+        ViewBag.Yon = landscape ? "yatay" : "dikey";
+        return View("~/Views/PRS/OdemeTalimat/FirmalarRapor.cshtml", webReport);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> FirmalarRaporPdf(string yon = "dikey")
+    {
+        if (!IsLoggedIn()) return RedirectToAction("Login", "Account");
+        if (!IsAdmin()) return Forbid();
+
+        if (!TryGetFirmalarReportOrientation(yon, out var landscape))
+            return BadRequest("Geçersiz rapor yönü. Geçerli değerler: dikey | yatay");
+
+        var reportPath = GetFirmalarReportPath(landscape);
+        if (!System.IO.File.Exists(reportPath))
+            return NotFound("Firma rapor şablonu bulunamadı.");
+
+        var firmalar = await _talimatService.GetFirmalarAsync();
+        using var report = CreateFirmalarReport(firmalar, reportPath);
+        await using var stream = new MemoryStream();
+        using var export = new PDFSimpleExport();
+        report.Export(export, stream);
+
+        Response.Headers["Cache-Control"] = "no-store, no-cache, must-revalidate";
+        Response.Headers["Pragma"] = "no-cache";
+        return File(stream.ToArray(), "application/pdf", $"odeme-talimat-firmalar-{(landscape ? "yatay" : "dikey")}.pdf");
+    }
+
+    private static bool TryGetFirmalarReportOrientation(string? yon, out bool landscape)
+    {
+        if (string.Equals(yon?.Trim(), "dikey", StringComparison.OrdinalIgnoreCase))
+        {
+            landscape = false;
+            return true;
+        }
+
+        if (string.Equals(yon?.Trim(), "yatay", StringComparison.OrdinalIgnoreCase))
+        {
+            landscape = true;
+            return true;
+        }
+
+        landscape = false;
+        return false;
+    }
+
+    private string GetFirmalarReportPath(bool landscape) =>
+        Path.Combine(_environment.ContentRootPath, "Reports", "OdemeTalimat",
+            $"Firmalar.{(landscape ? "Yatay" : "Dikey")}.frx");
+
+    private static Report CreateFirmalarReport(List<OtFirma> firmalar, string reportPath)
+    {
+        var rows = new DataTable("Firmalar");
+        rows.Columns.Add("CariIsmi", typeof(string));
+        rows.Columns.Add("OdemeIsmi", typeof(string));
+        rows.Columns.Add("IBAN", typeof(string));
+        rows.Columns.Add("EmailIletisim", typeof(string));
+        rows.Columns.Add("Aciklama", typeof(string));
+
+        if (firmalar.Count == 0)
+        {
+            rows.Rows.Add("Kayıtlı firma bulunamadı.", string.Empty, string.Empty, string.Empty, string.Empty);
+        }
+        else
+        {
+            foreach (var firma in firmalar)
+            {
+                var email = string.IsNullOrWhiteSpace(firma.Email) ? string.Empty : firma.Email.Trim();
+                var cc = string.IsNullOrWhiteSpace(firma.EmailCc) ? string.Empty : $"CC: {firma.EmailCc.Trim()}";
+                var emailIletisim = string.Join(Environment.NewLine, new[] { email, cc }.Where(x => x.Length > 0));
+                rows.Rows.Add(firma.CariIsmi, firma.OdemeIsmi, firma.IBAN, emailIletisim, firma.Aciklama ?? string.Empty);
+            }
+        }
+
+        var report = new Report();
+        report.Load(reportPath);
+        report.RegisterData(rows, "Firmalar");
+        var dataSource = report.GetDataSource("Firmalar")
+            ?? throw new InvalidOperationException("Firma rapor şablonunda 'Firmalar' veri kaynağı bulunamadı.");
+        dataSource.Enabled = true;
+        report.SetParameterValue("RaporTarihi", DateTime.Now.ToString("dd.MM.yyyy HH:mm", CultureInfo.GetCultureInfo("tr-TR")));
+        report.SetParameterValue("FirmaSayisi", firmalar.Count);
+        report.Prepare();
+        return report;
+    }
+
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> FirmaKaydet(OtFirma firma)
@@ -724,6 +871,82 @@ public async Task<IActionResult> Detay(int id)
         ViewBag.KullaniciAdi = KullaniciAdi();
         var bankalar = await _talimatService.GetBankalarAsync();
         return View(bankalar);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> BankalarRapor()
+    {
+        if (!IsLoggedIn()) return RedirectToAction("Login", "Account");
+        if (!IsAdmin()) return Forbid();
+
+        var reportPath = GetBankalarReportPath();
+        if (!System.IO.File.Exists(reportPath))
+            return NotFound("Banka rapor şablonu bulunamadı.");
+
+        var bankalar = await _talimatService.GetBankalarAsync();
+        var report = CreateBankalarReport(bankalar, reportPath);
+        var webReport = new WebReport { Report = report };
+        webReport.Width = "100%";
+        webReport.Height = "calc(100vh - 48px)";
+        webReport.Inline = false;
+        webReport.Toolbar.Show = true;
+        webReport.Toolbar.ShowPrint = true;
+        webReport.Toolbar.Exports.Show = true;
+        webReport.Toolbar.Exports.ShowPreparedReport = true;
+
+        return View("~/Views/PRS/OdemeTalimat/BankalarRapor.cshtml", webReport);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> BankalarRaporPdf()
+    {
+        if (!IsLoggedIn()) return RedirectToAction("Login", "Account");
+        if (!IsAdmin()) return Forbid();
+
+        var reportPath = GetBankalarReportPath();
+        if (!System.IO.File.Exists(reportPath))
+            return NotFound("Banka rapor şablonu bulunamadı.");
+
+        var bankalar = await _talimatService.GetBankalarAsync();
+        using var report = CreateBankalarReport(bankalar, reportPath);
+        await using var stream = new MemoryStream();
+        using var export = new PDFSimpleExport();
+        report.Export(export, stream);
+
+        Response.Headers["Cache-Control"] = "no-store, no-cache, must-revalidate";
+        Response.Headers["Pragma"] = "no-cache";
+        return File(stream.ToArray(), "application/pdf", "odeme-talimat-bankalar-yatay.pdf");
+    }
+
+    private string GetBankalarReportPath() =>
+        Path.Combine(_environment.ContentRootPath, "Reports", "OdemeTalimat", "Bankalar.Yatay.frx");
+
+    private static Report CreateBankalarReport(List<OtBanka> bankalar, string reportPath)
+    {
+        var rows = new DataTable("Bankalar");
+        rows.Columns.Add("SubeAdi", typeof(string));
+        rows.Columns.Add("IBAN", typeof(string));
+
+        if (bankalar.Count == 0)
+        {
+            rows.Rows.Add("Kayıtlı banka/hesap bulunamadı.", string.Empty);
+        }
+        else
+        {
+            foreach (var banka in bankalar)
+                rows.Rows.Add(banka.SubeAdi, banka.IBAN);
+        }
+
+        var report = new Report();
+        report.Load(reportPath);
+        report.RegisterData(rows, "Bankalar");
+        var dataSource = report.GetDataSource("Bankalar")
+            ?? throw new InvalidOperationException("Banka rapor şablonunda 'Bankalar' veri kaynağı bulunamadı.");
+        dataSource.Enabled = true;
+        report.SetParameterValue("RaporTarihi", DateTime.Now.ToString("dd.MM.yyyy HH:mm", CultureInfo.GetCultureInfo("tr-TR")));
+        report.SetParameterValue("BankaSayisi", bankalar.Count);
+        report.Prepare();
+        return report;
     }
 
     [HttpPost]

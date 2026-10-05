@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Report ScriptLanguage="CSharp" DoublePass="true"
+        ReportInfo.Created="2026-10-06" ReportInfo.Modified="2026-10-06"
+        ReportInfo.CreatorVersion="2026.2.3.0" ReportInfo.Version="1.0.0"
+        ReportInfo.Description="Ödeme talimatı banka ve hesap listesi - A4 yatay">
+  <Dictionary>
+    <TableDataSource Name="Bankalar" ReferenceName="Bankalar" DataType="System.Int32" Enabled="true">
+      <Column Name="SubeAdi" DataType="System.String"/>
+      <Column Name="IBAN" DataType="System.String"/>
+    </TableDataSource>
+    <Parameter Name="RaporTarihi" DataType="System.String"/>
+    <Parameter Name="BankaSayisi" DataType="System.Int32"/>
+  </Dictionary>
+  <ReportPage Name="Page1" Landscape="true" PaperWidth="297" PaperHeight="210"
+              LeftMargin="10" TopMargin="10" RightMargin="10" BottomMargin="10">
+    <ReportTitleBand Name="ReportTitle1" Width="1047.06" Height="56.7">
+      <TextObject Name="Kurum" Width="1047.06" Height="22.68" Text="GAMABEL YATIRIM LTD"
+                  HorzAlign="Center" VertAlign="Center" Font="Arial, 13pt, style=Bold"/>
+      <TextObject Name="Baslik" Top="22.68" Width="1047.06" Height="20" Text="BANKA / ÖDEME HESABI LİSTESİ"
+                  HorzAlign="Center" VertAlign="Center" Font="Arial, 11pt, style=Bold"/>
+      <TextObject Name="RaporBilgi" Top="43" Width="1047.06" Height="13.7"
+                  Text="Hesap sayısı: [BankaSayisi]    |    Rapor tarihi: [RaporTarihi]"
+                  HorzAlign="Center" VertAlign="Center" Font="Arial, 8pt"/>
+    </ReportTitleBand>
+    <PageHeaderBand Name="PageHeader1" Width="1047.06" Height="30">
+      <TextObject Name="HdrSube" Width="430" Height="30" Border.Lines="All" Fill.Color="30, 60, 114"
+                  Text="Şube / Hesap Adı" HorzAlign="Center" VertAlign="Center"
+                  Font="Arial, 9pt, style=Bold" TextFill.Color="White"/>
+      <TextObject Name="HdrIban" Left="430" Width="617.06" Height="30" Border.Lines="All" Fill.Color="30, 60, 114"
+                  Text="IBAN" HorzAlign="Center" VertAlign="Center"
+                  Font="Arial, 9pt, style=Bold" TextFill.Color="White"/>
+    </PageHeaderBand>
+    <DataBand Name="Data1" Width="1047.06" Height="30" CanGrow="true" DataSource="Bankalar">
+      <TextObject Name="DataSube" Width="430" Height="30" Border.Lines="All" CanGrow="true" GrowToBottom="true"
+                  Text="[Bankalar.SubeAdi]" VertAlign="Center" WordWrap="true" Font="Arial, 9pt"/>
+      <TextObject Name="DataIban" Left="430" Width="617.06" Height="30" Border.Lines="All" CanGrow="true" GrowToBottom="true"
+                  Text="[Bankalar.IBAN]" VertAlign="Center" WordWrap="true" Font="Arial, 9pt"/>
+    </DataBand>
+    <PageFooterBand Name="PageFooter1" Width="1047.06" Height="18.9">
+      <TextObject Name="Footer" Width="1047.06" Height="18.9"
+                  Text="GAMABEL YATIRIM LTD    |    Sayfa [PageN] / [TotalPages]"
+                  HorzAlign="Right" VertAlign="Center" Font="Arial, 7pt"/>
+    </PageFooterBand>
+  </ReportPage>
+</Report>

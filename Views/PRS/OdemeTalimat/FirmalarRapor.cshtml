@@ -1,0 +1,29 @@
+@model FastReport.Web.WebReport
+@{
+    Layout = null;
+    var yon = (string)ViewBag.Yon;
+    var tersYon = yon == "dikey" ? "yatay" : "dikey";
+}
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Firma Listesi Raporu</title>
+    <style>
+        html, body { margin: 0; padding: 0; height: 100%; font-family: Arial, sans-serif; }
+        .rapor-cubuk { height: 48px; line-height: 48px; padding: 0 12px; background: #f1f3f5; font-size: 13px; }
+        .rapor-cubuk a { margin-right: 14px; text-decoration: none; color: #0b5ed7; }
+        .rapor-cubuk strong { margin-right: 10px; }
+    </style>
+</head>
+<body>
+    <div class="rapor-cubuk">
+        <strong>Firma Listesi — @(yon == "dikey" ? "Dikey" : "Yatay")</strong>
+        <a asp-controller="OdemeTalimat" asp-action="FirmalarRapor" asp-route-yon="@tersYon">@(tersYon == "dikey" ? "Dikey" : "Yatay") görünüm</a>
+        <a asp-controller="OdemeTalimat" asp-action="FirmalarRaporPdf" asp-route-yon="@yon">PDF indir</a>
+        <a asp-controller="OdemeTalimat" asp-action="Firmalar">Firma yönetimine dön</a>
+    </div>
+    @await Model.Render()
+</body>
+</html>

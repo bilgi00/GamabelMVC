@@ -1015,7 +1015,8 @@ public class SevkiyatController : Controller
             using (var cmd = new MySqlCommand(checkDurumQuery, conn))
             {
                 var result = await cmd.ExecuteScalarAsync();
-                if (result != null && !result.ToString().Contains("Silindi"))
+                var columnType = result?.ToString();
+                if (!string.IsNullOrEmpty(columnType) && !columnType.Contains("Silindi", StringComparison.Ordinal))
                 {
                     using (var alterCmd = new MySqlCommand(
                         "ALTER TABLE stk_EksikKaydi MODIFY Durum ENUM('Bekliyor', 'SevkEdildi', 'Tamamlandi', 'Silindi') NOT NULL DEFAULT 'Bekliyor'",
@@ -1080,7 +1081,8 @@ public class SevkiyatController : Controller
             using (var cmd = new MySqlCommand(checkDurumQuery, conn))
             {
                 var result = await cmd.ExecuteScalarAsync();
-                if (result != null && !result.ToString().Contains("Silindi"))
+                var columnType = result?.ToString();
+                if (!string.IsNullOrEmpty(columnType) && !columnType.Contains("Silindi", StringComparison.Ordinal))
                 {
                     using (var alterCmd = new MySqlCommand(
                         "ALTER TABLE stk_Sevkiyat MODIFY Durum ENUM('Hazirlaniyor', 'Yolda', 'TeslimEdildi', 'OnayBekliyor', 'Onaylandi', 'IadeEdildi', 'Silindi') NOT NULL DEFAULT 'Hazirlaniyor'",

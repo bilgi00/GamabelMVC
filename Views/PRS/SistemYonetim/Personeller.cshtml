@@ -1,0 +1,108 @@
+@model gamabelmvc.Models.PRS.PersonelYonetimViewModel
+
+@{
+    ViewData["Title"] = "Personel Yönetimi";
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+        <div>
+            <h1 class="h3 mb-1">Personel Yönetimi</h1>
+            <p class="text-muted mb-0">Personel bilgilerini düzenleyip kaydedin. Personel numarası ilişkili kayıtlar nedeniyle değiştirilemez.</p>
+        </div>
+        <a class="btn btn-outline-secondary" href="@Url.Action("Index", "Home")">Ana sayfa</a>
+    </div>
+
+    @if (TempData["Hata"] is string hata)
+    {
+        <div class="alert alert-danger" role="alert">@hata</div>
+    }
+    @if (TempData["Basari"] is string basari)
+    {
+        <div class="alert alert-success" role="status">@basari</div>
+    }
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" asp-controller="SistemYonetim" asp-action="Personeller" class="row g-3 align-items-end">
+                <div class="col-12 col-md-9">
+                    <label for="arama" class="form-label">Personel ara</label>
+                    <input id="arama" name="arama" value="@Model.Arama" class="form-control"
+                           placeholder="Personel no, ad, soyad, birim veya statü" maxlength="100" />
+                </div>
+                <div class="col-12 col-md-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">Ara</button>
+                    <a href="@Url.Action("Personeller", "SistemYonetim")" class="btn btn-outline-secondary">Temizle</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h2 class="h5 mb-0">Personel kayıtları</h2>
+        <span class="badge text-bg-secondary">@Model.Personeller.Count kayıt</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-sm table-striped table-hover align-middle">
+            <thead class="table-dark">
+                <tr>
+                    <th>Personel No</th>
+                    <th>Ad</th>
+                    <th>Soyad</th>
+                    <th>Birim</th>
+                    <th>Statü</th>
+                    <th>İşlem</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Personeller.Count == 0)
+                {
+                    <tr><td colspan="6" class="text-center text-muted py-4">Eşleşen personel bulunamadı.</td></tr>
+                }
+                @foreach (var personel in Model.Personeller)
+                {
+                    <tr>
+                        <td class="fw-semibold text-nowrap">
+                            @personel.PerNo
+                            <input form="personel-@personel.PerNo" type="hidden" name="PerNo" value="@personel.PerNo" />
+                            <input form="personel-@personel.PerNo" type="hidden" name="arama" value="@Model.Arama" />
+                        </td>
+                        <td>
+                            <input form="personel-@personel.PerNo" name="Ad" value="@personel.Ad" class="form-control form-control-sm" maxlength="100" />
+                        </td>
+                        <td>
+                            <input form="personel-@personel.PerNo" name="Soyad" value="@personel.Soyad" class="form-control form-control-sm" maxlength="100" />
+                        </td>
+                        <td>
+                            <select form="personel-@personel.PerNo" name="BirimAdi" class="form-select form-select-sm">
+                                <option value="">— Birim yok —</option>
+                                @foreach (var birim in Model.Birimler)
+                                {
+                                    if (string.Equals(personel.BirimAdi, birim, StringComparison.Ordinal))
+                                    {
+                                        <option value="@birim" selected>@birim</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@birim">@birim</option>
+                                    }
+                                }
+                            </select>
+                        </td>
+                        <td>
+                            <input form="personel-@personel.PerNo" name="PerStatu" value="@personel.PerStatu" class="form-control form-control-sm" maxlength="100" />
+                        </td>
+                        <td class="text-nowrap">
+                            <form id="personel-@personel.PerNo" method="post"
+                                  asp-controller="SistemYonetim" asp-action="PersonelGuncelle">
+                                @Html.AntiForgeryToken()
+                            </form>
+                            <button form="personel-@personel.PerNo" type="submit" class="btn btn-sm btn-outline-primary">Kaydet</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

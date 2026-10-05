@@ -235,6 +235,63 @@ public async Task<List<OtFaturaViewModel>> GetTumAcikFaturalarWithFirmaAsync()
     return result;
 } 
 
+    public async Task<List<FaturaAraSonuc>> FaturaAraAsync(
+        string? faturaNo,
+        string? firmaAdi,
+        int limit = 201)
+    {
+        var result = new List<FaturaAraSonuc>();
+        await using var connection = new MySqlConnection(_connectionString);
+        await connection.OpenAsync();
+
+        var sql = @"
+            SELECT f.id, f.fatura_no, f.cari_kart, f.bakiye, f.odeme_durumu,
+                   b.dosya_adi, t.id, t.talimat_no, t.tarih, t.durum, banka.sube_adi,
+                   s.tutar, t.hazirlayan_kullanici, t.onaylayan_kullanici, t.onay_tarihi
+            FROM prs_ot_acik_faturalar f
+            LEFT JOIN prs_ot_import_batchlari b ON b.id = f.import_batch_id
+            LEFT JOIN prs_ot_talimat_satiri_faturalari tf ON tf.acik_fatura_id = f.id
+            LEFT JOIN prs_ot_talimat_satirlari s ON s.id = tf.talimat_satiri_id
+            LEFT JOIN prs_ot_talimatlar t ON t.id = s.talimat_id
+            LEFT JOIN prs_ot_bankalar banka ON banka.id = t.banka_id
+            WHERE (@faturaNo = '' OR f.fatura_no LIKE @faturaNoPattern)
+              AND (@firmaAdi = '' OR f.cari_kart LIKE @firmaAdiPattern)
+            ORDER BY f.id DESC, t.tarih DESC, t.id DESC
+            LIMIT @limit";
+
+        await using var command = new MySqlCommand(sql, connection);
+        command.Parameters.AddWithValue("@faturaNo", faturaNo ?? string.Empty);
+        command.Parameters.AddWithValue("@faturaNoPattern", $"%{faturaNo ?? string.Empty}%");
+        command.Parameters.AddWithValue("@firmaAdi", firmaAdi ?? string.Empty);
+        command.Parameters.AddWithValue("@firmaAdiPattern", $"%{firmaAdi ?? string.Empty}%");
+        command.Parameters.AddWithValue("@limit", limit);
+
+        await using var reader = await command.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
+        {
+            result.Add(new FaturaAraSonuc
+            {
+                FaturaId = reader.GetInt32(0),
+                FaturaNo = reader.GetString(1),
+                FirmaAdi = reader.GetString(2),
+                Bakiye = reader.GetDecimal(3),
+                OdemeDurumu = reader.IsDBNull(4) ? "bilinmiyor" : reader.GetString(4),
+                DosyaAdi = reader.IsDBNull(5) ? null : reader.GetString(5),
+                TalimatId = reader.IsDBNull(6) ? null : reader.GetInt32(6),
+                TalimatNo = reader.IsDBNull(7) ? null : reader.GetString(7),
+                OdemeTarihi = reader.IsDBNull(8) ? null : reader.GetDateTime(8),
+                TalimatDurumu = reader.IsDBNull(9) ? null : reader.GetString(9),
+                BankaSubeAdi = reader.IsDBNull(10) ? null : reader.GetString(10),
+                TalimatSatirTutari = reader.IsDBNull(11) ? null : reader.GetDecimal(11),
+                HazirlayanKullanici = reader.IsDBNull(12) ? null : reader.GetString(12),
+                OnaylayanKullanici = reader.IsDBNull(13) ? null : reader.GetString(13),
+                OnayTarihi = reader.IsDBNull(14) ? null : reader.GetDateTime(14)
+            });
+        }
+
+        return result;
+    }
+
     // -----------------------------------------------------------------------
     // TALİMAT OLUŞTUR - GEÇİCİ (VERİTABANINA KAYIT YOK)
     // -----------------------------------------------------------------------

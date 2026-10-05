@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Report ScriptLanguage="CSharp" DoublePass="true"
+        ReportInfo.Created="2026-10-06" ReportInfo.Modified="2026-10-06"
+        ReportInfo.CreatorVersion="2026.2.3.0" ReportInfo.Version="1.0.0"
+        ReportInfo.Description="Ödeme talimatı firma listesi - A4 yatay">
+  <Dictionary>
+    <TableDataSource Name="Firmalar" ReferenceName="Firmalar" DataType="System.Int32" Enabled="true">
+      <Column Name="CariIsmi" DataType="System.String"/>
+      <Column Name="OdemeIsmi" DataType="System.String"/>
+      <Column Name="IBAN" DataType="System.String"/>
+      <Column Name="EmailIletisim" DataType="System.String"/>
+      <Column Name="Aciklama" DataType="System.String"/>
+    </TableDataSource>
+    <Parameter Name="RaporTarihi" DataType="System.String"/>
+    <Parameter Name="FirmaSayisi" DataType="System.Int32"/>
+  </Dictionary>
+  <ReportPage Name="Page1" Landscape="true" PaperWidth="297" PaperHeight="210"
+              LeftMargin="10" TopMargin="10" RightMargin="10" BottomMargin="10">
+    <ReportTitleBand Name="ReportTitle1" Width="1047.06" Height="56.7">
+      <TextObject Name="Kurum" Width="1047.06" Height="22.68" Text="GAMABEL YATIRIM LTD"
+                  HorzAlign="Center" VertAlign="Center" Font="Arial, 13pt, style=Bold"/>
+      <TextObject Name="Baslik" Top="22.68" Width="1047.06" Height="20" Text="ÖDEME TALİMATI FİRMA LİSTESİ"
+                  HorzAlign="Center" VertAlign="Center" Font="Arial, 11pt, style=Bold"/>
+      <TextObject Name="RaporBilgi" Top="43" Width="1047.06" Height="13.7"
+                  Text="Firma sayısı: [FirmaSayisi]    |    Rapor tarihi: [RaporTarihi]"
+                  HorzAlign="Center" VertAlign="Center" Font="Arial, 8pt"/>
+    </ReportTitleBand>
+    <PageHeaderBand Name="PageHeader1" Width="1047.06" Height="30">
+      <TextObject Name="HdrCari" Width="190" Height="30" Border.Lines="All" Fill.Color="30, 60, 114"
+                  Text="Cari İsmi" HorzAlign="Center" VertAlign="Center" WordWrap="true"
+                  Font="Arial, 8pt, style=Bold" TextFill.Color="White"/>
+      <TextObject Name="HdrOdeme" Left="190" Width="165" Height="30" Border.Lines="All" Fill.Color="30, 60, 114"
+                  Text="Ödeme İsmi" HorzAlign="Center" VertAlign="Center" WordWrap="true"
+                  Font="Arial, 8pt, style=Bold" TextFill.Color="White"/>
+      <TextObject Name="HdrIban" Left="355" Width="190" Height="30" Border.Lines="All" Fill.Color="30, 60, 114"
+                  Text="IBAN" HorzAlign="Center" VertAlign="Center"
+                  Font="Arial, 8pt, style=Bold" TextFill.Color="White"/>
+      <TextObject Name="HdrEmail" Left="545" Width="210" Height="30" Border.Lines="All" Fill.Color="30, 60, 114"
+                  Text="E-posta / CC" HorzAlign="Center" VertAlign="Center" WordWrap="true"
+                  Font="Arial, 8pt, style=Bold" TextFill.Color="White"/>
+      <TextObject Name="HdrAciklama" Left="755" Width="292.06" Height="30" Border.Lines="All" Fill.Color="30, 60, 114"
+                  Text="Açıklama" HorzAlign="Center" VertAlign="Center"
+                  Font="Arial, 8pt, style=Bold" TextFill.Color="White"/>
+    </PageHeaderBand>
+    <DataBand Name="Data1" Width="1047.06" Height="30" CanGrow="true" DataSource="Firmalar">
+      <TextObject Name="DataCari" Width="190" Height="30" Border.Lines="All" CanGrow="true" GrowToBottom="true"
+                  Text="[Firmalar.CariIsmi]" VertAlign="Center" WordWrap="true" Font="Arial, 8pt"/>
+      <TextObject Name="DataOdeme" Left="190" Width="165" Height="30" Border.Lines="All" CanGrow="true" GrowToBottom="true"
+                  Text="[Firmalar.OdemeIsmi]" VertAlign="Center" WordWrap="true" Font="Arial, 8pt"/>
+      <TextObject Name="DataIban" Left="355" Width="190" Height="30" Border.Lines="All" CanGrow="true" GrowToBottom="true"
+                  Text="[Firmalar.IBAN]" VertAlign="Center" WordWrap="true" Font="Arial, 8pt"/>
+      <TextObject Name="DataEmail" Left="545" Width="210" Height="30" Border.Lines="All" CanGrow="true" GrowToBottom="true"
+                  Text="[Firmalar.EmailIletisim]" VertAlign="Center" WordWrap="true" Font="Arial, 8pt"/>
+      <TextObject Name="DataAciklama" Left="755" Width="292.06" Height="30" Border.Lines="All" CanGrow="true" GrowToBottom="true"
+                  Text="[Firmalar.Aciklama]" VertAlign="Center" WordWrap="true" Font="Arial, 8pt"/>
+    </DataBand>
+    <PageFooterBand Name="PageFooter1" Width="1047.06" Height="18.9">
+      <TextObject Name="Footer" Width="1047.06" Height="18.9"
+                  Text="GAMABEL YATIRIM LTD    |    Sayfa [PageN] / [TotalPages]"
+                  HorzAlign="Right" VertAlign="Center" Font="Arial, 7pt"/>
+    </PageFooterBand>
+  </ReportPage>
+</Report>

@@ -25,6 +25,11 @@
     <a href="/OdemeTalimat" class="ot-btn ot-btn-secondary">← Ödeme Talimatlarına Dön</a>
 </div>
 
+<div style="margin-bottom:12px; display:flex; gap:8px; flex-wrap:wrap;">
+    <a asp-controller="OdemeTalimat" asp-action="BankalarRapor" target="_blank" class="ot-btn ot-btn-secondary">📄 Banka Raporu (Yatay Önizleme)</a>
+    <a asp-controller="OdemeTalimat" asp-action="BankalarRaporPdf" target="_blank" class="ot-btn ot-btn-primary">⬇ PDF (Yatay)</a>
+</div>
+
 <div class="ot-card">
     <div class="ot-header">
         <h1 style="font-size:18px; margin:0;">🏦 Banka / Ödeme Hesabı Yönetimi</h1>
