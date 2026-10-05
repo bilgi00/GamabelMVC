@@ -41,3 +41,7 @@ secrets.json
 Properties/launchSettings.json
 # GAMABEL otomatik eklenenler
 GamabelMVC_GAMABEL_BACKUPS/
+
+
+.nuget-fastreport
+*.nuget-fastreport

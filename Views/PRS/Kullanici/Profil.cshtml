@@ -37,6 +37,42 @@
         </div>
     }
 
+    @if (TempData["WhatsAppHata"] is string whatsAppHata)
+    {
+        <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+            <strong>WhatsApp gönderilemedi:</strong> @whatsAppHata
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (TempData["WhatsAppBasari"] is string whatsAppBasari)
+    {
+        <div class="alert alert-success alert-dismissible fade show mb-4" role="alert">
+            @whatsAppBasari
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header text-white" style="background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);">
+            <h5 class="mb-0">WhatsApp Mesajı Gönder</h5>
+        </div>
+        <div class="card-body">
+            <form method="post" asp-action="WhatsAppMesajGonder">
+                <div class="mb-3">
+                    <label for="mesaj" class="form-label fw-semibold">Mesaj</label>
+                    <textarea id="mesaj" name="mesaj" class="form-control" rows="4" maxlength="4096"
+                              required placeholder="Göndermek istediğiniz mesajı yazın"></textarea>
+                    <small class="form-text text-muted">Alıcı: 0533 858 24 45</small>
+                    <small class="form-text text-muted d-block">Mesaj, Infobip'teki onaylı şablonun metin alanına yerleştirilir.</small>
+                </div>
+                <button type="submit" class="btn btn-success fw-bold">
+                    <i class="bi bi-whatsapp me-1" aria-hidden="true"></i> Gönder
+                </button>
+            </form>
+        </div>
+    </div>
+
     <!-- Content Row -->
     <div class="row g-4">
         <!-- Profile Information Card -->

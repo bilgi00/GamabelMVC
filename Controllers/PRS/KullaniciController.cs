@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using MySqlConnector;
 using ClosedXML.Excel;
 using gamabelmvc.Models.PRS;
+using gamabelmvc.Services;
 
 namespace gamabelmvc.Controllers.PRS;
 
@@ -10,10 +11,17 @@ namespace gamabelmvc.Controllers.PRS;
 public class KullaniciController : Controller
 {
     private readonly string _connectionString;
+    private readonly IWhatsAppMessageSender _whatsAppMessageSender;
+    private readonly ILogger<KullaniciController> _logger;
 
-    public KullaniciController(IConfiguration configuration)
+    public KullaniciController(
+        IConfiguration configuration,
+        IWhatsAppMessageSender whatsAppMessageSender,
+        ILogger<KullaniciController> logger)
     {
         _connectionString = configuration.GetConnectionString("MyConnection")!;
+        _whatsAppMessageSender = whatsAppMessageSender;
+        _logger = logger;
     }
 
     public async Task<IActionResult> Index()
@@ -380,6 +388,58 @@ public class KullaniciController : Controller
 
         ViewBag.KullaniciAdi = kullaniciAdi;
         return View(kullanici);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> WhatsAppMesajGonder(string? mesaj, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(HttpContext.Session.GetString("KullaniciAdi")))
+            return RedirectToAction("Login", "Account");
+
+        if (string.IsNullOrWhiteSpace(mesaj))
+        {
+            TempData["WhatsAppHata"] = "Gönderilecek mesajı yazın.";
+            return RedirectToAction(nameof(Profil));
+        }
+
+        mesaj = mesaj.Trim();
+        if (mesaj.Length > 4096)
+        {
+            TempData["WhatsAppHata"] = "Mesaj en fazla 4096 karakter olabilir.";
+            return RedirectToAction(nameof(Profil));
+        }
+
+        try
+        {
+            await _whatsAppMessageSender.SendAsync(mesaj, cancellationToken);
+            TempData["WhatsAppBasari"] = "Mesaj Infobip'e gönderim için kabul edildi.";
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogError(ex, "WhatsApp mesajı gönderilemedi; Infobip yapılandırması eksik veya geçersiz.");
+            TempData["WhatsAppHata"] = ex.Message;
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogError(ex, "Infobip WhatsApp mesaj gönderimi başarısız oldu.");
+            var responseBody = ex.Data["InfobipResponseBody"] as string;
+            var providerDetails = string.IsNullOrWhiteSpace(responseBody)
+                ? null
+                : responseBody.Length > 800 ? responseBody[..800] : responseBody;
+
+            TempData["WhatsAppHata"] = ex.StatusCode is null
+                ? "Infobip'e bağlanırken hata oluştu. Lütfen daha sonra tekrar deneyin."
+                : $"Infobip mesajı kabul etmedi (HTTP {(int)ex.StatusCode})."
+                    + (providerDetails is null ? string.Empty : $" Infobip yanıtı: {providerDetails}");
+        }
+        catch (TaskCanceledException ex) when (!cancellationToken.IsCancellationRequested)
+        {
+            _logger.LogError(ex, "Infobip WhatsApp isteği zaman aşımına uğradı.");
+            TempData["WhatsAppHata"] = "Infobip isteği zaman aşımına uğradı. Lütfen tekrar deneyin.";
+        }
+
+        return RedirectToAction(nameof(Profil));
     }
 
     /// <summary>

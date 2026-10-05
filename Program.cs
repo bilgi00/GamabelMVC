@@ -157,6 +157,9 @@ builder.Services.AddScoped<IMailService, MailService>();
 builder.Services.AddSingleton<MailQueueService>();
 builder.Services.AddHostedService(provider => provider.GetRequiredService<MailQueueService>());
 
+// Infobip WhatsApp mesaj gönderimi
+builder.Services.AddHttpClient<IWhatsAppMessageSender, InfobipWhatsAppMessageSender>();
+
 
 
 var app = builder.Build();
