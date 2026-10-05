@@ -999,7 +999,7 @@ Kullanıcı **"X sayfasındaki verileri raporla"** dediğinde sırayla:
 OdemeTalimat/Detay sayfasındaki verileri raporla.
 Standart: FASTREPORT_A4_STANDART.md (v3)
 Yön: dikey ve yatay
-Çıktı: önizleme + PDF
+Çıktı: önizleme + PDF + excel
 ```
 
 Beklenen sonuç: Mevcut ödeme talimatı rapor/route/veri hazırlama ve `PrsAdmin` yetkisi önce incelenir; talebe uygun şablon yön(ler)i eklenir. Gerekliyse ortak rapor servisine bağlanır, eski `RaporPdf2` önizleme davranışı korunur, ilgili butonlar doğrulanır ve çalıştırılan test/Designer kontrolleri özette bildirilir.
