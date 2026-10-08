@@ -17,7 +17,7 @@ public class HomeController : Controller
         _dbFactory = dbFactory;
     }
 
-    public async Task<IActionResult> Index()
+    public async Task<IActionResult> Index(string? donem)
     {
         var activeModule = HttpContext.Session.GetString("ActiveModule");
 
@@ -26,11 +26,17 @@ public class HomeController : Controller
             if (string.IsNullOrEmpty(HttpContext.Session.GetString("KullaniciAdi")))
                 return RedirectToAction("Login", "Account");
 
-            return View("~/Views/Home/Index.cshtml");
+            var personelDashboard = await GetPersonelDashboardAsync(donem);
+            return View("~/Views/Home/Index.cshtml", personelDashboard);
         }
 
         if (activeModule != "STS")
-            return View("~/Views/Home/Index.cshtml");
+        {
+            var personelDashboard = string.IsNullOrEmpty(HttpContext.Session.GetString("KullaniciAdi"))
+                ? new HomeDashboardViewModel()
+                : await GetPersonelDashboardAsync(donem);
+            return View("~/Views/Home/Index.cshtml", personelDashboard);
+        }
 
         var kullaniciId = HttpContext.Session.GetInt32("KullaniciId");
         if (kullaniciId == null)
@@ -198,6 +204,102 @@ public class HomeController : Controller
         ViewBag.DashboardData = dashboardData;
         ViewBag.HaftaNo = haftaNo;
         return View("~/Views/STS/Home/Index.cshtml");
+    }
+
+    private async Task<HomeDashboardViewModel> GetPersonelDashboardAsync(string? donem)
+    {
+        var secilenTarih = DateTime.Today;
+        if (!string.IsNullOrWhiteSpace(donem) &&
+            DateTime.TryParseExact(donem, "yyyy-MM", System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.None, out var parsedTarih))
+        {
+            secilenTarih = parsedTarih;
+        }
+
+        var rol = (HttpContext.Session.GetString("Rol") ?? "").Trim();
+        var normalizedRol = rol.Replace(" ", "_").ToLowerInvariant();
+        var isAdminOrManager = normalizedRol == "admin" || normalizedRol == "birim_amiri";
+        var model = new HomeDashboardViewModel
+        {
+            Yil = secilenTarih.Year,
+            Ay = secilenTarih.Month,
+            IzinListesiGoster = isAdminOrManager || HttpContext.Session.GetString("Menu_Puantaj") == "1",
+            MesaiListesiGoster = isAdminOrManager || HttpContext.Session.GetString("Menu_Mesai") == "1"
+        };
+
+        if (!model.IzinListesiGoster && !model.MesaiListesiGoster)
+            return model;
+
+        var baslangic = new DateTime(model.Yil, model.Ay, 1);
+        var sonrakiAy = baslangic.AddMonths(1);
+
+        try
+        {
+            using var connection = await _dbFactory.CreateConnectionAsync();
+
+            if (model.IzinListesiGoster)
+            {
+                using var command = new MySqlCommand(@"
+                    SELECT p.per_no, p.ad, p.soyad,
+                           COUNT(*) AS izin_gunu,
+                           GROUP_CONCAT(DISTINCT pi.izin_tipi ORDER BY pi.izin_tipi SEPARATOR ', ') AS izin_tipleri
+                    FROM puantaj_izin pi
+                    INNER JOIN personeller p ON p.per_no = pi.personel_id
+                    WHERE pi.yil = @yil AND pi.ay = @ay
+                    GROUP BY p.per_no, p.ad, p.soyad
+                    ORDER BY p.ad, p.soyad", connection);
+                command.Parameters.AddWithValue("@yil", model.Yil);
+                command.Parameters.AddWithValue("@ay", model.Ay);
+
+                using var reader = await command.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    model.IzinPersoneller.Add(new HomeIzinPersonelViewModel
+                    {
+                        PersonelNo = Convert.ToString(reader["per_no"]) ?? "",
+                        AdSoyad = $"{reader["ad"]} {reader["soyad"]}".Trim(),
+                        IzinGunu = Convert.ToInt32(reader["izin_gunu"]),
+                        IzinTipleri = reader["izin_tipleri"] == DBNull.Value ? "" : Convert.ToString(reader["izin_tipleri"]) ?? ""
+                    });
+                }
+            }
+
+            if (model.MesaiListesiGoster)
+            {
+                using var command = new MySqlCommand(@"
+                    SELECT p.per_no, p.ad, p.soyad,
+                           COUNT(DISTINCT mk.tarih) AS mesai_gunu,
+                           COALESCE(SUM(COALESCE(mk.fiili_saat, 0)), 0) AS fiili_saat,
+                           COALESCE(SUM(COALESCE(mk.zam01_saat, 0) + COALESCE(mk.zam05_saat, 0)), 0) AS ek_mesai_saat
+                    FROM mesai_kayitlari mk
+                    INNER JOIN personeller p ON p.per_no = mk.personel_id
+                    WHERE mk.tarih >= @baslangic AND mk.tarih < @sonrakiAy
+                    GROUP BY p.per_no, p.ad, p.soyad
+                    ORDER BY p.ad, p.soyad", connection);
+                command.Parameters.AddWithValue("@baslangic", baslangic);
+                command.Parameters.AddWithValue("@sonrakiAy", sonrakiAy);
+
+                using var reader = await command.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    model.MesaiPersoneller.Add(new HomeMesaiPersonelViewModel
+                    {
+                        PersonelNo = Convert.ToString(reader["per_no"]) ?? "",
+                        AdSoyad = $"{reader["ad"]} {reader["soyad"]}".Trim(),
+                        MesaiGunu = Convert.ToInt32(reader["mesai_gunu"]),
+                        FiiliSaat = Convert.ToDecimal(reader["fiili_saat"]),
+                        EkMesaiSaat = Convert.ToDecimal(reader["ek_mesai_saat"])
+                    });
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Ana sayfa personel puantaj ve mesai listeleri yüklenemedi ({Yil}-{Ay}).", model.Yil, model.Ay);
+            model.HataMesaji = "Aylık personel listeleri yüklenirken bir hata oluştu.";
+        }
+
+        return model;
     }
 
     [HttpPost]

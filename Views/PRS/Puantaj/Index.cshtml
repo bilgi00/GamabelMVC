@@ -3,33 +3,351 @@
     Layout = "_Layout";
 }
 
+<style>
+    .puantaj-wrapper .pz-card {
+        background: #fff;
+        border: 1px solid #e1e6ef;
+        border-radius: 16px;
+        box-shadow: 0 1px 2px rgba(16, 24, 40, .05);
+        margin: 0 0 16px;
+    }
+
+    .puantaj-wrapper .pz-clip {
+        overflow: hidden;
+    }
+
+    .puantaj-wrapper .pz-card-head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 16px 20px;
+    }
+
+    .puantaj-wrapper .pz-h2 {
+        color: #1f2937;
+        font-size: 18px;
+        font-weight: 700;
+        margin: 0;
+    }
+
+    .puantaj-wrapper .pz-sub {
+        color: #5b6678;
+        font-size: 13px;
+        margin: 4px 0 0;
+    }
+
+    .puantaj-wrapper .puantaj-header.pz-head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 10px 16px;
+        margin: 0 0 16px;
+        background: #fff;
+        border: 1px solid #e1e6ef;
+        border-radius: 16px;
+        box-shadow: 0 1px 2px rgba(16, 24, 40, .05);
+    }
+
+    .puantaj-wrapper .pz-head .page-headline {
+        color: #1d3a8a;
+        font-size: 20px;
+        font-weight: 800;
+        line-height: 1.2;
+        margin: 0;
+    }
+
+    .puantaj-wrapper .pz-head .page-sub {
+        color: #5b6678;
+        font-size: 13px;
+        margin: 2px 0 0;
+    }
+
+    .puantaj-wrapper .pz-actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .puantaj-wrapper .pz-actions .btn-puantaj {
+        min-height: 38px;
+        padding: 0 14px;
+        border: 1px solid #cbd5e1;
+        border-radius: 10px;
+        background: #fff;
+        box-shadow: none;
+        color: #1d3a8a;
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+    .puantaj-wrapper .pz-actions .btn-puantaj:hover {
+        filter: brightness(.96);
+    }
+
+    .puantaj-wrapper .pz-actions .btn-warning-puantaj {
+        background: #eef2ff;
+        border-color: #c7d2fe;
+        color: #3730a3;
+    }
+
+    .puantaj-wrapper .pz-actions .btn-success-puantaj {
+        background: #15803d;
+        border-color: #15803d;
+        color: #fff;
+    }
+
+    .puantaj-wrapper .pz-sep {
+        width: 1px;
+        align-self: stretch;
+        background: #e1e6ef;
+        margin: 0 2px;
+    }
+
+    .puantaj-wrapper .pz-filters {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 16px;
+    }
+
+    .puantaj-wrapper .pz-f1 {
+        flex: 1 1 200px;
+    }
+
+    .puantaj-wrapper .pz-f2 {
+        flex: 2 1 240px;
+    }
+
+    .puantaj-wrapper .pz-filters .form-select,
+    .puantaj-wrapper .pz-filters .form-control,
+    .puantaj-wrapper .pz-filters .filter-static {
+        height: 38px;
+        min-width: 0;
+        padding: 0 12px;
+        border: 1px solid #cbd5e1;
+        border-radius: 10px;
+        background-color: #fff;
+        box-shadow: none;
+        color: #1f2937;
+        font-size: 14px;
+        font-weight: 500;
+    }
+
+    .puantaj-wrapper .pz-filters .filter-static {
+        display: flex;
+        align-items: center;
+        padding-right: 12px;
+        background-color: #f8fafc;
+        font-weight: 600;
+    }
+
+    .puantaj-wrapper .pz-filters .calendar-nav {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0;
+    }
+
+    .puantaj-wrapper .pz-filters .month-nav-button {
+        display: grid;
+        width: 38px;
+        height: 38px;
+        place-items: center;
+        padding: 0;
+        border: 1px solid #cbd5e1;
+        border-radius: 10px;
+        background: #fff;
+        color: #1d3a8a;
+        font-size: 18px;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    .puantaj-wrapper .pz-filters .month-badge {
+        display: grid;
+        min-width: 130px;
+        height: 38px;
+        place-items: center;
+        padding: 0 12px;
+        border: 1px solid #cbd5e1;
+        border-radius: 10px;
+        background: #fff;
+        color: #1f2937;
+        font-size: 15px;
+        font-weight: 700;
+    }
+
+    .puantaj-wrapper .pz-legend {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px 20px;
+        padding: 10px 20px;
+        border-top: 1px solid #e8ecf3;
+        border-bottom: 1px solid #e8ecf3;
+        background: #f8fafc;
+    }
+
+    .puantaj-wrapper .pz-legend .btn-legend-toggle {
+        padding: 0;
+        border: 0;
+        background: transparent;
+        color: #334155;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    .puantaj-wrapper .pz-legend .legend {
+        flex-wrap: wrap;
+        gap: 8px 16px;
+        margin: 0;
+    }
+
+    .puantaj-wrapper .pz-legend .legend-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: #334155;
+        font-size: 13px;
+    }
+
+    .puantaj-wrapper .pz-legend .pz-lweekend {
+        display: inline-block;
+        width: 14px;
+        height: 14px;
+        border-radius: 4px;
+        background: #e11d63;
+    }
+
+    .puantaj-wrapper .pz-footer {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 8px 16px;
+        padding: 10px 20px;
+        border-top: 1px solid #e8ecf3;
+        color: #5b6678;
+        font-size: 13px;
+    }
+
+    .puantaj-wrapper .pz-table th {
+        background: #f8fafc;
+        color: #5b6678;
+        font-size: 12px;
+        text-align: left;
+    }
+
+    .puantaj-wrapper .pz-table th,
+    .puantaj-wrapper .pz-table td {
+        padding: .6rem 1.25rem;
+    }
+</style>
+
 <div class="puantaj-wrapper">
-    <!-- HEADER -->
-    <div class="puantaj-header shadow-sm p-3 mb-5 bg-body-tertiary rounded">
-        <div class="row align-items-center g-2 mb-2">
-            <div class="col-md-6">
-                <div class="page-headline"><i class="fas fa-calendar-alt me-2"></i>Puantaj Takvimi</div>
-                <div class="page-sub">Personel çalışma ve izin durumlarını aylık olarak görüntüleyin.</div>
-            </div>
-            <div class="col-md-6">
-                <div class="btn-group-icon no-print">
-                    <button class="btn-puantaj btn-warning-puantaj" id="batchIzinBtn"><i class="fas fa-users me-1"></i>Toplu İzin</button>
-                    <button class="btn-puantaj btn-success-puantaj" id="saveBtn"><i class="fas fa-save me-1"></i>Kaydet</button>
-                    <button class="btn-puantaj btn-info-puantaj" id="exportBtn"><i class="fas fa-file-excel me-1"></i>Dışa Aktar</button>
-                    <button class="btn-puantaj btn-outline-puantaj" id="previewBtn" type="button">Önizle</button>
-                    <button class="btn-puantaj btn-outline-puantaj" id="pdfExportBtn" type="button">PDF Kaydet</button>
-                </div>
-            </div>
+
+    <div class="puantaj-header pz-head">
+        <div>
+            <div class="page-headline"><i class="fas fa-calendar-alt me-2"></i>Puantaj Takvimi</div>
+            <div class="page-sub">Personel çalışma ve izin durumlarını aylık olarak görüntüleyin.</div>
+        </div>
+        <div class="pz-actions no-print">
+            <button class="btn-puantaj btn-warning-puantaj" id="batchIzinBtn"><i class="fas fa-users me-1"></i>Toplu İzin</button>
+            <button class="btn-puantaj btn-success-puantaj" id="saveBtn"><i class="fas fa-save me-1"></i>Kaydet</button>
+            <span class="pz-sep" aria-hidden="true"></span>
+            <button class="btn-puantaj btn-info-puantaj" id="exportBtn"><i class="fas fa-file-excel me-1"></i>Dışa Aktar</button>
+            <button class="btn-puantaj btn-outline-puantaj" id="previewBtn" type="button">Önizle</button>
+            <button class="btn-puantaj btn-outline-puantaj" id="pdfExportBtn" type="button">PDF Kaydet</button>
         </div>
     </div>
 
-    <section class="card mb-3" aria-labelledby="aylikIzinKayitlariBaslik">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h2 class="h6 mb-0" id="aylikIzinKayitlariBaslik">Seçili Ayın İzin Kayıtları</h2>
+    <section class="pz-card pz-filters" aria-label="Filtreler">
+        @if (ViewBag.Rol == "admin")
+        {
+            <select id="birimSelect" class="form-select pz-f1" aria-label="Birim">
+                <option value="all">Tüm Birimler</option>
+                @if (ViewBag.Birimler != null)
+                {
+                    @foreach (string birim in ViewBag.Birimler)
+                    {
+                        <option value="@birim">@birim</option>
+                    }
+                }
+            </select>
+        }
+        else
+        {
+            <span class="filter-static pz-f1" title="Birim">@(ViewBag.KullaniciBirim ?? "Biriminiz")</span>
+        }
+
+        <select id="statuSelect" class="form-select pz-f1" aria-label="Personel Statüsü">
+            <option value="__TUMU__">Tüm Personeller</option>
+        </select>
+
+        <input id="personelArama" type="search" class="form-control pz-f2" placeholder="Ad veya soyad yazın..." autocomplete="off" aria-label="Personel ara" />
+
+        <div class="calendar-nav" role="group" aria-label="Ay ve yıl">
+            <button type="button" class="month-nav-button" id="previousMonthBtn" aria-label="Önceki ay" title="Önceki ay"><span aria-hidden="true">←</span></button>
+            <span class="month-badge" id="monthTitle">Mart 2026</span>
+            <button type="button" class="month-nav-button" id="nextMonthBtn" aria-label="Sonraki ay" title="Sonraki ay"><span aria-hidden="true">→</span></button>
+        </div>
+
+        <span class="birim-badge d-none" id="birimBadge" aria-hidden="true">Tüm Birimler</span>
+    </section>
+
+    <section class="pz-card pz-cal" aria-labelledby="puantajTakvimBaslik">
+        <div class="pz-card-head">
+            <div>
+                <h2 class="pz-h2" id="puantajTakvimBaslik">Aylık Puantaj</h2>
+                <p class="pz-sub no-print"><strong>Hücreye tıklayarak düzenleyin.</strong> Klavyeden X, İ, G, Ç, V, Ö veya H tuşlarını kullanabilirsiniz.</p>
+            </div>
+        </div>
+
+        <div class="pz-legend">
+            <button class="btn-legend-toggle" id="legendToggleBtn" type="button" aria-controls="legendPanel" aria-expanded="true">🎨 Renk Açıklamaları ▲</button>
+            <div class="legend" id="legendPanel" style="display:flex;">
+                <div class="legend-item"><span class="legend-color lx"></span>X · Çalıştı</div>
+                <div class="legend-item"><span class="legend-color li"></span>İ · Yıllık İzin</div>
+                <div class="legend-item"><span class="legend-color lgi"></span>Gİ · Görev İzni</div>
+                <div class="legend-item"><span class="legend-color lch"></span>ÇH · Çocuk Hastalık</div>
+                <div class="legend-item"><span class="legend-color lv"></span>Vİ · Vefat İzni</div>
+                <div class="legend-item"><span class="legend-color loz"></span>Öİ · Özel İzin</div>
+                <div class="legend-item"><span class="legend-color lh"></span>H · Hastalık</div>
+                <div class="legend-item"><span class="legend-color lsi"></span>Sİ · Seferberlik İzni</div>
+                <div class="legend-item"><span class="legend-color lodi"></span>ÖDİ · Ödeneksiz İzin</div>
+                <div class="legend-item"><span class="pz-lweekend"></span>Hafta sonu</div>
+            </div>
+        </div>
+
+        <div class="table-wrapper">
+            <table class="puantaj-table" id="puantajTable">
+                <thead id="tableHeader"></thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+
+        <div class="footer pz-footer">
+            <span><i class="fas fa-users me-1"></i><span id="totalPersonel">0</span> personel</span>
+            <span id="autoSaveStatus" class="auto-save-status active">💾 Değişiklikler otomatik kaydedilir</span>
+        </div>
+    </section>
+
+    <section class="pz-card pz-clip" aria-labelledby="aylikIzinKayitlariBaslik">
+        <div class="pz-card-head">
+            <div>
+                <h2 class="pz-h2" id="aylikIzinKayitlariBaslik">Seçili Ayın İzin Kayıtları</h2>
+                <p class="pz-sub">Seçili ay için girilmiş izinler.</p>
+            </div>
             <span class="badge bg-secondary" id="aylikIzinKayitSayisi">0 kayıt</span>
         </div>
         <div class="table-responsive">
-            <table class="table table-sm table-striped table-bordered align-middle mb-0">
+            <table class="table table-sm table-striped table-bordered align-middle mb-0 pz-table">
                 <thead>
                     <tr>
                         <th scope="col">Tarih</th>
@@ -45,90 +363,6 @@
             </table>
         </div>
     </section>
-
-    <!-- FILTER ROW -->
-    <div class="controls row g-2 align-items-end mb-2">
-            <div class="filter-field col-md-3">
-                <label for="birimSelect">Birim</label>
-            @if (ViewBag.Rol == "admin")
-            {
-                <select id="birimSelect" class="form-select">
-                    <option value="all">Tüm Birimler</option>
-                    @if (ViewBag.Birimler != null)
-                    {
-                        @foreach (string birim in ViewBag.Birimler)
-                        {
-                            <option value="@birim">@birim</option>
-                        }
-                    }
-                </select>
-            }
-            else
-            {
-                <span class="filter-static">@(ViewBag.KullaniciBirim ?? "Biriminiz")</span>
-            }
-            </div>
-
-            <div class="filter-field col-md-3">
-                <label for="statuSelect">Personel Statüsü</label>
-                <select id="statuSelect" class="form-select" aria-label="Personel Statüsü">
-                    <option value="__TUMU__">Tüm Personeller</option>
-                </select>
-            </div>
-
-            <div class="filter-field col-md-3">
-                <label for="personelArama">Personel Ara</label>
-                <input id="personelArama" type="search" class="form-control" placeholder="Ad veya soyad yazın..." autocomplete="off" />
-            </div>
-
-            <div class="filter-field col-md-3">
-                <label>Ay ve Yıl</label>
-                <div class="calendar-nav">
-                    <button type="button" class="month-nav-button" id="previousMonthBtn" aria-label="Önceki ay" title="Önceki ay"><span aria-hidden="true">←</span></button>
-                    <span class="month-badge" id="monthTitle">Mart 2026</span>
-                    <button type="button" class="month-nav-button" id="nextMonthBtn" aria-label="Sonraki ay" title="Sonraki ay"><span aria-hidden="true">→</span></button>
-                </div>
-            </div>
-            <div class="col-12 d-flex justify-content-between align-items-center gap-2 flex-wrap mt-1">
-                <span class="birim-badge" id="birimBadge">Tüm Birimler</span>
-            </div>
-    </div>
-
-    <!-- INFO ALERT -->
-    <div class="alert-info-custom d-flex align-items-center gap-3 no-print mb-2">
-        <i class="fas fa-info-circle"></i>
-        <div><strong>Hücreye tıklayarak düzenleyin.</strong> Klavyeden X, İ, G, Ç, V, Ö veya H tuşlarını kullanabilirsiniz.</div>
-    </div>
-
-    <div class="legend-row mb-2">
-        <button class="btn-legend-toggle" id="legendToggleBtn">🎨 Renk Açıklamaları ▼</button>
-        <div class="legend" id="legendPanel" style="display:none;">
-            <div class="legend-item"><span class="legend-color lx"></span>X</div>
-            <div class="legend-item"><span class="legend-color li"></span>İ</div>
-            <div class="legend-item"><span class="legend-color lgi"></span>Gİ</div>
-            <div class="legend-item"><span class="legend-color lch"></span>ÇH</div>
-            <div class="legend-item"><span class="legend-color lv"></span>Vİ</div>
-            <div class="legend-item"><span class="legend-color loz"></span>Öİ</div>
-            <div class="legend-item"><span class="legend-color lh"></span>H</div>
-            <div class="legend-item"><span class="legend-color lsi"></span>Sİ</div>
-            <div class="legend-item"><span class="legend-color lodi"></span>ÖDİ</div>
-        </div>
-    </div>
-
-    <!-- TABLO -->
-    <div class="table-wrapper">
-        <table class="puantaj-table" id="puantajTable">
-            <thead id="tableHeader"></thead>
-            <tbody id="tableBody"></tbody>
-        </table>
-    </div>
-
-    <!-- FOOTER -->
-    <div class="footer">
-        <span><i class="fas fa-info-circle me-1"></i>Hücreye tıklayarak düzenleyin | Klavye: X,İ,G,Ç,V,Ö,H</span>
-        <span><i class="fas fa-users me-1"></i><span id="totalPersonel">0</span> personel</span>
-        <span id="autoSaveStatus" class="auto-save-status active">💾 Değişiklikler otomatik kaydedilir</span>
-    </div>
 </div>
 
 <!-- ========== MODAL ========== -->
@@ -677,9 +911,11 @@
         if (panel.style.display === 'none') {
             panel.style.display = 'flex';
             btn.textContent = '🎨 Renk Açıklamaları ▲';
+            btn.setAttribute('aria-expanded', 'true');
         } else {
             panel.style.display = 'none';
             btn.textContent = '🎨 Renk Açıklamaları ▼';
+            btn.setAttribute('aria-expanded', 'false');
         }
     }
 

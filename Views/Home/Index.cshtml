@@ -1,10 +1,11 @@
-﻿@{
+@model gamabelmvc.Models.HomeDashboardViewModel
+@{
     ViewData["Title"] = "Ana Sayfa";
 }
 
 <style>
-    .hero-section { min-height: 75vh; display: flex; align-items: center; justify-content: center; }
-    .hero-card { text-align: center; max-width: 520px; width: 100%; }
+    .hero-section { display: flex; align-items: center; justify-content: center; padding: 28px 0 20px; }
+    .hero-card { text-align: center; max-width: 720px; width: 100%; }
     .hero-logo { width: 80px; height: 80px; background: linear-gradient(135deg, #1a237e, #1565c0); border-radius: 18px; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; font-size: 36px; color: white; box-shadow: 0 8px 24px rgba(26,35,126,0.25); }
     .hero-title { font-size: 28px; font-weight: 800; color: #1a237e; margin-bottom: 6px; letter-spacing: 0.5px; }
     .hero-subtitle { font-size: 15px; color: #6c757d; margin-bottom: 30px; }
@@ -12,6 +13,27 @@
     .hero-btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 32px; font-size: 15px; font-weight: 600; border-radius: 10px; text-decoration: none; transition: all 0.2s; }
     .hero-btn-primary { background: linear-gradient(135deg, #1a237e, #1565c0); color: white; border: none; box-shadow: 0 4px 16px rgba(26,35,126,0.3); }
     .hero-btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(26,35,126,0.4); color: white; }
+    .home-monthly { max-width: 1200px; margin: 0 auto 32px; }
+    .home-monthly-toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:16px; padding:14px 16px; background:#fff; border:1px solid #e2e8f0; border-radius:12px; }
+    .home-monthly-toolbar h2 { margin:0; color:#1e3a8a; font-size:18px; font-weight:700; }
+    .home-monthly-toolbar form { display:flex; align-items:center; gap:8px; }
+    .home-monthly-toolbar input { width:170px; min-height:38px; border:1px solid #cbd5e1; border-radius:8px; padding:6px 10px; }
+    .home-monthly-toolbar button { min-height:38px; border:0; border-radius:8px; padding:6px 14px; background:#1e3a8a; color:white; font-weight:600; }
+    .home-list-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+    .home-list-card { min-width:0; overflow:hidden; background:#fff; border:1px solid #e2e8f0; border-radius:12px; box-shadow:0 4px 16px rgba(30,58,138,.05); }
+    .home-list-card h3 { margin:0; padding:14px 16px; color:#1e3a8a; font-size:16px; font-weight:700; border-bottom:1px solid #e2e8f0; }
+    .home-list-scroll { max-height:420px; overflow:auto; }
+    .home-list-card table { width:100%; border-collapse:collapse; font-size:13px; }
+    .home-list-card th,.home-list-card td { padding:9px 12px; border-bottom:1px solid #eef2f7; text-align:left; white-space:nowrap; }
+    .home-list-card th { position:sticky; top:0; z-index:1; background:#f8fafc; color:#475569; font-size:11px; text-transform:uppercase; }
+    .home-list-card td.num { text-align:right; font-variant-numeric:tabular-nums; }
+    .home-list-empty { margin:0; padding:24px 16px; color:#64748b; text-align:center; font-size:13px; }
+    @@media (max-width: 767.98px) {
+        .home-list-grid { grid-template-columns:1fr; }
+        .home-monthly-toolbar { align-items:flex-start; }
+        .home-monthly-toolbar form { width:100%; }
+        .home-monthly-toolbar input { flex:1; min-width:0; }
+    }
 </style>
 
 <div class="hero-section">
@@ -33,3 +55,87 @@
         }
     </div>
 </div>
+
+@if (Model.IzinListesiGoster || Model.MesaiListesiGoster)
+{
+    <section class="home-monthly" aria-label="Aylık personel özetleri">
+        @if (!string.IsNullOrEmpty(Model.HataMesaji))
+        {
+            <div class="alert alert-danger" role="alert">@Model.HataMesaji</div>
+        }
+
+        <div class="home-monthly-toolbar">
+            <h2>@(new DateTime(Model.Yil, Model.Ay, 1).ToString("MMMM yyyy", System.Globalization.CultureInfo.GetCultureInfo("tr-TR"))) aylık özetleri</h2>
+            <form method="get" asp-controller="Home" asp-action="Index">
+                <label class="visually-hidden" for="personelDonem">Ay seçin</label>
+                <input id="personelDonem" type="month" name="donem" value="@($"{Model.Yil:D4}-{Model.Ay:D2}")" />
+                <button type="submit">Göster</button>
+            </form>
+        </div>
+
+        <div class="home-list-grid">
+            @if (Model.IzinListesiGoster)
+            {
+                <section class="home-list-card" aria-labelledby="izinListesiBaslik">
+                    <h3 id="izinListesiBaslik">İzin kullanan personeller</h3>
+                    @if (Model.IzinPersoneller.Count == 0)
+                    {
+                        <p class="home-list-empty">Bu ay için izin kaydı bulunamadı.</p>
+                    }
+                    else
+                    {
+                        <div class="home-list-scroll">
+                            <table>
+                                <thead>
+                                    <tr><th>Personel</th><th>İzin türü</th><th class="text-end">Gün</th></tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var personel in Model.IzinPersoneller)
+                                    {
+                                        <tr>
+                                            <td>@personel.AdSoyad</td>
+                                            <td>@personel.IzinTipleri</td>
+                                            <td class="num">@personel.IzinGunu</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </section>
+            }
+
+            @if (Model.MesaiListesiGoster)
+            {
+                <section class="home-list-card" aria-labelledby="mesaiListesiBaslik">
+                    <h3 id="mesaiListesiBaslik">Mesai yapan personeller</h3>
+                    @if (Model.MesaiPersoneller.Count == 0)
+                    {
+                        <p class="home-list-empty">Bu ay için mesai kaydı bulunamadı.</p>
+                    }
+                    else
+                    {
+                        <div class="home-list-scroll">
+                            <table>
+                                <thead>
+                                    <tr><th>Personel</th><th class="text-end">Gün</th><th class="text-end">Fiili saat</th><th class="text-end">Ek mesai</th></tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var personel in Model.MesaiPersoneller)
+                                    {
+                                        <tr>
+                                            <td>@personel.AdSoyad</td>
+                                            <td class="num">@personel.MesaiGunu</td>
+                                            <td class="num">@personel.FiiliSaat.ToString("0.##", System.Globalization.CultureInfo.GetCultureInfo("tr-TR"))</td>
+                                            <td class="num">@personel.EkMesaiSaat.ToString("0.##", System.Globalization.CultureInfo.GetCultureInfo("tr-TR"))</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </section>
+            }
+        </div>
+    </section>
+}

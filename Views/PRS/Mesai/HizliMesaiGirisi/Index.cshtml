@@ -102,117 +102,340 @@
     }
 }
 
-<!DOCTYPE html>
-<html lang="tr">
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Hızlı Mesai Girişi</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.css" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/css/site.css" />
-</head>
-<body class="hizli-mesai-page">
+    <style>
+        .hizli-mesai-page .hm-card {
+            margin: 0 0 16px;
+            overflow: hidden;
+            border: 1px solid #e1e6ef;
+            border-radius: 16px;
+            background: #fff;
+            box-shadow: 0 1px 2px rgba(16, 24, 40, .05);
+        }
+
+        .hizli-mesai-page .hm-header {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 10px 16px;
+            margin-bottom: 16px;
+        }
+
+        .hizli-mesai-page .hm-title {
+            color: #1d3a8a;
+            font-size: 20px;
+            font-weight: 800;
+            line-height: 1.2;
+        }
+
+        .hizli-mesai-page .hm-subtitle {
+            margin-top: 2px;
+            color: #5b6678;
+            font-size: 13px;
+        }
+
+        .hizli-mesai-page .hm-actions {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .hizli-mesai-page .hm-actions .btn {
+            min-height: 38px;
+            padding: 0 13px;
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            background: #fff;
+            color: #1d3a8a;
+            font-size: 13px;
+            font-weight: 600;
+            box-shadow: none;
+        }
+
+        .hizli-mesai-page .hm-actions .btn-batch {
+            border-color: #c7d2fe;
+            background: #eef2ff;
+            color: #3730a3;
+        }
+
+        .hizli-mesai-page .hm-actions .btn-success {
+            border-color: #15803d;
+            background: #15803d;
+            color: #fff;
+        }
+
+        .hizli-mesai-page .hm-actions .hm-separator {
+            width: 1px;
+            align-self: stretch;
+            margin: 0 2px;
+            background: #e1e6ef;
+        }
+
+        .hizli-mesai-page .hm-filters {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 16px;
+        }
+
+        .hizli-mesai-page .hm-filter-unit {
+            flex: 1 1 180px;
+            min-width: 0;
+        }
+
+        .hizli-mesai-page .hm-filter-search {
+            flex: 2 1 230px;
+        }
+
+        .hizli-mesai-page .hm-filters .form-select,
+        .hizli-mesai-page .hm-filters .form-control,
+        .hizli-mesai-page .hm-filters .input-group-text {
+            height: 38px;
+            border: 1px solid #cbd5e1;
+            background-color: #fff;
+            color: #1f2937;
+            font-size: 14px;
+            box-shadow: none;
+        }
+
+        .hizli-mesai-page .hm-filters .form-select {
+            padding-top: 0;
+            padding-bottom: 0;
+            border-radius: 10px;
+        }
+
+        .hizli-mesai-page .hm-filters .input-group {
+            flex-wrap: nowrap;
+        }
+
+        .hizli-mesai-page .hm-filters .input-group-text {
+            display: grid;
+            width: 40px;
+            place-items: center;
+            border-right: 0;
+            border-radius: 10px 0 0 10px;
+            color: #64748b;
+        }
+
+        .hizli-mesai-page .hm-filters .input-group .form-control {
+            min-width: 0;
+            border-radius: 0 10px 10px 0;
+        }
+
+        .hizli-mesai-page .hm-month-nav {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .hizli-mesai-page .hm-month-nav .btn {
+            display: grid;
+            width: 38px;
+            height: 38px;
+            place-items: center;
+            padding: 0;
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            color: #1d3a8a;
+            font-size: 18px;
+        }
+
+        .hizli-mesai-page .hm-month-nav .month-badge {
+            display: grid;
+            min-width: 130px;
+            height: 38px;
+            place-items: center;
+            padding: 0 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            background: #fff;
+            color: #1f2937;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .hizli-mesai-page .hm-action-message {
+            flex: 1 0 100%;
+            min-height: 16px;
+            text-align: right;
+        }
+
+        .hizli-mesai-page .hm-calendar-head {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px 16px;
+            padding: 14px 18px;
+            border-bottom: 1px solid #e8ecf3;
+        }
+
+        .hizli-mesai-page .hm-calendar-title {
+            margin: 0;
+            color: #1f2937;
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .hizli-mesai-page .hm-calendar-subtitle {
+            margin: 3px 0 0;
+            color: #5b6678;
+            font-size: 13px;
+        }
+
+        .hizli-mesai-page .hm-weekend-legend {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            color: #5b6678;
+            font-size: 12px;
+        }
+
+        .hizli-mesai-page .hm-weekend-swatch {
+            width: 14px;
+            height: 14px;
+            border-radius: 4px;
+            background: #e11d63;
+        }
+
+        .hizli-mesai-page .hm-calendar-body {
+            padding: 14px 16px 0;
+        }
+
+        .hizli-mesai-page .hm-stats {
+            margin: 0;
+            padding: 0 16px 16px;
+        }
+
+        .hizli-mesai-page .hm-stats .stats-mini-card {
+            height: 100%;
+            border: 1px solid #e1e6ef;
+            border-radius: 12px;
+            background: #f8fafc;
+        }
+
+        .hizli-mesai-page .hm-empty {
+            margin: 14px 16px 16px;
+            border: 1px dashed #cbd5e1;
+            border-radius: 12px;
+            background: #f8fafc;
+        }
+
+        @@media (max-width: 767.98px) {
+            .hizli-mesai-page .hm-header {
+                align-items: flex-start;
+            }
+
+            .hizli-mesai-page .hm-actions {
+                width: 100%;
+            }
+
+            .hizli-mesai-page .hm-actions .btn {
+                flex: 1 1 auto;
+            }
+
+            .hizli-mesai-page .hm-actions .hm-separator {
+                display: none;
+            }
+
+            .hizli-mesai-page .hm-action-message {
+                text-align: left;
+            }
+        }
+    </style>
+<div class="hizli-mesai-page">
 
     <div class="container-fluid px-0">
 
         <!-- MAIN CARD -->
-        <div class="dashboard-card">
+        <div class="dashboard-card hm-dashboard">
 
-            <!-- HEADER -->
-            <div class="row align-items-center g-2 mb-2">
-                <div class="col-md-6">
-                    <div class="page-headline">
-                        <i class="bi bi-lightning-charge-fill text-primary me-2"></i> Hızlı Mesai Girişi
+            <div class="hm-card hm-header">
+                <div>
+                    <div class="hm-title">
+                        <i class="bi bi-lightning-charge-fill me-2"></i>Hızlı Mesai Girişi
                     </div>
-                    <div class="page-sub">Personel mesai saatlerini hızlıca giriniz.</div>
+                    <div class="hm-subtitle">Personel mesai saatlerini hızlıca giriniz.</div>
                 </div>
-                <div class="col-md-6">
-                    <div class="btn-group-icon no-print">
-                        <button class="btn btn-batch" onclick="acBatchModal()">
-                            <i class="bi bi-grid-3x3-gap-fill me-1"></i> Toplu Giriş
-                        </button>
-                        <button class="btn btn-success btn-soft-primary" onclick="takvimKaydet()"><i class="bi bi-check-lg me-1"></i> Kaydet</button>
-                        <button class="btn btn-soft-primary" onclick="takvimExcelAktar()"><i class="bi bi-file-earmark-excel me-1"></i> Excel</button>
-                        <button class="btn btn-soft-primary" onclick="takvimPdfIndir()"><i class="bi bi-file-earmark-pdf me-1"></i> PDF</button>
-                        <button class="btn btn-soft-primary" onclick="takvimYazdir()"><i class="bi bi-printer me-1"></i> Yazdır</button>
-                        <button class="btn btn-soft-primary" onclick="acReportModal()"><i class="bi bi-bar-chart-fill me-1"></i> Rapor</button>
-                    </div>
+                <div class="hm-actions no-print">
+                    <button class="btn btn-batch" onclick="acBatchModal()">
+                        <i class="bi bi-grid-3x3-gap-fill me-1"></i>Toplu Giriş
+                    </button>
+                    <button class="btn btn-success" onclick="takvimKaydet()"><i class="bi bi-check-lg me-1"></i>Kaydet</button>
+                    <span class="hm-separator" aria-hidden="true"></span>
+                    <button class="btn" onclick="takvimExcelAktar()"><i class="bi bi-file-earmark-excel me-1"></i>Excel</button>
+                    <button class="btn" onclick="takvimPdfIndir()"><i class="bi bi-file-earmark-pdf me-1"></i>PDF</button>
+                    <button class="btn" onclick="takvimYazdir()"><i class="bi bi-printer me-1"></i>Yazdır</button>
+                    <button class="btn" onclick="acReportModal()"><i class="bi bi-bar-chart-fill me-1"></i>Rapor</button>
                 </div>
             </div>
 
-            <!-- FILTER ROW -->
-            <div class="row g-2 align-items-end mb-2">
-                <div class="col-md-3">
-                    <label class="form-label fw-semibold text-secondary" style="font-size:13px;">Birim</label>
-                    <select id="subeSelect" class="form-select form-select-sm rounded-3 border-0 bg-light" style="font-size:13px; padding:6px 12px;" onchange="birimSecildi()">
-                        <option value="">-- Birim Seçiniz --</option>
-                        @foreach (var birim in birimler)
+            <section class="hm-card hm-filters" aria-label="Filtreler">
+                <select id="subeSelect" class="form-select hm-filter-unit" aria-label="Birim" onchange="birimSecildi()">
+                    <option value="">-- Birim Seçiniz --</option>
+                    @foreach (var birim in birimler)
+                    {
+                        if (birim == secilenBirim)
                         {
-                            if (birim == secilenBirim)
-                            {
-                                <option value="@birim" selected>@birim</option>
-                            }
-                            else
-                            {
-                                <option value="@birim">@birim</option>
-                            }
-                        }
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label fw-semibold text-secondary" style="font-size:13px;">Personel Statüsü</label>
-                    <select id="statuSelect" class="form-select form-select-sm rounded-3 border-0 bg-light" style="font-size:13px; padding:6px 12px;" onchange="statuSecildi()">
-                        @if (secilenStatu == "__TUMU__")
-                        {
-                            <option value="__TUMU__" selected>-- Tüm Personeller --</option>
+                            <option value="@birim" selected>@birim</option>
                         }
                         else
                         {
-                            <option value="__TUMU__">-- Tüm Personeller --</option>
+                            <option value="@birim">@birim</option>
                         }
-                        @foreach (var statu in personelStatuleri)
-                        {
-                            if (statu == secilenStatu)
-                            {
-                                <option value="@statu" selected>@statu</option>
-                            }
-                            else
-                            {
-                                <option value="@statu">@statu</option>
-                            }
-                        }
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label fw-semibold text-secondary" for="personelArama" style="font-size:13px;">Personel Ara</label>
-                    <div class="input-group input-group-sm">
-                        <span class="input-group-text bg-light border-0"><i class="bi bi-search"></i></span>
-                        <input id="personelArama" type="search" class="form-control border-0 bg-light" placeholder="Ad veya soyad yazın..." autocomplete="off" oninput="personelAra(this.value)" />
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label fw-semibold text-secondary" style="font-size:13px;">Ay &amp; Yıl</label>
-                    <div class="d-flex align-items-center gap-2">
-                        <button class="btn btn-outline-primary rounded-3 px-3 no-print" style="font-size:13px; padding:4px 12px;" onclick="ayDegistir(-1)">←</button>
-                        <span class="month-badge" id="monthTitle">@ayAdlari[secilenAy] @secilenYil</span>
-                        <button class="btn btn-outline-primary rounded-3 px-3 no-print" style="font-size:13px; padding:4px 12px;" onclick="ayDegistir(1)">→</button>
-                    </div>
-                </div>
-                <div class="col-md-6 text-md-end">
-                    <div id="takvimActionMsg" class="text-muted small fst-italic" style="font-size:12px;"></div>
-                </div>
-            </div>
+                    }
+                </select>
 
-            <!-- INFO ALERT -->
-            <div class="alert alert-info-custom d-flex align-items-center gap-3 no-print" style="padding:8px 16px; font-size:13px;">
-                <i class="bi bi-info-circle-fill fs-5 text-primary"></i>
-                <div>
-                    <strong>Tıklayarak mesai girebilirsiniz.</strong> Sağ tık veya Shift+Click ile silebilirsiniz.
-                    Hafta sonları <span class="badge bg-danger bg-opacity-10 text-danger">kırmızı</span> renkle gösterilir.
+                <select id="statuSelect" class="form-select hm-filter-unit" aria-label="Personel Statüsü" onchange="statuSecildi()">
+                    @if (secilenStatu == "__TUMU__")
+                    {
+                        <option value="__TUMU__" selected>-- Tüm Personeller --</option>
+                    }
+                    else
+                    {
+                        <option value="__TUMU__">-- Tüm Personeller --</option>
+                    }
+                    @foreach (var statu in personelStatuleri)
+                    {
+                        if (statu == secilenStatu)
+                        {
+                            <option value="@statu" selected>@statu</option>
+                        }
+                        else
+                        {
+                            <option value="@statu">@statu</option>
+                        }
+                    }
+                </select>
+
+                <div class="input-group hm-filter-search">
+                    <span class="input-group-text" aria-hidden="true"><i class="bi bi-search"></i></span>
+                    <input id="personelArama" type="search" class="form-control" placeholder="Ad veya soyad yazın..." autocomplete="off" oninput="personelAra(this.value)" aria-label="Personel ara" />
                 </div>
-            </div>
+
+                <div class="hm-month-nav" role="group" aria-label="Ay ve yıl">
+                    <button type="button" class="btn no-print" onclick="ayDegistir(-1)" aria-label="Önceki ay" title="Önceki ay">←</button>
+                    <span class="month-badge" id="monthTitle">@ayAdlari[secilenAy] @secilenYil</span>
+                    <button type="button" class="btn no-print" onclick="ayDegistir(1)" aria-label="Sonraki ay" title="Sonraki ay">→</button>
+                </div>
+
+                <div id="takvimActionMsg" class="hm-action-message text-muted small fst-italic" aria-live="polite"></div>
+            </section>
+
+            <section class="hm-card hm-calendar" aria-labelledby="mesaiTakvimBaslik">
+                <header class="hm-calendar-head">
+                    <div>
+                        <h2 class="hm-calendar-title" id="mesaiTakvimBaslik">Aylık Mesai Takvimi</h2>
+                        <p class="hm-calendar-subtitle no-print">Hücreye tıklayarak mesai girin; sağ tık veya Shift+Click ile kayıt silin.</p>
+                    </div>
+                    <span class="hm-weekend-legend"><span class="hm-weekend-swatch" aria-hidden="true"></span>Hafta sonu</span>
+                </header>
+                <div class="hm-calendar-body">
 
             <!-- CALENDAR TABLE -->
             @if (!string.IsNullOrEmpty(secilenBirim) && personeller.Count > 0)
@@ -237,7 +460,7 @@
                                     </th>
                                 }
                                 <th class="bg-light toplam-baslik">TOPLAM</th>
-                                <th class="bg-light toplam-detay-baslik">+ Hafta Sonu</th>
+                                <th class="bg-light toplam-detay-baslik">Fiili + Ek Mesai</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -277,11 +500,9 @@
                                     <td class="personel-toplam" data-personel-id="@personel.PerNo" style="font-size:11px; padding:3px 4px;">
                                         <span id="toplam-@personel.PerNo">00:00</span>
                                     </td>
-                                    <td class="personel-toplam-detay" data-personel-id="@personel.PerNo" style="font-size:10px; padding:3px 4px;">
+                                    <td class="personel-toplam-detay" data-personel-id="@personel.PerNo" title="Fiili saat + hafta sonu ek mesai" style="font-size:10px; padding:3px 4px;">
                                         <span id="toplamDetay-@personel.PerNo">
-                                            <span class="normal-saat">00:00</span><br/>
-                                            <span class="ekstra-saat">+0</span><br/>
-                                            <span class="toplam-saat">00:00</span>
+                                            <span class="normal-saat">00:00</span><span aria-hidden="true"> + </span><span class="ekstra-saat">00:00</span>
                                         </span>
                                     </td>
                                 </tr>
@@ -292,7 +513,7 @@
                 </div>
 
                 <!-- STATS CARDS -->
-                <div class="row g-2 mt-3">
+                <div class="row g-2 hm-stats">
                     <div class="col-6 col-md-3">
                         <div class="stats-mini-card" style="padding:10px 8px;">
                             <div><span class="stat-icon" style="font-size:16px;">📅</span><span class="stat-label" style="font-size:11px;">Toplam Gün</span></div>
@@ -321,11 +542,14 @@
             }
             else
             {
-                <div class="text-center py-4 text-secondary">
+                <div class="hm-empty text-center py-4 text-secondary">
                     <i class="bi bi-inbox fs-1 d-block mb-2"></i>
                     <p class="fw-semibold" style="font-size:14px;">@(string.IsNullOrEmpty(secilenBirim) ? "Lütfen birim seçiniz." : "Seçilen birimde aktif personel bulunmamaktadır.")</p>
                 </div>
             }
+
+                </div>
+            </section>
 
         </div><!-- /.dashboard-card -->
     </div><!-- /.container-fluid -->
@@ -640,13 +864,11 @@
             rows.forEach(row => {
                 let normalToplamDakika = 0;
                 let haftaSonuToplamDakika = 0;
-                let toplamDakika = 0;
                 const cells = row.querySelectorAll('td[data-saat]');
                 cells.forEach(cell => {
                     const val = parseFloat(cell.getAttribute('data-saat')) || 0;
                     const dakika = Math.round(val * 60);
                     const gun = parseInt(cell.getAttribute('data-gun'));
-                    toplamDakika += dakika;
                     
                     // Hafta sonu kontrolü
                     const tarih = new Date(@secilenYil, @secilenAy - 1, gun);
@@ -662,11 +884,9 @@
                 if (detayCell) {
                     const normalSpan = detayCell.querySelector('.normal-saat');
                     const ekstraSpan = detayCell.querySelector('.ekstra-saat');
-                    const toplamSpan = detayCell.querySelector('.toplam-saat');
                     
                     if (normalSpan) normalSpan.textContent = formatDakika(normalToplamDakika);
-                    if (ekstraSpan) ekstraSpan.textContent = '+' + formatDakika(haftaSonuToplamDakika);
-                    if (toplamSpan) toplamSpan.textContent = formatDakika(toplamDakika);
+                    if (ekstraSpan) ekstraSpan.textContent = formatDakika(haftaSonuToplamDakika);
                 }
             });
         }
@@ -1238,5 +1458,4 @@
         }
     </script>
 
-</body>
-</html>
+</div>

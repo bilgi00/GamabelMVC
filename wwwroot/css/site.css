@@ -3208,7 +3208,7 @@ body {
         .personel-toplam {
             min-width: 50px;
             position: sticky;
-            right: 70px;
+            right: 100px;
             background: #F8FAFC;
             border-left: 2px solid #E2E8F0;
             font-weight: 700;
@@ -3222,9 +3222,9 @@ body {
             color: #DC2626;
         }
 
-        /* ✅ Toplam + Hafta Sonu + Resmi Tatil sütunu */
+        /* Fiili saat + hafta sonu ek mesai sütunu */
         .personel-toplam-detay {
-            min-width: 70px;
+            min-width: 100px;
             position: sticky;
             right: 0;
             background: #F1F5F9;
@@ -3241,11 +3241,6 @@ body {
             color: #DC2626;
             font-size: 9px;
         }
-        .personel-toplam-detay .toplam-saat {
-            color: #16A34A;
-            font-size: 12px;
-        }
-
         /* Toplu Mesai Girişi Butonu */
         .btn-batch {
             background: linear-gradient(135deg, #667EEA 0%, #764BA2 100%);
@@ -3550,7 +3545,7 @@ body {
     .puantaj-table .col-personel { width: 220px; min-width: 180px; max-width: 240px; }
     .puantaj-table .col-gun { width: 38px; min-width: 38px; max-width: 40px; }
     .puantaj-table .col-sayac { width: 50px; min-width: 44px; max-width: 56px; }
-    .puantaj-table .col-hakkedis { width: 80px; min-width: 70px; max-width: 90px; }
+    .puantaj-table .col-hakkedis { width: 80px;     min-width: 100px; max-width: 90px; }
 
     /* Başlık */
     .puantaj-table thead th {
