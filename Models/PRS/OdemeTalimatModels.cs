@@ -30,6 +30,18 @@ public class OtImportBatch
     public int SatirSayisi { get; set; }
 }
 
+public class ExcelYuklemeOzetViewModel
+{
+    public int ExcelSatirSayisi { get; set; }
+    public int CiftIslemSayisi { get; set; }
+    public int OdenmisIslemSayisi { get; set; }
+    public int MevcutAcikIslemSayisi { get; set; }
+    public int Eklenen { get; set; }
+    public List<string> CiftFaturalar { get; set; } = new();
+    public List<string> OdenmisFaturalar { get; set; } = new();
+    public int EkOdenmisFaturaSayisi { get; set; }
+}
+
 
 
 public class OtFaturaViewModel

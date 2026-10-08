@@ -37,7 +37,6 @@ $scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Path
 Set-Location $scriptPath
 
 $backupRoot = Join-Path $scriptPath "_GAMABEL_BACKUPS"
-$logFile = Join-Path $scriptPath "git_gelistirme_log.txt"
 
 # Git'e gonderilmesi istenmeyen / kontrol edilmesi gereken dosyalar
 $RiskliDosyaPatternleri = @(
@@ -74,17 +73,6 @@ function Pause-Menu {
     Read-Host "Devam etmek icin Enter'a basin" | Out-Null
 }
 
-function Write-Log {
-    param(
-        [string]$Mesaj
-    )
-
-    try {
-        $Kayit = "[$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] $Mesaj"
-        Add-Content -Path $logFile -Value $Kayit -Encoding UTF8
-    }
-    catch {}
-}
 
 function ConvertTo-LatinChars {
     param([string]$Metin)
@@ -344,7 +332,6 @@ function Start-Application {
     Write-Host "dotnet run baslatiliyor..." -ForegroundColor Yellow
     Write-Host ""
 
-    Write-Log "Uygulama calistirildi: $($Project.FullName)"
 
     dotnet run --project $Project.FullName
 
@@ -379,12 +366,10 @@ function Build-Application {
     if ($LASTEXITCODE -eq 0) {
         Write-Host ""
         Write-Host "BUILD BASARILI." -ForegroundColor Green
-        Write-Log "Build basarili: $($Project.Name)"
     }
     else {
         Write-Host ""
         Write-Host "BUILD BASARISIZ." -ForegroundColor Red
-        Write-Log "Build basarisiz: $($Project.Name)"
     }
 
     Pause-Menu
@@ -421,12 +406,10 @@ function Test-Application {
     if ($LASTEXITCODE -eq 0) {
         Write-Host ""
         Write-Host "TESTLER BASARILI." -ForegroundColor Green
-        Write-Log "Testler basarili"
     }
     else {
         Write-Host ""
         Write-Host "TESTLER BASARISIZ." -ForegroundColor Red
-        Write-Log "Testler basarisiz"
     }
 
     Pause-Menu
@@ -550,14 +533,12 @@ function Pull-FromGitHub {
     if ($LASTEXITCODE -eq 0) {
         Write-Host ""
         Write-Host "GITHUB GUNCELLEMELERI LOKALE BASARIYLA UYGULANDI." -ForegroundColor Green
-        Write-Log "GitHub -> Lokal pull basarili. Branch: $Branch"
     }
     else {
         Write-Host ""
         Write-Host "PULL BASARISIZ." -ForegroundColor Red
         Write-Host "Lokal ve GitHub arasinda birlestirme gerektiren fark olabilir." -ForegroundColor Yellow
         Write-Host "Mevcut kod zorla ezilmedi." -ForegroundColor Green
-        Write-Log "GitHub -> Lokal pull basarisiz. Branch: $Branch"
     }
 
     Pause-Menu
@@ -712,7 +693,6 @@ function Push-ToGitHub {
                     Write-Host "BUILD BASARISIZ." -ForegroundColor Red
                     Write-Host "Commit islemi iptal edildi." -ForegroundColor Yellow
                     Write-Host "Stage edilen dosyalar korunuyor." -ForegroundColor Green
-                    Write-Log "Push iptal: Build basarisiz."
                     Pause-Menu
                     return
                 }
@@ -742,7 +722,6 @@ function Push-ToGitHub {
                 Write-Host ""
                 Write-Host "TESTLER BASARISIZ." -ForegroundColor Red
                 Write-Host "Commit islemi iptal edildi." -ForegroundColor Yellow
-                Write-Log "Push iptal: Testler basarisiz."
                 Pause-Menu
                 return
             }
@@ -829,14 +808,12 @@ function Push-ToGitHub {
     if ($LASTEXITCODE -eq 0) {
         Write-Host ""
         Write-Host "DEGISIKLIKLER GITHUB'A BASARIYLA YUKLENDI." -ForegroundColor Green
-        Write-Log "Lokal -> GitHub push basarili. Branch: $Branch | Commit: $MesajLatin"
     }
     else {
         Write-Host ""
         Write-Host "PUSH BASARISIZ." -ForegroundColor Red
         Write-Host "Commit lokal bilgisayarda kayitli." -ForegroundColor Yellow
         Write-Host "Daha sonra tekrar deneyebilirsiniz." -ForegroundColor Yellow
-        Write-Log "Lokal -> GitHub push basarisiz. Branch: $Branch | Commit: $MesajLatin"
     }
 
     Pause-Menu
@@ -986,7 +963,6 @@ function Smart-Sync {
 
             if ($LASTEXITCODE -eq 0) {
                 Write-Host "Senkronizasyon tamamlandi." -ForegroundColor Green
-                Write-Log "Akilli senkronizasyon: GitHub -> Lokal"
             }
             else {
                 Write-Host "Pull basarisiz." -ForegroundColor Red
@@ -1010,7 +986,6 @@ function Smart-Sync {
 
             if ($LASTEXITCODE -eq 0) {
                 Write-Host "Senkronizasyon tamamlandi." -ForegroundColor Green
-                Write-Log "Akilli senkronizasyon: Lokal -> GitHub"
             }
             else {
                 Write-Host "Push basarisiz." -ForegroundColor Red
@@ -1131,14 +1106,12 @@ function New-ProjectBackup {
         Write-Host "YEDEK BASARIYLA ALINDI:" -ForegroundColor Green
         Write-Host $BackupPath -ForegroundColor Gray
 
-        Write-Log "Proje yedegi alindi: $BackupPath"
 
         return $true
     }
     catch {
         Write-Host ""
         Write-Host "YEDEK ALINAMADI: $($_.Exception.Message)" -ForegroundColor Red
-        Write-Log "Proje yedegi basarisiz: $($_.Exception.Message)"
         return $false
     }
 }
@@ -1204,12 +1177,10 @@ function Restore-LatestBackup {
 
         Write-Host ""
         Write-Host "SON YEDEK GERI YUKLENDI." -ForegroundColor Green
-        Write-Log "Son yedek geri yuklendi: $($Latest.FullName)"
     }
     catch {
         Write-Host ""
         Write-Host "Geri yukleme basarisiz: $($_.Exception.Message)" -ForegroundColor Red
-        Write-Log "Geri yukleme basarisiz: $($_.Exception.Message)"
     }
 
     Pause-Menu
@@ -1227,7 +1198,6 @@ function Open-VSCode {
     if (Get-Command code -ErrorAction SilentlyContinue) {
         code $scriptPath
         Write-Host "VS Code acildi." -ForegroundColor Green
-        Write-Log "VS Code acildi."
     }
     else {
         Write-Host "VS Code 'code' komutu bulunamadi." -ForegroundColor Red
@@ -1310,7 +1280,6 @@ if (-not (Test-GitRepository)) {
     exit 1
 }
 
-Write-Log "GAMABEL MVC Gelistirme Merkezi baslatildi."
 
 while ($true) {
 
@@ -1356,7 +1325,6 @@ while ($true) {
         "14" { Show-CommitHistory }
 
         "0" {
-            Write-Log "Gelistirme Merkezi kapatildi."
             Clear-Host
             Write-Host ""
             Write-Host "GAMABEL MVC Gelistirme Merkezi kapatildi." -ForegroundColor Green

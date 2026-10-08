@@ -23,6 +23,29 @@
         </div>
     </div>
 
+    <section class="card mb-3" aria-labelledby="aylikIzinKayitlariBaslik">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h2 class="h6 mb-0" id="aylikIzinKayitlariBaslik">Seçili Ayın İzin Kayıtları</h2>
+            <span class="badge bg-secondary" id="aylikIzinKayitSayisi">0 kayıt</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-sm table-striped table-bordered align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th scope="col">Tarih</th>
+                        <th scope="col">Personel No</th>
+                        <th scope="col">Personel</th>
+                        <th scope="col">İzin Türü</th>
+                        <th scope="col">Açıklama</th>
+                    </tr>
+                </thead>
+                <tbody id="aylikIzinKayitlariBody">
+                    <tr><td colspan="5" class="text-center text-muted">Veriler yükleniyor...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
     <!-- FILTER ROW -->
     <div class="controls row g-2 align-items-end mb-2">
             <div class="filter-field col-md-3">
@@ -213,7 +236,9 @@
     var seciliBirim = kullaniciRol === 'admin' ? 'all' : kullaniciBirim;
     var autoSaveTimer = null;
     var isSaving = false;
-    var resmiTatiller = {};
+    var izinYuklemeNo = 0;
+    var aylikIzinKayitlari = [];
+    var izinPersonelBilgileri = {};
 
     // ============================================================
     // YARDIMCI FONKSİYONLAR
@@ -222,13 +247,108 @@
     function isWeekend(y, m, d) { var dt = new Date(y, m-1, d); return dt.getDay()===0 || dt.getDay()===6; }
     function getDurumClass(d) { return {'X':'x','İ':'i','Gİ':'gi','ÇH':'ch','Vİ':'vi','Öİ':'oi','H':'h','Sİ':'si','ÖDİ':'odi'}[d]||'x'; }
     function getDurumDisplay(d) { return {'X':'X','İ':'İ','Gİ':'Gİ','ÇH':'ÇH','Vİ':'Vİ','Öİ':'Öİ','H':'H','Sİ':'Sİ','ÖDİ':'ÖDİ'}[d]||'X'; }
-    function getPersonelAdi(pid) { var p = personeller.find(function(x){return x.perNo===pid;}); return p ? p.ad+' '+p.soyad : ''; }
+    function getPersonelBilgisi(pid) {
+        return personeller.find(function(x){return String(x.personelId)===String(pid);}) ||
+            izinPersonelBilgileri[pid] || null;
+    }
+    function getPersonelAdi(pid) {
+        var p = getPersonelBilgisi(pid);
+        return p ? (p.ad+' '+p.soyad).trim() : '';
+    }
+    function renderIzinKayitlari() {
+        var tbody = document.getElementById('aylikIzinKayitlariBody');
+        var sayac = document.getElementById('aylikIzinKayitSayisi');
+        var kayitlar = aylikIzinKayitlari.map(function(izin) {
+            var personelVerisi = calismaVerileri[izin.personelId] || {};
+            var izinTipi = personelVerisi[izin.gun] || izin.izinTipi;
+            return {
+                gun: izin.gun,
+                personelId: izin.personelId,
+                personelAdi: (izin.ad + ' ' + izin.soyad).trim(),
+                perNo: izin.perNo,
+                izinTipi: izinTipi,
+                aciklama: personelVerisi['aciklama_' + izin.gun] || izin.aciklama || ''
+            };
+        });
+        kayitlar = kayitlar.filter(function(izin) {
+            return izinTurleri.indexOf(izin.izinTipi) >= 0;
+        });
+
+        Object.keys(degisenler).forEach(function(personelId) {
+            Object.keys(degisenler[personelId]).forEach(function(gunAnahtari) {
+                var gun = parseInt(gunAnahtari, 10);
+                var zatenListede = aylikIzinKayitlari.some(function(izin) {
+                    return String(izin.personelId) === String(personelId) && izin.gun === gun;
+                });
+                var izinTipi = degisenler[personelId][gunAnahtari];
+                if (zatenListede || izinTurleri.indexOf(izinTipi) < 0) return;
+
+                var personel = getPersonelBilgisi(personelId) || {};
+                var personelVerisi = calismaVerileri[personelId] || {};
+                kayitlar.push({
+                    gun: gun,
+                    personelId: personelId,
+                    personelAdi: ((personel.ad || '') + ' ' + (personel.soyad || '')).trim(),
+                    perNo: personel.perNo || '',
+                    izinTipi: izinTipi,
+                    aciklama: personelVerisi['aciklama_' + gun] || ''
+                });
+            });
+        });
+
+        kayitlar.sort(function(a, b) {
+            return a.gun - b.gun || a.personelAdi.localeCompare(b.personelAdi, 'tr-TR');
+        });
+        sayac.textContent = kayitlar.length + ' kayıt';
+        tbody.replaceChildren();
+
+        if (kayitlar.length === 0) {
+            var bosSatir = tbody.insertRow();
+            var bosHucre = bosSatir.insertCell();
+            bosHucre.colSpan = 5;
+            bosHucre.className = 'text-center text-muted';
+            bosHucre.textContent = 'Seçili ayda izin kaydı bulunmuyor.';
+            return;
+        }
+
+        kayitlar.forEach(function(kayit) {
+            var satir = tbody.insertRow();
+            satir.insertCell().textContent = String(kayit.gun).padStart(2, '0') + '.' +
+                String(currentMonth).padStart(2, '0') + '.' + currentYear;
+            satir.insertCell().textContent = kayit.perNo || kayit.personelId;
+            satir.insertCell().textContent = kayit.personelAdi || 'Personel bilgisi bulunamadı';
+            satir.insertCell().textContent = kayit.izinTipi;
+            satir.insertCell().textContent = kayit.aciklama;
+        });
+    }
     function changeMonth(offset) {
+        if (isSaving) {
+            showToast('Kayıt işlemi tamamlanınca ayı değiştirebilirsiniz','warning');
+            return;
+        }
+        if (Object.keys(degisenler).length > 0) {
+            if (autoSaveTimer) {
+                clearTimeout(autoSaveTimer);
+                autoSaveTimer = null;
+            }
+            saveChanges(false).then(function(saved) {
+                if (!saved) return;
+                if (Object.keys(degisenler).length > 0) {
+                    changeMonth(offset);
+                    return;
+                }
+                changeMonthNow(offset);
+            });
+            return;
+        }
+        changeMonthNow(offset);
+    }
+    function changeMonthNow(offset) {
         currentMonth += offset;
         if (currentMonth > 12) { currentMonth = 1; currentYear++; }
         else if (currentMonth < 1) { currentMonth = 12; currentYear--; }
         document.getElementById('monthTitle').textContent = getMonthName(currentMonth) + ' ' + currentYear;
-        loadPersoneller();
+        loadIzinler();
     }
     function getFilteredPersoneller() {
         var arama = personelAramaMetni.trim().toLocaleLowerCase('tr-TR');
@@ -306,33 +426,51 @@
     }
 
     function loadIzinler() {
-        fetch('/Puantaj/GetResmiTatiller?yil='+currentYear+'&ay='+currentMonth)
-            .then(function(r){return r.json();})
-            .then(function(tatilData){
-                resmiTatiller = {};
-                if (Array.isArray(tatilData)) {
-                    for (var i=0; i<tatilData.length; i++) resmiTatiller[tatilData[i].gun] = tatilData[i].tatilAdi;
-                }
-                return fetch('/Puantaj/GetIzinler?yil='+currentYear+'&ay='+currentMonth);
-            })
+        var yil = currentYear;
+        var ay = currentMonth;
+        var yuklemeNo = ++izinYuklemeNo;
+        document.getElementById('aylikIzinKayitSayisi').textContent = '...';
+        document.getElementById('aylikIzinKayitlariBody').innerHTML =
+            '<tr><td colspan="5" class="text-center text-muted">Veriler yükleniyor...</td></tr>';
+        fetch('/Puantaj/GetIzinler?yil='+yil+'&ay='+ay)
             .then(function(r){return r.json();})
             .then(function(data){
-                if (data.hata) { showToast('Hata: '+data.hata,'error'); return; }
+                if (yuklemeNo !== izinYuklemeNo) return;
+                if (data.hata) {
+                    document.getElementById('aylikIzinKayitSayisi').textContent = 'Hata';
+                    document.getElementById('aylikIzinKayitlariBody').innerHTML =
+                        '<tr><td colspan="5" class="text-center text-danger">Puantaj verisi alınamadı.</td></tr>';
+                    showToast('Hata: '+data.hata,'error');
+                    return;
+                }
                 calismaVerileri = {};
+                izinPersonelBilgileri = {};
+                aylikIzinKayitlari = data;
                 for (var idx=0; idx<data.length; idx++) {
                     var iz = data[idx];
                     if (!calismaVerileri[iz.personelId]) calismaVerileri[iz.personelId] = {};
                     calismaVerileri[iz.personelId][iz.gun] = iz.izinTipi;
                     if (iz.aciklama) calismaVerileri[iz.personelId]['aciklama_'+iz.gun] = iz.aciklama;
+                    izinPersonelBilgileri[iz.personelId] = {
+                        personelId: iz.personelId,
+                        perNo: iz.perNo,
+                        ad: iz.ad,
+                        soyad: iz.soyad
+                    };
                 }
                 degisenler = {};
+                document.getElementById('aylikIzinKayitSayisi').textContent = '0 kayıt';
                 renderTable();
-                var tatilSayisi = Object.keys(resmiTatiller).length;
-                var msg = getMonthName(currentMonth)+' '+currentYear+' yüklendi';
-                if (tatilSayisi > 0) msg += ' ('+tatilSayisi+' resmi tatil)';
-                showToast(msg,'info');
+                showToast(getMonthName(ay)+' '+yil+' puantaj verileri yüklendi','info');
             })
-            .catch(function(){ showToast('İzin verisi alınamadı','error'); });
+            .catch(function(){
+                if (yuklemeNo === izinYuklemeNo) {
+                    document.getElementById('aylikIzinKayitSayisi').textContent = 'Hata';
+                    document.getElementById('aylikIzinKayitlariBody').innerHTML =
+                        '<tr><td colspan="5" class="text-center text-danger">Puantaj verisi alınamadı.</td></tr>';
+                    showToast('Puantaj verisi alınamadı','error');
+                }
+            });
     }
 
     // ============================================================
@@ -341,9 +479,9 @@
     function saveChanges(showMsg) {
         if (Object.keys(degisenler).length === 0) {
             if (showMsg) showToast('Kaydedilecek değişiklik yok','info');
-            return;
+            return Promise.resolve(true);
         }
-        if (isSaving) return;
+        if (isSaving) return Promise.resolve(false);
 
         isSaving = true;
         var kaydedilenler = {};
@@ -365,7 +503,7 @@
             }
         }
         var kaydetmeBasarili = false;
-        fetch('/Puantaj/KaydetIzin', {
+        return fetch('/Puantaj/KaydetIzin', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(izinler)
@@ -383,15 +521,17 @@
                     }
                     if (degisenler[pid] && Object.keys(degisenler[pid]).length === 0) delete degisenler[pid];
                 }
+                return true;
             } else {
                 if (data.mesaj && data.mesaj.indexOf('kilitlenmiş') > -1) {
                     showKilitPopup(data.mesaj);
                 } else {
                     showToast('Hata: ' + data.mesaj, 'error');
                 }
+                return false;
             }
         })
-        .catch(function(){ showToast('Kaydetme hatası','error'); })
+        .catch(function(){ showToast('Kaydetme hatası','error'); return false; })
         .finally(function() {
             isSaving = false;
             if (kaydetmeBasarili && Object.keys(degisenler).length > 0) scheduleAutoSave();
@@ -427,7 +567,7 @@
         sel.innerHTML = '';
         getFilteredPersoneller().forEach(function(p) {
             var opt = document.createElement('option');
-            opt.value = p.perNo;
+            opt.value = p.personelId;
             opt.textContent = p.ad + ' ' + p.soyad + ' (' + p.birim + ')';
             sel.appendChild(opt);
         });
@@ -445,7 +585,7 @@
 
     function saveBatchIzin() {
         var opts = document.getElementById('batchPersonelSelect').selectedOptions;
-        var pids = Array.from(opts).map(function(o){return parseInt(o.value);});
+        var pids = Array.from(opts).map(function(o){return o.value;});
         var bas = new Date(document.getElementById('baslangicTarih').value);
         var bit = new Date(document.getElementById('bitisTarih').value);
         var tip = document.getElementById('batchIzinTipi').value;
@@ -476,6 +616,7 @@
     // TABLO OLUŞTURMA
     // ============================================================
     function renderTable() {
+        renderIzinKayitlari();
         var filtered = getFilteredPersoneller();
         var gunSayisi = 30;
         var today = new Date();
@@ -486,14 +627,11 @@
         var hdr = '<tr><th class="col-personel" style="position:sticky;left:0;z-index:25;">Personel</th>';
         for (var i=1; i<=gunSayisi; i++) {
             var wk = isWeekend(currentYear,currentMonth,i);
-            var tatilMi = resmiTatiller.hasOwnProperty(i);
             var cls = '';
             var style = '';
-            var title = '';
             if (wk) cls += ' weekend';
-            if (tatilMi) { cls += ' tatil'; title = ' title="'+resmiTatiller[i]+'"'; }
             if (isCurrentMonth && i === todayDay) cls += ' today-col';
-            hdr += '<th class="col-gun'+cls+'"'+style+title+'>'+i+'</th>';
+            hdr += '<th class="col-gun'+cls+'"'+style+'>'+i+'</th>';
         }
         hdr += '<th class="col-sayac">X</th><th class="col-sayac">İ</th><th class="col-sayac">H</th><th class="col-hakkedis">Hakediş</th></tr>';
         document.getElementById('tableHeader').innerHTML = hdr;
@@ -502,25 +640,22 @@
         var body = '';
         filtered.forEach(function(p) {
             var tX=0, tI=0, tH=0;
-            body += '<tr data-personel-id="'+p.perNo+'">';
+            body += '<tr data-personel-id="'+p.personelId+'">';
             body += '<td class="col-personel-sticky">'+p.ad+' '+p.soyad+'</td>';
             for (var gun=1; gun<=gunSayisi; gun++) {
-                var durum = (calismaVerileri[p.perNo] && calismaVerileri[p.perNo][gun]) || 'X';
+                var durum = (calismaVerileri[p.personelId] && calismaVerileri[p.personelId][gun]) || 'X';
                 var cls = 'durum-' + getDurumClass(durum);
                 var disp = getDurumDisplay(durum);
                 if (durum==='X') tX++;
                 else if (durum==='H') tH++;
                 else if (izinTurleri.indexOf(durum)>=0) tI++;
                 var wk = isWeekend(currentYear,currentMonth,gun);
-                var tatilMi = resmiTatiller.hasOwnProperty(gun);
                 var extraCls = '';
                 if (wk) extraCls += ' weekend';
-                if (tatilMi) extraCls += ' tatil';
                 if (isCurrentMonth && gun === todayDay) extraCls += ' today-col';
-                var titleAttr = tatilMi ? ' title="'+resmiTatiller[gun]+'"' : '';
-                body += '<td class="durum-cell '+cls+extraCls+'" data-gun="'+gun+'" data-personel="'+p.perNo+'" onclick="openModal(\''+p.perNo+'\','+gun+',\''+durum.replace(/'/g,"\\'")+'\')"'+titleAttr+'>'+disp+'</td>';
+                body += '<td class="durum-cell '+cls+extraCls+'" data-gun="'+gun+'" data-personel="'+p.personelId+'" onclick="openModal(\''+p.personelId+'\','+gun+',\''+durum.replace(/'/g,"\\'")+'\')">'+disp+'</td>';
             }
-                var hak = calculateHakkedis(p.perNo);
+                var hak = calculateHakkedis(p.personelId);
             var hakCls = hak >= 28 ? 'hakkedis-good' : (hak >= 25 ? 'hakkedis-mid' : 'hakkedis-low');
             body += '<td class="total-cell col-sayac">'+tX+'</td>';
             body += '<td class="total-cell col-sayac">'+tI+'</td>';
@@ -585,7 +720,7 @@
     document.addEventListener('keydown', function(e) {
         var t = e.target;
         if (t.classList && t.classList.contains('durum-cell')) {
-            var pid = parseInt(t.dataset.personel), gun = parseInt(t.dataset.gun), nd = null;
+            var pid = t.dataset.personel, gun = parseInt(t.dataset.gun), nd = null;
             var key = e.key.toUpperCase();
             if (key==='X') nd='X';
             else if (key==='İ'||key==='I') nd='İ';

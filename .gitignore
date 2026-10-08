@@ -1,4 +1,4 @@
-# Derleme çıktıları
+﻿# Derleme çıktıları
 bin/
 obj/
 publish/
@@ -45,4 +45,4 @@ GamabelMVC_GAMABEL_BACKUPS/
 
 .nuget-fastreport
 *.nuget-fastreport
-git_gelistirme_log.txt
+_GAMABEL_BACKUPS/

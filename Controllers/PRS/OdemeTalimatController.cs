@@ -124,10 +124,27 @@ public class OdemeTalimatController : Controller
         try
         {
             await using var stream = excelDosyasi.OpenReadStream();
-            var batch = await _importService.ImportAsync(stream, excelDosyasi.FileName);
-            
-            TempData["Basarili"] = $"✅ Excel dosyası başarıyla yüklendi! {batch.SatirSayisi} fatura kaydedildi.";
-            
+            var result = await _importService.ImportAsyncWithFilter(stream, excelDosyasi.FileName);
+            var ozet = new ExcelYuklemeOzetViewModel
+            {
+                ExcelSatirSayisi = result.excelSatirSayisi,
+                CiftIslemSayisi = result.ciftIslemSayisi,
+                OdenmisIslemSayisi = result.odenmisIslemSayisi,
+                MevcutAcikIslemSayisi = result.mevcutAcikIslemSayisi,
+                Eklenen = result.eklenen,
+                CiftFaturalar = result.ciftFaturalar,
+                OdenmisFaturalar = result.odenmisFaturalar.Take(10).ToList(),
+                EkOdenmisFaturaSayisi = Math.Max(0, result.odenmisFaturalar.Count - 10)
+            };
+
+            var batch = result.batch;
+            if (batch == null)
+            {
+                TempData["YuklemeOzet"] = JsonSerializer.Serialize(ozet);
+                return RedirectToAction("Index");
+            }
+
+            TempData["YuklemeOzet"] = JsonSerializer.Serialize(ozet);
             return RedirectToAction("FaturaSecim", new { batchId = batch.Id });
         }
         catch (Exception ex)
