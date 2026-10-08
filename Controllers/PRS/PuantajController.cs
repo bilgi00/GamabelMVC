@@ -97,6 +97,7 @@ public class PuantajController : Controller
             {
                 personeller.Add(new
                 {
+                    personelId = reader.IsDBNull(0) ? "" : Convert.ToString(reader.GetValue(0)) ?? "",
                     perNo = reader.IsDBNull(0) ? "" : Convert.ToString(reader.GetValue(0)) ?? "",
                     ad = reader.IsDBNull(1) ? "" : reader.GetString(1),
                     soyad = reader.IsDBNull(2) ? "" : reader.GetString(2),
@@ -127,7 +128,11 @@ public class PuantajController : Controller
             await connection.OpenAsync();
 
             await using var cmd = new MySqlCommand(
-                "SELECT id, personel_id, gun, izin_tipi, aciklama FROM puantaj_izin WHERE yil = @yil AND ay = @ay",
+                @"SELECT pi.id, pi.personel_id, p.per_no, p.ad, p.soyad,
+                         pi.gun, pi.izin_tipi, pi.aciklama
+                  FROM puantaj_izin pi
+                  INNER JOIN personeller p ON p.per_no = pi.personel_id
+                  WHERE pi.yil = @yil AND pi.ay = @ay",
                 connection);
             cmd.Parameters.AddWithValue("@yil", yil);
             cmd.Parameters.AddWithValue("@ay", ay);
@@ -139,9 +144,12 @@ public class PuantajController : Controller
                 {
                     id = reader.GetInt32(0),
                     personelId = reader.IsDBNull(1) ? "" : Convert.ToString(reader.GetValue(1)) ?? "",
-                    gun = reader.GetInt32(2),
-                    izinTipi = reader.IsDBNull(3) ? "" : reader.GetString(3),
-                    aciklama = reader.IsDBNull(4) ? "" : reader.GetString(4)
+                    perNo = reader.IsDBNull(2) ? "" : reader.GetString(2),
+                    ad = reader.IsDBNull(3) ? "" : reader.GetString(3),
+                    soyad = reader.IsDBNull(4) ? "" : reader.GetString(4),
+                    gun = reader.GetInt32(5),
+                    izinTipi = reader.IsDBNull(6) ? "" : reader.GetString(6),
+                    aciklama = reader.IsDBNull(7) ? "" : reader.GetString(7)
                 });
             }
         }
@@ -164,6 +172,8 @@ public class PuantajController : Controller
 
         if (izinler == null || izinler.Count == 0)
             return Json(new { basarili = false, mesaj = "Kaydedilecek veri yok" });
+        if (izinler.Any(izin => string.IsNullOrWhiteSpace(izin.PersonelId)))
+            return Json(new { basarili = false, mesaj = "Geçersiz personel kimliği." });
 
         // Ay kilidi kontrolü
         var ilkIzin = izinler.First();

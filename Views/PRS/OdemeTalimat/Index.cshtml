@@ -3,6 +3,10 @@
     var sonYuklemeler = ViewBag.SonYuklemeler as List<gamabelmvc.Models.PRS.OtImportBatch> ?? new();
     var sonTalimatlar = ViewBag.SonTalimatlar as List<gamabelmvc.Models.PRS.OtTalimat> ?? new();
     bool isAdmin = ViewBag.IsAdmin ?? false;
+    var yuklemeOzetJson = TempData["YuklemeOzet"] as string;
+    var yuklemeOzet = yuklemeOzetJson == null
+        ? null
+        : System.Text.Json.JsonSerializer.Deserialize<gamabelmvc.Models.PRS.ExcelYuklemeOzetViewModel>(yuklemeOzetJson);
 }
 
 <style>
@@ -56,6 +60,10 @@
         @if (ViewBag.Hata != null)
         {
             <div class="alert-hata">❌ @ViewBag.Hata</div>
+        }
+        @if (yuklemeOzet != null)
+        {
+            <partial name="_ExcelYuklemeOzet" model="yuklemeOzet" />
         }
 
         <!-- Yükleme formu -->

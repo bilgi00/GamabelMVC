@@ -11,6 +11,10 @@
     var toplamBakiye = firmaGruplariList.Sum(g => ((IEnumerable<dynamic>)g.Faturalar).Sum(f => (decimal)f.Bakiye));
     var secilenTalimatTarihi = ViewBag.SecilenTalimatTarihi as DateTime? ?? DateTime.Today;
     var secilenTalimatTarihiStr = secilenTalimatTarihi.ToString("yyyy-MM-dd");
+    var yuklemeOzetJson = TempData["YuklemeOzet"] as string;
+    var yuklemeOzet = yuklemeOzetJson == null
+        ? null
+        : System.Text.Json.JsonSerializer.Deserialize<gamabelmvc.Models.PRS.ExcelYuklemeOzetViewModel>(yuklemeOzetJson);
 }
 
 <style>
@@ -51,6 +55,7 @@
     .ot-table td { padding: 6px 10px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
     .alert-hata { background: #fee2e2; border: 1px solid #fca5a5; color: #991b1b; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; }
     .alert-bilgi { background: #dbeafe; border: 1px solid #93c5fd; color: #1e40af; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; }
+    .alert-basarili { background: #d1fae5; border: 1px solid #6ee7b7; color: #065f46; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; }
     .banka-secim { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 14px 16px; margin-bottom: 20px; }
     .banka-secim label { font-weight: 600; color: #1e40af; margin-right: 10px; }
     .banka-secim select { padding: 6px 12px; border: 1px solid #93c5fd; border-radius: 6px; font-size: 14px; min-width: 320px; }
@@ -91,6 +96,14 @@
         @if (TempData["Bilgi"] != null)
         {
             <div class="alert-bilgi">ℹ️ @TempData["Bilgi"]</div>
+        }
+        @if (TempData["Basarili"] != null)
+        {
+            <div class="alert-basarili">✅ @TempData["Basarili"]</div>
+        }
+        @if (yuklemeOzet != null)
+        {
+            <partial name="_ExcelYuklemeOzet" model="yuklemeOzet" />
         }
 
         @if (!firmaGruplari.Any())

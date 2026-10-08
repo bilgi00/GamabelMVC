@@ -18,7 +18,15 @@ public class OdemeFaturaImportService
     // ================================================================
     // ✅ YENİ: Excel'deki mevcut faturaları filtrele ve kaydet (Tarih Eklendi)
     // ================================================================
-    public async Task<(OtImportBatch? batch, int eklenen, int atlanan, List<string> atlananFaturalar)> ImportAsyncWithFilter(Stream excelStream, string dosyaAdi)
+    public async Task<(
+        OtImportBatch? batch,
+        int excelSatirSayisi,
+        int ciftIslemSayisi,
+        int odenmisIslemSayisi,
+        int mevcutAcikIslemSayisi,
+        int eklenen,
+        List<string> odenmisFaturalar,
+        List<string> ciftFaturalar)> ImportAsyncWithFilter(Stream excelStream, string dosyaAdi)
     {
         ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
         using var package = new ExcelPackage(excelStream);
@@ -78,20 +86,15 @@ public class OdemeFaturaImportService
         if (faturalar.Count == 0)
             throw new InvalidOperationException("Excel dosyasinda ice aktarilacak fatura bulunamadi.");
 
-        // ============================================================
-        // 2. Excel içinde aynı (CariKart + FaturaNo) kontrolü
-        // ============================================================
-        var excelDuplicateFaturalar = faturalar
-            .GroupBy(f => new { f.cariKart, f.faturaNo })
-            .Where(g => g.Count() > 1)
-            .Select(g => $"{g.Key.cariKart} - {g.Key.faturaNo}")
+        var excelGruplari = faturalar
+            .GroupBy(f => (f.cariKart, f.faturaNo), InvoiceKeyComparer.Instance)
             .ToList();
-
-        if (excelDuplicateFaturalar.Any())
-        {
-            throw new InvalidOperationException(
-                $"Excel dosyasinda ayni cari kart ve fatura numarasi birden fazla kez bulunuyor: {string.Join("; ", excelDuplicateFaturalar)}");
-        }
+        var ciftIslemSayisi = excelGruplari.Sum(g => g.Count() - 1);
+        var ciftFaturalar = excelGruplari
+            .Where(g => g.Count() > 1)
+            .Select(g => $"{g.First().cariKart} - {g.First().faturaNo}")
+            .ToList();
+        var benzersizFaturalar = excelGruplari.Select(g => g.First()).ToList();
 
         await using var connection = new MySqlConnection(_connectionString);
         await connection.OpenAsync();
@@ -102,38 +105,48 @@ public class OdemeFaturaImportService
             // ============================================================
             // 3. ✅ Veritabanında mevcut olanları bul (CariKart + FaturaNo)
             // ============================================================
-            var inClause = string.Join(",", faturalar.Select((_, i) => $"(@cari{i}, @fatura{i})"));
+            var inClause = string.Join(",", benzersizFaturalar.Select((_, i) => $"(@cari{i}, @fatura{i})"));
             var kontrolCmd = new MySqlCommand(
-                $@"SELECT cari_kart, fatura_no FROM prs_ot_acik_faturalar 
+                $@"SELECT cari_kart, fatura_no, odeme_durumu FROM prs_ot_acik_faturalar
                   WHERE (cari_kart, fatura_no) IN ({inClause})",
                 connection, tx);
 
-            for (int i = 0; i < faturalar.Count; i++)
+            for (int i = 0; i < benzersizFaturalar.Count; i++)
             {
-                kontrolCmd.Parameters.AddWithValue($"@cari{i}", faturalar[i].cariKart);
-                kontrolCmd.Parameters.AddWithValue($"@fatura{i}", faturalar[i].faturaNo);
+                kontrolCmd.Parameters.AddWithValue($"@cari{i}", benzersizFaturalar[i].cariKart);
+                kontrolCmd.Parameters.AddWithValue($"@fatura{i}", benzersizFaturalar[i].faturaNo);
             }
 
-            var mevcutSet = new HashSet<(string cariKart, string faturaNo)>();
+            var mevcutSet = new HashSet<(string cariKart, string faturaNo)>(InvoiceKeyComparer.Instance);
+            var odenmisSet = new HashSet<(string cariKart, string faturaNo)>(InvoiceKeyComparer.Instance);
             await using (var r = await kontrolCmd.ExecuteReaderAsync())
             {
                 while (await r.ReadAsync())
                 {
-                    mevcutSet.Add((r.GetString(0), r.GetString(1)));
+                    var key = (r.GetString(0).Trim(), r.GetString(1).Trim());
+                    mevcutSet.Add(key);
+                    if (string.Equals(r.GetString(2), "odendi", StringComparison.OrdinalIgnoreCase))
+                        odenmisSet.Add(key);
                 }
             }
 
             // ============================================================
-            // 4. ✅ Filtrele: Sadece mevcut OLMAYANları kaydet
+            // 4. Tekrarlanan ve daha önce yüklenmiş faturaları filtrele
             // ============================================================
             var eklenecekFaturalar = new List<(string cariKart, string faturaNo, DateTime? faturaTarihi, decimal bakiye)>();
-            var atlananFaturalar = new List<string>();
+            var odenmisFaturalar = new List<string>();
+            var mevcutAcikIslemSayisi = 0;
 
-            foreach (var f in faturalar)
+            foreach (var f in benzersizFaturalar)
             {
-                if (mevcutSet.Contains((f.cariKart, f.faturaNo)))
+                var key = (f.cariKart, f.faturaNo);
+                if (odenmisSet.Contains(key))
                 {
-                    atlananFaturalar.Add($"{f.cariKart} - {f.faturaNo}");
+                    odenmisFaturalar.Add($"{f.cariKart} - {f.faturaNo}");
+                }
+                else if (mevcutSet.Contains(key))
+                {
+                    mevcutAcikIslemSayisi++;
                 }
                 else
                 {
@@ -142,14 +155,20 @@ public class OdemeFaturaImportService
             }
 
             // ============================================================
-            // 5. ✅ Eğer eklenecek fatura yoksa uyarı ver
+            // 5. Hiç yeni fatura yoksa raporu döndür; boş batch oluşturma
             // ============================================================
             if (eklenecekFaturalar.Count == 0)
             {
                 await tx.RollbackAsync();
-                throw new InvalidOperationException(
-                    $"Excel'deki tüm faturalar zaten sistemde mevcut.\n" +
-                    $"Toplam: {faturalar.Count} fatura, tamamı atlandı.");
+                return (
+                    null,
+                    faturalar.Count,
+                    ciftIslemSayisi,
+                    odenmisFaturalar.Count,
+                    mevcutAcikIslemSayisi,
+                    0,
+                    odenmisFaturalar,
+                    ciftFaturalar);
             }
 
             // ============================================================
@@ -191,7 +210,15 @@ public class OdemeFaturaImportService
                 SatirSayisi = eklenecekFaturalar.Count 
             };
 
-            return (batch, eklenecekFaturalar.Count, atlananFaturalar.Count, atlananFaturalar);
+            return (
+                batch,
+                faturalar.Count,
+                ciftIslemSayisi,
+                odenmisFaturalar.Count,
+                mevcutAcikIslemSayisi,
+                eklenecekFaturalar.Count,
+                odenmisFaturalar,
+                ciftFaturalar);
         }
         catch
         {
@@ -209,6 +236,20 @@ public class OdemeFaturaImportService
         if (result.batch == null)
             throw new InvalidOperationException("Kaydedilecek fatura bulunamadı.");
         return result.batch;
+    }
+
+    private sealed class InvoiceKeyComparer : IEqualityComparer<(string cariKart, string faturaNo)>
+    {
+        public static readonly InvoiceKeyComparer Instance = new();
+
+        public bool Equals((string cariKart, string faturaNo) x, (string cariKart, string faturaNo) y) =>
+            StringComparer.OrdinalIgnoreCase.Equals(x.cariKart, y.cariKart)
+            && StringComparer.OrdinalIgnoreCase.Equals(x.faturaNo, y.faturaNo);
+
+        public int GetHashCode((string cariKart, string faturaNo) value) =>
+            HashCode.Combine(
+                StringComparer.OrdinalIgnoreCase.GetHashCode(value.cariKart),
+                StringComparer.OrdinalIgnoreCase.GetHashCode(value.faturaNo));
     }
 
     private static bool TryParseBakiye(string value, out decimal bakiye)
