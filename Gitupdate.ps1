@@ -372,7 +372,7 @@ function Get-LocalChanges {
         }
     }
 
-    return , $Result
+    return $Result
 }
 
 function Show-LocalChanges {
@@ -394,9 +394,12 @@ function Show-LocalChanges {
     $Shown = 0
 
     foreach ($C in $Changes) {
-        $Code = $C.Code
+        $Code = if ($null -ne $C) { [string]$C.Code } else { "" }
 
-        if ($Code.Contains("U") -or $Code -eq "AA" -or $Code -eq "DD") {
+        if ([string]::IsNullOrWhiteSpace($Code)) {
+            $Label = "BILINMIYOR"; $Color = "Gray"; $Degisen++
+        }
+        elseif ($Code.Contains("U") -or $Code -eq "AA" -or $Code -eq "DD") {
             $Label = "CONFLICT"; $Color = "Magenta"; $Conflict++
         }
         elseif ($Code -eq "??" -or $Code.Contains("A")) {
