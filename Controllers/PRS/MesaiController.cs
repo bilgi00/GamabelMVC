@@ -1,12 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using MySqlConnector;
-using FastReport;
-using FastReport.Export.PdfSimple;
-using FastReport.Utils;
-using FastReport.Web;
 using System.Data;
-using System.Drawing;
+using gamabelmvc.Services;
+using gamabelmvc.Services.Raporlama;
 
 namespace gamabelmvc.Controllers.PRS;
 
@@ -15,11 +12,15 @@ public class MesaiController : Controller
 {
     private readonly string _connectionString;
     private readonly IWebHostEnvironment _environment;
+    private readonly IRaporServisi _raporServisi;
 
-    public MesaiController(IConfiguration configuration, IWebHostEnvironment environment)
+    private static readonly RaporTanimi MesaiRaporTanimi = RaporKaydi.Mesai;
+
+    public MesaiController(IConfiguration configuration, IWebHostEnvironment environment, IRaporServisi raporServisi)
     {
         _connectionString = configuration.GetConnectionString("MyConnection")!;
         _environment = environment;
+        _raporServisi = raporServisi;
     }
 
     public async Task<IActionResult> Index()
@@ -61,6 +62,27 @@ public class MesaiController : Controller
         ViewBag.Rol = rol;
         ViewBag.KullaniciBirim = kullaniciBirim;
         return View();
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> AyKilitliMi(int yil, int ay)
+    {
+        if (string.IsNullOrEmpty(HttpContext.Session.GetString("KullaniciAdi")))
+            return Unauthorized();
+        if (yil < 1 || ay is < 1 or > 12)
+            return BadRequest(new { mesaj = "Geçersiz yıl veya ay." });
+
+        try
+        {
+            await using var connection = new MySqlConnection(_connectionString);
+            await connection.OpenAsync();
+            return Json(new { kilitli = await AyKilitKontrol.KilitliMiAsync(connection, yil, ay) });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new { mesaj = "Ay kilit durumu kontrol edilemedi.", hata = ex.Message });
+        }
     }
 
     [HttpGet]
@@ -184,26 +206,30 @@ public class MesaiController : Controller
         if (string.IsNullOrWhiteSpace(kayit.PerNo))
             return Json(new { basarili = false, mesaj = "Personel per_no bilgisi zorunludur." });
 
-        // Ay kilidi kontrolü
-        try
-        {
-            var tarih = DateTime.Parse(kayit.Tarih);
-            await using var kilitConn = new MySqlConnection(_connectionString);
-            await kilitConn.OpenAsync();
-            await using var kilitCmd = new MySqlCommand(
-                "SELECT COUNT(*) FROM ay_kilitleri WHERE yil = @yil AND ay = @ay", kilitConn);
-            kilitCmd.Parameters.AddWithValue("@yil", tarih.Year);
-            kilitCmd.Parameters.AddWithValue("@ay", tarih.Month);
-            var kilitSayisi = Convert.ToInt32(await kilitCmd.ExecuteScalarAsync());
-            if (kilitSayisi > 0)
-                return Json(new { basarili = false, mesaj = "Bu ay kilitlenmiştir. Kayıt yapılamaz." });
-        }
-        catch { }
+        if (!DateTime.TryParse(kayit.Tarih, out var tarih))
+            return Json(new { basarili = false, mesaj = "Geçersiz mesai tarihi." });
 
         try
         {
             await using var connection = new MySqlConnection(_connectionString);
             await connection.OpenAsync();
+
+            if (kayit.Id > 0)
+            {
+                await using var mevcutTarihCmd = new MySqlCommand(
+                    "SELECT tarih FROM mesai_kayitlari WHERE id = @id", connection);
+                mevcutTarihCmd.Parameters.AddWithValue("@id", kayit.Id);
+                var mevcutTarih = await mevcutTarihCmd.ExecuteScalarAsync();
+                if (mevcutTarih == null || mevcutTarih == DBNull.Value)
+                    return Json(new { basarili = false, mesaj = "Mesai kaydı bulunamadı." });
+
+                var oncekiTarih = Convert.ToDateTime(mevcutTarih);
+                if (await AyKilitKontrol.KilitliMiAsync(connection, oncekiTarih.Year, oncekiTarih.Month))
+                    return Json(new { basarili = false, mesaj = "Kaydın bulunduğu ay kilitlenmiştir. Değişiklik yapılamaz." });
+            }
+
+            if (await AyKilitKontrol.KilitliMiAsync(connection, tarih.Year, tarih.Month))
+                return Json(new { basarili = false, mesaj = "Bu ay kilitlenmiştir. Kayıt veya değişiklik yapılamaz." });
 
             await using var personelCmd = new MySqlCommand(
                 "SELECT per_no FROM personeller WHERE per_no = @perNo LIMIT 1", connection);
@@ -267,27 +293,24 @@ public class MesaiController : Controller
         if (string.IsNullOrEmpty(HttpContext.Session.GetString("KullaniciAdi")))
             return Unauthorized();
 
+        if (dto == null || dto.Id <= 0)
+            return Json(new { basarili = false, mesaj = "Geçersiz kayıt bilgisi." });
+
         try
         {
             await using var connection = new MySqlConnection(_connectionString);
             await connection.OpenAsync();
 
-            // Ay kilidi kontrolü - kaydın tarihini bul
             await using var tarihCmd = new MySqlCommand(
                 "SELECT tarih FROM mesai_kayitlari WHERE id = @id", connection);
             tarihCmd.Parameters.AddWithValue("@id", dto.Id);
             var tarihObj = await tarihCmd.ExecuteScalarAsync();
-            if (tarihObj != null)
-            {
-                var tarih = (DateTime)tarihObj;
-                await using var kilitCmd = new MySqlCommand(
-                    "SELECT COUNT(*) FROM ay_kilitleri WHERE yil = @yil AND ay = @ay", connection);
-                kilitCmd.Parameters.AddWithValue("@yil", tarih.Year);
-                kilitCmd.Parameters.AddWithValue("@ay", tarih.Month);
-                var kilitSayisi = Convert.ToInt32(await kilitCmd.ExecuteScalarAsync());
-                if (kilitSayisi > 0)
-                    return Json(new { basarili = false, mesaj = "Bu ay kilitlenmiştir. Silme yapılamaz." });
-            }
+            if (tarihObj == null || tarihObj == DBNull.Value)
+                return NotFound(new { basarili = false, mesaj = "Mesai kaydı bulunamadı." });
+
+            var tarih = Convert.ToDateTime(tarihObj);
+            if (await AyKilitKontrol.KilitliMiAsync(connection, tarih.Year, tarih.Month))
+                return Json(new { basarili = false, mesaj = "Bu ay kilitlenmiştir. Silme yapılamaz." });
 
             await using var cmd = new MySqlCommand("DELETE FROM mesai_kayitlari WHERE id = @id", connection);
             cmd.Parameters.AddWithValue("@id", dto.Id);
@@ -324,9 +347,19 @@ public class MesaiController : Controller
         }
     }
 
+    // ---- FastReport A4 Rapor Standardı (v3) ----
+    // Önizleme ve PDF aynı .frx şablonundan üretilir: Reports/Mesai/Mesai.Yatay.frx
+    // Excel çıktısı kaldırıldı (standart Bölüm 12: Excel .frx'ten üretilmez).
+
     [HttpGet]
-    public async Task<IActionResult> FastReportPreview(int yil, int ay, string birim, bool personelBazli = false)
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+    public async Task<IActionResult> Rapor(int yil, int ay, string birim, string? personel = null, string yon = "yatay")
     {
+        if (!RaporYon.TryCoz(yon, out var y))
+            return BadRequest("Geçersiz yön. Geçerli değerler: dikey | yatay");
+        if (!MesaiRaporTanimi.YonDestekliyor(y))
+            return BadRequest("Mesai raporu için yalnızca 'yatay' şablonu mevcuttur.");
+
         if (string.IsNullOrEmpty(HttpContext.Session.GetString("KullaniciAdi")))
             return Unauthorized();
 
@@ -344,22 +377,27 @@ public class MesaiController : Controller
                 birim = kullaniciBirim;
         }
 
-        var mesailer = await GetMesaiRaporVerisiAsync(yil, ay, birim, rol == "admin");
-        var reportPath = GetMesaiReportPath();
-        if (!System.IO.File.Exists(reportPath))
-            return NotFound($"FastReport şablonu bulunamadı: {reportPath}");
+        var mesailer = await GetMesaiRaporVerisiAsync(yil, ay, birim, rol == "admin", personel);
+        var (ds, prm) = MesaiRaporVerisiHazirla(mesailer, yil, ay, birim, personel);
 
-        var webReport = new WebReport();
-        webReport.Report.Load(reportPath);
-        PrepareMesaiReport(webReport.Report, mesailer, birim, yil, ay, personelBazli);
-        webReport.Toolbar.Show = true;
-
-        return View("~/Views/PRS/Mesai/FastReportPreview.cshtml", webReport);
+        var web = _raporServisi.Onizleme(MesaiRaporTanimi, y, ds, prm);
+        ViewBag.Yon = y;
+        ViewBag.DesteklenenYonler = MesaiRaporTanimi.Yonler();
+        ViewBag.RaporQuery = $"yil={yil}&ay={ay}&birim={Uri.EscapeDataString(birim)}" +
+            (string.IsNullOrWhiteSpace(personel) ? "" : $"&personel={Uri.EscapeDataString(personel)}");
+        ViewBag.PdfUrl = Url.Action(nameof(RaporPdf), new { yil, ay, birim, personel, yon = y.ToString().ToLowerInvariant(), indir = true });
+        return View("~/Views/Shared/Rapor.cshtml", web);
     }
 
+    // PDF İNDİR / TARAYICIDA AÇ — aynı .frx şablonundan üretilir (A4 yatay).
     [HttpGet]
-    public async Task<IActionResult> FastReportPdf(int yil, int ay, string birim, bool personelBazli = false)
+    public async Task<IActionResult> RaporPdf(int yil, int ay, string birim, string? personel = null, string yon = "yatay", bool indir = false)
     {
+        if (!RaporYon.TryCoz(yon, out var y))
+            return BadRequest("Geçersiz yön. Geçerli değerler: dikey | yatay");
+        if (!MesaiRaporTanimi.YonDestekliyor(y))
+            return BadRequest("Mesai raporu için yalnızca 'yatay' şablonu mevcuttur.");
+
         if (string.IsNullOrEmpty(HttpContext.Session.GetString("KullaniciAdi")))
             return Unauthorized();
 
@@ -377,24 +415,188 @@ public class MesaiController : Controller
                 birim = kullaniciBirim;
         }
 
-        var mesailer = await GetMesaiRaporVerisiAsync(yil, ay, birim, rol == "admin");
-        var reportPath = GetMesaiReportPath();
-        if (!System.IO.File.Exists(reportPath))
-            return NotFound($"FastReport şablonu bulunamadı: {reportPath}");
+        var mesailer = await GetMesaiRaporVerisiAsync(yil, ay, birim, rol == "admin", personel);
+        var (ds, prm) = MesaiRaporVerisiHazirla(mesailer, yil, ay, birim, personel);
+        var cikti = _raporServisi.Pdf(MesaiRaporTanimi, y, ds, prm);
 
-        using var report = new Report();
-        report.Load(reportPath);
-        PrepareMesaiReport(report, mesailer, birim, yil, ay, personelBazli);
+        // Hassas rapor yanıtı istemci/proxy önbelleğine alınmaz.
+        Response.Headers["Cache-Control"] = "no-store, no-cache, must-revalidate";
+        Response.Headers["Pragma"] = "no-cache";
 
-        await using var stream = new MemoryStream();
-        using var export = new PDFSimpleExport();
-        report.Export(export, stream);
-
-        var dosyaAdi = $"mesai-{(personelBazli ? "personel" : "birim")}-{yil:D4}-{ay:D2}.pdf";
-        return File(stream.ToArray(), "application/pdf", dosyaAdi);
+        var personelEk = string.IsNullOrWhiteSpace(personel) ? "" : $"-{Uri.EscapeDataString(personel)}";
+        var dosyaAdi = $"mesai-{yil:D4}-{ay:D2}{personelEk}.pdf";
+        return indir ? File(cikti.Icerik, "application/pdf", dosyaAdi)
+                     : File(cikti.Icerik, "application/pdf");
     }
 
-    private async Task<DataTable> GetMesaiRaporVerisiAsync(int yil, int ay, string birim, bool admin)
+    // HTML DIŞA AKTAR — .frx şablonundan üretilir (RaporCiktiTuru.Html).
+    // Excel'den farklı olarak tasarım şablondan gelir; .frx değişince HTML de değişir.
+    [HttpGet]
+    public async Task<IActionResult> RaporHtml(int yil, int ay, string birim, string? personel = null, string yon = "yatay", bool indir = false)
+    {
+        if (!RaporYon.TryCoz(yon, out var y))
+            return BadRequest("Geçersiz yön. Geçerli değerler: dikey | yatay");
+        if (!MesaiRaporTanimi.YonDestekliyor(y))
+            return BadRequest("Mesai raporu için yalnızca 'yatay' şablonu mevcuttur.");
+
+        if (string.IsNullOrEmpty(HttpContext.Session.GetString("KullaniciAdi")))
+            return Unauthorized();
+        if (ay is < 1 or > 12 || string.IsNullOrWhiteSpace(birim))
+            return BadRequest("Geçerli yıl, ay ve birim bilgisi gereklidir.");
+
+        var rol = (HttpContext.Session.GetString("Rol") ?? "birim_amiri").Trim().ToLowerInvariant();
+        var kullaniciBirim = HttpContext.Session.GetString("Birim") ?? "";
+        if (rol != "admin")
+        {
+            if (birim == "all")
+                return Forbid();
+
+            if (!string.IsNullOrWhiteSpace(kullaniciBirim))
+                birim = kullaniciBirim;
+        }
+
+        var mesailer = await GetMesaiRaporVerisiAsync(yil, ay, birim, rol == "admin", personel);
+        var (ds, prm) = MesaiRaporVerisiHazirla(mesailer, yil, ay, birim, personel);
+        var cikti = _raporServisi.Cikar(MesaiRaporTanimi, RaporCiktiTuru.Html, y, ds, prm);
+
+        // Hassas rapor yanıtı istemci/proxy önbelleğine alınmaz.
+        Response.Headers["Cache-Control"] = "no-store, no-cache, must-revalidate";
+        Response.Headers["Pragma"] = "no-cache";
+
+        return indir ? File(cikti.Icerik, "text/html; charset=utf-8", $"mesai-{yil:D4}-{ay:D2}.html")
+                     : File(cikti.Icerik, "text/html; charset=utf-8");
+    }
+
+    // EXCEL DIŞA AKTAR — Mesai verisi .xlsx olarak indirilir (EPPlus, NonCommercial lisans).
+    // Yetki/kapsam kuralları PDF ile aynıdır: admin olmayan kendi birimine kilitlidir.
+    [HttpGet]
+    public async Task<IActionResult> RaporExcel(int yil, int ay, string birim, string? personel = null)
+    {
+        if (string.IsNullOrEmpty(HttpContext.Session.GetString("KullaniciAdi")))
+            return Unauthorized();
+        if (ay is < 1 or > 12 || string.IsNullOrWhiteSpace(birim))
+            return BadRequest("Geçerli yıl, ay ve birim bilgisi gereklidir.");
+
+        var rol = (HttpContext.Session.GetString("Rol") ?? "birim_amiri").Trim().ToLowerInvariant();
+        var kullaniciBirim = HttpContext.Session.GetString("Birim") ?? "";
+        if (rol != "admin")
+        {
+            if (birim == "all")
+                return Forbid();
+
+            if (!string.IsNullOrWhiteSpace(kullaniciBirim))
+                birim = kullaniciBirim;
+        }
+
+        var mesailer = await GetMesaiRaporVerisiAsync(yil, ay, birim, rol == "admin", personel);
+
+        OfficeOpenXml.ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
+        using var package = new OfficeOpenXml.ExcelPackage();
+        var ws = package.Workbook.Worksheets.Add("Ek Mesai Çizelgesi");
+
+        const int kolonSayisi = 10;
+
+        // Personel filtresi varsa başlık etiketine personel adı eklenir (PDF ile aynı gösterim).
+        var personelNo = (personel ?? "").Trim();
+        var kapsamEtiketi = birim == "all" ? "Tüm Personeller" : birim;
+        if (personelNo.Length > 0)
+        {
+            var adSoyad = mesailer.Rows.Count > 0 ? Convert.ToString(mesailer.Rows[0]["AdSoyad"]) : personelNo;
+            kapsamEtiketi = $"{kapsamEtiketi} · {adSoyad}";
+        }
+
+        // Başlık bloğu (satır 1-3)
+        ws.Cells[1, 1, 1, kolonSayisi].Merge = true;
+        ws.Cells[1, 1].Value = "GAMABEL YATIRIM LTD";
+        ws.Cells[2, 1, 2, kolonSayisi].Merge = true;
+        ws.Cells[2, 1].Value = "EK MESAİ ÇİZELGESİ (BİRİM BAZLI)";
+        ws.Cells[3, 1, 3, kolonSayisi].Merge = true;
+        ws.Cells[3, 1].Value = $"Birim: {kapsamEtiketi}    |    " +
+            $"Dönem: {new DateTime(yil, ay, 1).ToString("MMMM yyyy", new System.Globalization.CultureInfo("tr-TR"))}    |    " +
+            $"Oluşturan: {HttpContext.Session.GetString("KullaniciAdi") ?? "-"}    |    " +
+            $"Tarih: {DateTime.Now:dd.MM.yyyy HH:mm}";
+
+        ws.Cells[1, 1].Style.Font.Size = 12;
+        ws.Cells[2, 1].Style.Font.Size = 14;
+        ws.Cells[2, 1].Style.Font.Bold = true;
+        ws.Cells[3, 1].Style.Font.Size = 9;
+        ws.Cells[1, 1, 3, 1].Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
+
+        // Kolon başlıkları (satır 5)
+        string[] basliklar = { "ADI SOYADI", "TARİH", "GÜN", "BAŞLANGIÇ", "BİTİŞ", "FİİLİ SAAT", "ZAM 0,1", "ZAM 0,5", "TOPLAM", "AÇIKLAMA" };
+        for (var i = 0; i < basliklar.Length; i++)
+            ws.Cells[5, i + 1].Value = basliklar[i];
+
+        using (var baslikRange = ws.Cells[5, 1, 5, kolonSayisi])
+        {
+            baslikRange.Style.Font.Bold = true;
+            baslikRange.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
+            baslikRange.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.FromArgb(30, 58, 138));
+            baslikRange.Style.Font.Color.SetColor(System.Drawing.Color.White);
+            baslikRange.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Center;
+        }
+
+        // Veri satırları (satır 6'dan itibaren)
+        const int ilkVeriSatiri = 6;
+        var satir = ilkVeriSatiri;
+        foreach (DataRow k in mesailer.Rows)
+        {
+            ws.Cells[satir, 1].Value = k["AdSoyad"];
+            ws.Cells[satir, 2].Value = k["Tarih"];
+            ws.Cells[satir, 3].Value = k["Gun"];
+            ws.Cells[satir, 4].Value = k["Baslangic"];
+            ws.Cells[satir, 5].Value = k["Bitis"];
+            ws.Cells[satir, 6].Value = k["FiiliSaat"];
+            ws.Cells[satir, 7].Value = k["Zam01Saat"];
+            ws.Cells[satir, 8].Value = k["Zam05Saat"];
+            ws.Cells[satir, 9].Value = k["ToplamSaat"];
+            ws.Cells[satir, 10].Value = k["Aciklama"];
+            satir++;
+        }
+
+        // Sayı biçimi ve kenarlıklar
+        if (satir > ilkVeriSatiri)
+        {
+            var veriAraligi = ws.Cells[ilkVeriSatiri, 1, satir - 1, kolonSayisi];
+            veriAraligi.Style.Border.Top.Style = veriAraligi.Style.Border.Bottom.Style =
+            veriAraligi.Style.Border.Left.Style = veriAraligi.Style.Border.Right.Style =
+                OfficeOpenXml.Style.ExcelBorderStyle.Thin;
+
+            var saatAraligi = ws.Cells[ilkVeriSatiri, 6, satir - 1, 9];
+            saatAraligi.Style.Numberformat.Format = "#,##0.00";
+            saatAraligi.Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Right;
+        }
+
+        // Genel toplam satırı
+        if (satir > ilkVeriSatiri)
+        {
+            ws.Cells[satir, 5].Value = "GENEL TOPLAM";
+            ws.Cells[satir, 5].Style.Font.Bold = true;
+            ws.Cells[satir, 5].Style.HorizontalAlignment = OfficeOpenXml.Style.ExcelHorizontalAlignment.Right;
+            for (var c = 6; c <= 9; c++)
+            {
+                decimal toplam = 0m;
+                for (var s = ilkVeriSatiri; s < satir; s++)
+                    toplam += Convert.ToDecimal(ws.Cells[s, c].Value);
+                ws.Cells[satir, c].Value = toplam;
+                ws.Cells[satir, c].Style.Font.Bold = true;
+                ws.Cells[satir, c].Style.Numberformat.Format = "#,##0.00";
+            }
+        }
+
+        ws.Cells[1, 1, satir, kolonSayisi].AutoFitColumns();
+
+        // Hassas rapor yanıtı istemci/proxy önbelleğine alınmaz.
+        Response.Headers["Cache-Control"] = "no-store, no-cache, must-revalidate";
+        Response.Headers["Pragma"] = "no-cache";
+
+        var personelKisaltma = personelNo.Length > 0 ? $"-{Uri.EscapeDataString(personelNo)}" : "";
+        var dosyaAdi = $"ek-mesai-cizelgesi-{yil:D4}-{ay:D2}{personelKisaltma}.xlsx";
+        return File(package.GetAsByteArray(),
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", dosyaAdi);
+    }
+
+    private async Task<DataTable> GetMesaiRaporVerisiAsync(int yil, int ay, string birim, bool admin, string? personel = null)
     {
         var tablo = new DataTable("Mesai");
         tablo.Columns.Add("AdSoyad", typeof(string));
@@ -408,19 +610,28 @@ public class MesaiController : Controller
         tablo.Columns.Add("ToplamSaat", typeof(decimal));
         tablo.Columns.Add("Aciklama", typeof(string));
 
+        var personelNo = (personel ?? "").Trim();
+
         await using var connection = new MySqlConnection(_connectionString);
         await connection.OpenAsync();
         var tumBirimler = admin && birim == "all";
-        var filtre = tumBirimler ? "" : "p.birim_adi = @birim AND ";
+        var filtreler = new List<string> { "YEAR(mk.tarih) = @yil", "MONTH(mk.tarih) = @ay" };
+        if (!tumBirimler)
+            filtreler.Insert(0, "p.birim_adi = @birim");
+        if (personelNo.Length > 0)
+            filtreler.Add("mk.personel_id = @personel");
+
         await using var cmd = new MySqlCommand(
             $@"SELECT CONCAT(p.ad, ' ', p.soyad), mk.tarih, mk.baslangic, mk.bitis,
                       mk.fiili_saat, mk.zam01_saat, mk.zam05_saat, mk.toplam_saat, mk.aciklama
                FROM mesai_kayitlari mk
                INNER JOIN personeller p ON p.per_no = mk.personel_id
-               WHERE {filtre}YEAR(mk.tarih) = @yil AND MONTH(mk.tarih) = @ay
+               WHERE {string.Join(" AND ", filtreler)}
                ORDER BY p.ad, p.soyad, mk.tarih", connection);
         if (!tumBirimler)
             cmd.Parameters.AddWithValue("@birim", birim);
+        if (personelNo.Length > 0)
+            cmd.Parameters.AddWithValue("@personel", personelNo);
         cmd.Parameters.AddWithValue("@yil", yil);
         cmd.Parameters.AddWithValue("@ay", ay);
 
@@ -442,134 +653,42 @@ public class MesaiController : Controller
         return tablo;
     }
 
-    private string GetMesaiReportPath() =>
-        Path.Combine(_environment.ContentRootPath, "Reports", "Mesai.frx");
-
-    private static void PrepareMesaiReport(Report report, DataTable mesailer, string birim, int yil, int ay, bool personelBazli)
+    /// Tablo ve kolon adları .frx ile birebir eşleşir: DataTable "Mesai" → ReferenceName "Data.Mesai".
+    /// personel doluysa rapor yalnızca o personele ait kayıtlarla üretilir; başlıktaki Birim etiketine
+    /// personel adı eklenir (şablon/değişken tasarımı aynı kalır).
+    private (DataSet, Dictionary<string, object?>) MesaiRaporVerisiHazirla(DataTable mesailer, int yil, int ay, string birim, string? personel = null)
     {
-        report.RegisterData(mesailer, "Mesai");
-        report.GetDataSource("Mesai")!.Enabled = true;
-        report.SetParameterValue("Birim", birim == "all" ? "Tüm Personeller" : birim);
-        report.SetParameterValue("Ay", new DateTime(yil, ay, 1).ToString("MMMM", new System.Globalization.CultureInfo("tr-TR")));
-        report.SetParameterValue("Yil", yil);
-        report.SetParameterValue("RaporBaslik", personelBazli
-            ? "EK MESAİ ÇİZELGESİ (PERSONEL BAZLI)"
-            : "EK MESAİ ÇİZELGESİ (BİRİM BAZLI)");
-        report.SetParameterValue("GenelFiili", mesailer.AsEnumerable().Sum(row => row.Field<decimal>("FiiliSaat")));
-        report.SetParameterValue("GenelZam01", mesailer.AsEnumerable().Sum(row => row.Field<decimal>("Zam01Saat")));
-        report.SetParameterValue("GenelZam05", mesailer.AsEnumerable().Sum(row => row.Field<decimal>("Zam05Saat")));
-        report.SetParameterValue("GenelToplam", mesailer.AsEnumerable().Sum(row => row.Field<decimal>("ToplamSaat")));
-        report.Prepare();
-    }
+        var ds = new DataSet("Data");
+        ds.Tables.Add(mesailer);
 
-    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
-    private static Report CreateMesaiReport(DataTable mesailer, string baslik, string birim, string ayAdi, int yil, bool personelBazli)
-    {
-        var report = new Report();
-        report.RegisterData(mesailer, "Mesai");
-        report.GetDataSource("Mesai")!.Enabled = true;
-
-        var page = new ReportPage { Name = "MesaiRaporu", PaperWidth = 297, PaperHeight = 210 };
-        report.Pages.Add(page);
-
-        page.ReportTitle = new ReportTitleBand { Name = "Baslik", Height = Units.Millimeters * 19 };
-        var kurum = CreateText("Kurum", "GAMABEL YATIRIM LTD", 0, 0, 277, 6, 12, true, HorzAlign.Center);
-        kurum.Fill = new SolidFill(Color.FromArgb(30, 60, 114));
-        kurum.TextColor = Color.White;
-        kurum.Border.Color = Color.FromArgb(30, 60, 114);
-        page.ReportTitle.Objects.Add(kurum);
-
-        var raporBaslik = CreateText("RaporBaslik", baslik, 0, 6, 277, 6, 10, true, HorzAlign.Center);
-        raporBaslik.Fill = new SolidFill(Color.FromArgb(233, 238, 248));
-        raporBaslik.Border.Color = Color.FromArgb(30, 60, 114);
-        page.ReportTitle.Objects.Add(raporBaslik);
-
-        var raporBilgi = CreateText("RaporBilgi", $"Birim: {birim}  |  Ay: {ayAdi}  |  Yıl: {yil}", 0, 12, 277, 5, 8, false, HorzAlign.Center);
-        raporBilgi.Fill = new SolidFill(Color.FromArgb(248, 250, 252));
-        raporBilgi.Border.Color = Color.FromArgb(210, 218, 230);
-        page.ReportTitle.Objects.Add(raporBilgi);
-
-        page.PageHeader = new PageHeaderBand { Name = "TabloBaslik", Height = Units.Millimeters * 7 };
-        var columns = new[]
+        var personelNo = (personel ?? "").Trim();
+        var birimEtiketi = birim == "all" ? "Tüm Personeller" : birim;
+        string? personelEtiketi = null;
+        if (personelNo.Length > 0)
         {
-            ("Adı Soyadı", "AdSoyad", 40f), ("Tarih", "Tarih", 22f), ("Gün", "Gun", 21f),
-            ("Başlangıç", "Baslangic", 20f), ("Bitiş", "Bitis", 20f), ("Fiili", "FiiliSaat", 18f),
-            ("Zam 0.1", "Zam01Saat", 18f), ("Zam 0.5", "Zam05Saat", 18f),
-            ("Toplam", "ToplamSaat", 18f), ("Açıklama", "Aciklama", 62f), ("İmza", "", 20f)
+            // Filtreli tabloda tüm satırlar aynı personele aittir; adı ilk satırdan alırız.
+            personelEtiketi = mesailer.Rows.Count > 0
+                ? Convert.ToString(mesailer.Rows[0]["AdSoyad"])
+                : personelNo;
+            birimEtiketi = $"{birimEtiketi} · {personelEtiketi}";
+        }
+
+        var prm = new Dictionary<string, object?>
+        {
+            ["BaslikAdi"]   = "EK MESAİ ÇİZELGESİ (BİRİM BAZLI)",
+            ["OlusturanAd"] = HttpContext.Session.GetString("KullaniciAdi") ?? "GAMABEL YATIRIM LTD",
+            ["Tarih"]       = DateTime.Now.ToString("dd.MM.yyyy HH:mm"),
+            ["Birim"]       = birimEtiketi,
+            ["Personel"]    = personelEtiketi,
+            ["Ay"]          = new DateTime(yil, ay, 1).ToString("MMMM", new System.Globalization.CultureInfo("tr-TR")),
+            ["Yil"]         = yil,
+            ["KayitSayisi"] = mesailer.Rows.Count,
+            ["Filigran"]    = null, // Yalnızca taslak/onay durumu güvenilir şekilde belirlenebiliyorsa doldurun.
+            // İmza isimleri: biliniyorsa doldurulur; boş bırakılırsa .frx'te yalnızca imza çizgisi görünür (elle imza).
+            ["ImzaBirimSorumlusu"]  = "",
+            ["ImzaBelediyeBaskani"] = ""
         };
-        var left = 0f;
-        foreach (var (caption, _, width) in columns)
-        {
-            var header = CreateText($"H{left}", caption, left, 0, width, 7, 7, true, HorzAlign.Center);
-            header.Fill = new SolidFill(Color.FromArgb(30, 60, 114));
-            header.TextColor = Color.White;
-            header.Border.Color = Color.White;
-            page.PageHeader.Objects.Add(header);
-            left += width;
-        }
-
-        var data = new DataBand { Name = "MesaiSatirlari", Height = Units.Millimeters * 6, DataSource = report.GetDataSource("Mesai") };
-        if (personelBazli)
-        {
-            var group = new GroupHeaderBand { Name = "PersonelGrup", Height = Units.Millimeters * 6, Condition = "[Mesai.AdSoyad]" };
-            var personelAdi = CreateText("PersonelAdi", "[Mesai.AdSoyad]", 0, 0, 277, 6, 8, true, HorzAlign.Left);
-            personelAdi.Fill = new SolidFill(Color.FromArgb(219, 229, 243));
-            personelAdi.Border.Color = Color.FromArgb(30, 60, 114);
-            group.Objects.Add(personelAdi);
-            group.Data = data;
-            page.Bands.Add(group);
-        }
-        else
-        {
-            page.Bands.Add(data);
-        }
-
-        left = 0;
-        foreach (var (_, field, width) in columns)
-        {
-            var value = string.IsNullOrEmpty(field) ? "" : $"[Mesai.{field}]";
-            var alignment = field is "FiiliSaat" or "Zam01Saat" or "Zam05Saat" or "ToplamSaat" ? HorzAlign.Right : HorzAlign.Left;
-            data.Objects.Add(CreateText($"D{left}", value, left, 0, width, 6, 7, false, alignment));
-            left += width;
-        }
-
-        page.ReportSummary = new ReportSummaryBand { Name = "RaporOzeti", Height = Units.Millimeters * 35 };
-        var fiili = mesailer.AsEnumerable().Sum(row => row.Field<decimal>("FiiliSaat"));
-        var zam01 = mesailer.AsEnumerable().Sum(row => row.Field<decimal>("Zam01Saat"));
-        var zam05 = mesailer.AsEnumerable().Sum(row => row.Field<decimal>("Zam05Saat"));
-        var toplam = mesailer.AsEnumerable().Sum(row => row.Field<decimal>("ToplamSaat"));
-
-        var ozet = CreateText("Ozet", $"GENEL TOPLAM    Fiili: {fiili:0.00} saat   |   Zam 0.1: {zam01:0.00}   |   Zam 0.5: {zam05:0.00}   |   TOPLAM: {toplam:0.00} saat", 0, 2, 277, 7, 8, true, HorzAlign.Center);
-        ozet.Fill = new SolidFill(Color.FromArgb(219, 229, 243));
-        ozet.Border.Color = Color.FromArgb(30, 60, 114);
-        page.ReportSummary.Objects.Add(ozet);
-
-        var birimImza = CreateText("BirimImza", "BİRİM SORUMLUSU\n\nAdı Soyadı / İmza", 0, 13, 130, 18, 8, true, HorzAlign.Center);
-        birimImza.Border.Color = Color.FromArgb(120, 130, 145);
-        page.ReportSummary.Objects.Add(birimImza);
-
-        var baskanImza = CreateText("BaskanImza", "BELEDİYE BAŞKANI\n\nAdı Soyadı / İmza", 147, 13, 130, 18, 8, true, HorzAlign.Center);
-        baskanImza.Border.Color = Color.FromArgb(120, 130, 145);
-        page.ReportSummary.Objects.Add(baskanImza);
-
-        page.PageFooter = new PageFooterBand { Name = "AltBilgi", Height = Units.Millimeters * 5 };
-        page.PageFooter.Objects.Add(CreateText("Sayfa", "Sayfa [PageN]", 0, 0, 277, 5, 7, false, HorzAlign.Right));
-        return report;
-    }
-
-    private static TextObject CreateText(string name, string text, float leftMm, float topMm, float widthMm, float heightMm, float fontSize, bool bold, HorzAlign align)
-    {
-        var cell = new TextObject
-        {
-            Name = name,
-            Bounds = new RectangleF(leftMm * Units.Millimeters, topMm * Units.Millimeters, widthMm * Units.Millimeters, heightMm * Units.Millimeters),
-            Text = text,
-            Font = new Font("Arial", fontSize, bold ? FontStyle.Bold : FontStyle.Regular),
-            HorzAlign = align,
-            VertAlign = VertAlign.Center
-        };
-        cell.Border.Lines = BorderLines.All;
-        return cell;
+        return (ds, prm);
     }
 
     public async Task<IActionResult> MesaiOdemesi()
@@ -629,6 +748,15 @@ public class MesaiController : Controller
             {
                 basarili = false,
                 hata = "Birim seçiniz"
+            });
+        }
+
+        if (yil <= 0 || ay < 1 || ay > 12)
+        {
+            return Json(new
+            {
+                basarili = false,
+                hata = "Geçerli bir yıl ve ay seçiniz"
             });
         }
 

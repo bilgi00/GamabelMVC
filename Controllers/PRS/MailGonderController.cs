@@ -338,7 +338,7 @@ public class MailGonderController : Controller
     // MAIL RAPORU
     // ================================================================
     [HttpGet]
-    public async Task<IActionResult> Rapor()
+    public IActionResult Rapor()
     {
         if (!IsLoggedIn()) return RedirectToAction("Login", "Account");
         if (!IsAdmin()) return Forbid();

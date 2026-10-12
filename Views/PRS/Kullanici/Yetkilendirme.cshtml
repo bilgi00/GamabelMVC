@@ -142,6 +142,10 @@ else if (ViewBag.Hata == null)
     </div>
     <div class="card-body">
         <p class="text-muted mb-3">Kilitli aylar için puantaj ve ek mesai tablolarına kayıt yapılamaz.</p>
+        @if (ViewBag.KilitHata != null)
+        {
+            <div class="alert alert-danger" role="alert">@ViewBag.KilitHata</div>
+        }
         <div class="row mb-3">
             <div class="col-md-3">
                 <label class="form-label fw-bold">Yıl:</label>
@@ -156,7 +160,7 @@ else if (ViewBag.Hata == null)
             {
                 <div class="col-md-2 col-sm-3 col-4 mb-2">
                     <div class="form-check form-switch">
-                        <input class="form-check-input ay-kilit-cb" type="checkbox" id="ayKilit_@(i+1)" data-ay="@(i+1)">
+                        <input class="form-check-input ay-kilit-cb" type="checkbox" id="ayKilit_@(i+1)" data-ay="@(i+1)" @(ViewBag.KilitHata != null ? "disabled" : null)>
                         <label class="form-check-label" for="ayKilit_@(i+1)">@aylar[i]</label>
                     </div>
                 </div>

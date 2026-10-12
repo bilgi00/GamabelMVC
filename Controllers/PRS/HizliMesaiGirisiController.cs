@@ -45,10 +45,15 @@ public class HizliMesaiGirisiController : Controller
         if (yil < 1 || ay < 1 || ay > 12)
             return BadRequest("Geçersiz yıl veya ay.");
 
+        ViewBag.SecilenYil = yil;
+        ViewBag.SecilenAy = ay;
+        ViewBag.AyKilitli = true;
+
         try
         {
             var birimler = new List<string>();
             await using var conn = await _dbFactory.CreateConnectionAsync();
+            ViewBag.AyKilitli = await AyKilitKontrol.KilitliMiAsync(conn, yil.Value, ay.Value);
             
             if (rol == "admin")
             {
@@ -281,6 +286,8 @@ public class HizliMesaiGirisiController : Controller
 
             // 7. Veritabanı işlemleri
             await using var conn = await _dbFactory.CreateConnectionAsync();
+            if (await AyKilitKontrol.KilitliMiAsync(conn, tarih.Year, tarih.Month))
+                return Conflict("Bu ay kilitlenmiştir. Mesai kaydı eklenemez.");
 
             // Aynı tarihte kayıt var mı?
             var checkQuery = "SELECT COUNT(*) FROM mesai_kayitlari WHERE personel_id = @PersonelId AND DATE(tarih) = @Tarih";
@@ -376,7 +383,11 @@ public class HizliMesaiGirisiController : Controller
                 if (kayitTarihi == null || kayitTarihi == DBNull.Value)
                     return NotFound("Mesai kaydı bulunamadı");
 
-                hesap = HesaplaMesai(Convert.ToDateTime(kayitTarihi), baslangic, bitis);
+                var tarih = Convert.ToDateTime(kayitTarihi);
+                if (await AyKilitKontrol.KilitliMiAsync(conn, tarih.Year, tarih.Month))
+                    return Conflict("Bu ay kilitlenmiştir. Mesai kaydı değiştirilemez.");
+
+                hesap = HesaplaMesai(tarih, baslangic, bitis);
             }
 
             using (var cmd = new MySqlCommand(updateQuery, conn))
@@ -414,6 +425,18 @@ public class HizliMesaiGirisiController : Controller
         try
         {
             await using var conn = await _dbFactory.CreateConnectionAsync();
+
+            using (var tarihCmd = new MySqlCommand("SELECT tarih FROM mesai_kayitlari WHERE id = @Id", conn))
+            {
+                tarihCmd.Parameters.AddWithValue("@Id", id);
+                var kayitTarihi = await tarihCmd.ExecuteScalarAsync();
+                if (kayitTarihi == null || kayitTarihi == DBNull.Value)
+                    return NotFound("Mesai kaydı bulunamadı");
+
+                var tarih = Convert.ToDateTime(kayitTarihi);
+                if (await AyKilitKontrol.KilitliMiAsync(conn, tarih.Year, tarih.Month))
+                    return Conflict("Bu ay kilitlenmiştir. Mesai kaydı silinemez.");
+            }
 
             var deleteQuery = "DELETE FROM mesai_kayitlari WHERE id = @Id";
             using (var cmd = new MySqlCommand(deleteQuery, conn))
@@ -541,7 +564,7 @@ public class HizliMesaiGirisiController : Controller
     }
 
     // ============================================================
-    // GET: HizliMesaiGirisi/GetAyToplami - Ay toplamı ve limit kontrolü
+    // GET: HizliMesaiGirisi/GetAyToplami - Ay toplamı
     // ============================================================
     [HttpGet]
     public async Task<IActionResult> GetAyToplami(int yil, int ay, string? personelId = null)
@@ -572,11 +595,8 @@ public class HizliMesaiGirisiController : Controller
                 ayToplami = Convert.ToDecimal(await cmd.ExecuteScalarAsync() ?? 0m);
             }
 
-            var limitAsildiMi = ayToplami > 88m;
-
-            return Json(new { 
-                ayToplami = ayToplami.ToString("F2", CultureInfo.InvariantCulture),
-                limitAsildiMi 
+            return Json(new {
+                ayToplami = ayToplami.ToString("F2", CultureInfo.InvariantCulture)
             });
         }
         catch (Exception ex)
@@ -635,6 +655,12 @@ public class HizliMesaiGirisiController : Controller
             }
 
             await using var conn = await _dbFactory.CreateConnectionAsync();
+
+            foreach (var donem in kayitlar.Select(k => (k.tarih.Year, k.tarih.Month)).Distinct())
+            {
+                if (await AyKilitKontrol.KilitliMiAsync(conn, donem.Year, donem.Month))
+                    return Conflict($"{donem.Year} yılı {donem.Month}. ay kilitlenmiştir. Dosyadaki mesai kayıtları eklenemedi.");
+            }
 
             var insertQuery = @"
                 INSERT INTO mesai_kayitlari

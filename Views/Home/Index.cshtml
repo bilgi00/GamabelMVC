@@ -49,10 +49,7 @@
                 <a href="/Account/StsLogin" class="hero-btn hero-btn-primary" style="background: linear-gradient(135deg, #0f766e, #0ea5e9);">📦 STS Girişi</a>
             </div>
         }
-        else
-        {
-            <a href="/Puantaj" class="hero-btn hero-btn-primary">📊 Puantaj Takvimine Git</a>
-        }
+
     </div>
 </div>
 
@@ -118,7 +115,7 @@
                         <div class="home-list-scroll">
                             <table>
                                 <thead>
-                                    <tr><th>Personel</th><th class="text-end">Gün</th><th class="text-end">Fiili saat</th><th class="text-end">Ek mesai</th></tr>
+                                    <tr><th>Personel</th><th class="text-end">Gün</th><th class="text-end">Fiili saat</th><th class="text-end">Ek mesai</th><th class="text-end">Toplam saat</th></tr>
                                 </thead>
                                 <tbody>
                                     @foreach (var personel in Model.MesaiPersoneller)
@@ -128,6 +125,7 @@
                                             <td class="num">@personel.MesaiGunu</td>
                                             <td class="num">@personel.FiiliSaat.ToString("0.##", System.Globalization.CultureInfo.GetCultureInfo("tr-TR"))</td>
                                             <td class="num">@personel.EkMesaiSaat.ToString("0.##", System.Globalization.CultureInfo.GetCultureInfo("tr-TR"))</td>
+                                            <td class="num">@((personel.FiiliSaat + personel.EkMesaiSaat).ToString("0.##", System.Globalization.CultureInfo.GetCultureInfo("tr-TR")))</td>
                                         </tr>
                                     }
                                 </tbody>
@@ -139,3 +137,7 @@
         </div>
     </section>
 }
+
+<div class="container-fluid pb-3">
+    <p class="text-muted small text-end mb-0">Sürüm commit: <code>@gamabelmvc.GitCommitInfo.CommitHash</code></p>
+</div>

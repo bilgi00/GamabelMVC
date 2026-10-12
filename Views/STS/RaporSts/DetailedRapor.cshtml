@@ -101,16 +101,21 @@
         string subeAdi = "Bilinmiyor";
         try
         {
-            var subeleri = ViewBag.Subeleri as List<dynamic>;
-            if (subeleri != null && ViewBag.SeciliSubeId != null)
+            var subeleri = (ViewBag.Subeleri as List<dynamic>) ?? new List<dynamic>();
+            if (ViewBag.SeciliSubeId != null)
             {
                 foreach (var sube in subeleri)
                 {
                     try
                     {
-                        if (sube.Id.ToString() == ViewBag.SeciliSubeId.ToString())
+                        if (sube is null)
                         {
-                            subeAdi = sube.Ad;
+                            continue;
+                        }
+
+                        if (string.Equals(Convert.ToString(sube.Id), Convert.ToString(ViewBag.SeciliSubeId), StringComparison.Ordinal))
+                        {
+                            subeAdi = Convert.ToString(sube.Ad) ?? "Bilinmiyor";
                             break;
                         }
                     }
@@ -156,18 +161,18 @@
                                         try
                                         {
                                             dynamic islem = islemItem;
-                                            object girisTarihi = null;
-                                            object haftaNo = null;
-                                            object urunAdi = null;
-                                            object firma = null;
-                                            object eksikMiktar = null;
-                                            object eksikDurum = null;
-                                            object acilMi = false;
-                                            object sevkTarihi = null;
-                                            object sevkMiktari = null;
-                                            object sevkiyatDurum = null;
-                                            object subeOnayTarihi = null;
-                                            object eksikNotu = null;
+                                            object? girisTarihi = null;
+                                            object? haftaNo = null;
+                                            object? urunAdi = null;
+                                            object? firma = null;
+                                            object? eksikMiktar = null;
+                                            object? eksikDurum = null;
+                                            object? acilMi = false;
+                                            object? sevkTarihi = null;
+                                            object? sevkMiktari = null;
+                                            object? sevkiyatDurum = null;
+                                            object? subeOnayTarihi = null;
+                                            object? eksikNotu = null;
 
                                             try { girisTarihi = islem.GirisTarihi; } catch { }
                                             try { haftaNo = islem.HaftaNo; } catch { }
@@ -300,7 +305,7 @@
                                                 <td class="text-center">
                                                     @{
                                                         decimal sevkMiktariVal = 0;
-                                                        try { sevkMiktariVal = (decimal)sevkMiktari; } catch { }
+                                                        try { sevkMiktariVal = Convert.ToDecimal(sevkMiktari); } catch { }
                                                         
                                                         if (sevkMiktariVal > 0)
                                                         {

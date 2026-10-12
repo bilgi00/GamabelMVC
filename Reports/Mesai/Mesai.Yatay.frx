@@ -1,0 +1,75 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Report ScriptLanguage="CSharp" DoublePass="true" ReportInfo.Version="1.1.0" ReportInfo.Description="FastReport A4 Rapor Standardı v3.1 — başlık her sayfada, imza (Birim Sorumlusu + Belediye Başkanı) son sayfada" ReportInfo.Created="2026-10-12" ReportInfo.Modified="10/12/2026 23:13:30" ReportInfo.CreatorVersion="2027.1.0.0">
+  <Dictionary>
+    <TableDataSource Name="Mesai" ReferenceName="Data.Mesai" DataType="System.Int32" Enabled="true">
+      <Column Name="AdSoyad" DataType="System.String"/>
+      <Column Name="Tarih" DataType="System.String"/>
+      <Column Name="Gun" DataType="System.String"/>
+      <Column Name="Baslangic" DataType="System.String"/>
+      <Column Name="Bitis" DataType="System.String"/>
+      <Column Name="FiiliSaat" DataType="System.Decimal"/>
+      <Column Name="Zam01Saat" DataType="System.Decimal"/>
+      <Column Name="Zam05Saat" DataType="System.Decimal"/>
+      <Column Name="ToplamSaat" DataType="System.Decimal"/>
+      <Column Name="Aciklama" DataType="System.String"/>
+    </TableDataSource>
+    <Parameter Name="BaslikAdi" DataType="System.String" AsString=""/>
+    <Parameter Name="OlusturanAd" DataType="System.String" AsString=""/>
+    <Parameter Name="Tarih" DataType="System.String" AsString=""/>
+    <Parameter Name="SablonSurum" DataType="System.String" AsString=""/>
+    <Parameter Name="Filigran" DataType="System.String" AsString=""/>
+    <Parameter Name="ImzaBirimSorumlusu" DataType="System.String" AsString=""/>
+    <Parameter Name="ImzaBelediyeBaskani" DataType="System.String" AsString=""/>
+    <Parameter Name="Birim" DataType="System.String" AsString=""/>
+    <Parameter Name="Ay" DataType="System.String" AsString=""/>
+    <Parameter Name="Yil" DataType="System.Int32" AsString=""/>
+    <Parameter Name="KayitSayisi" DataType="System.Int32" AsString=""/>
+    <Total Name="GenelFiili" Expression="[Mesai.FiiliSaat]" Evaluator="Data1" PrintOn="ReportSummary1"/>
+    <Total Name="GenelZam01" Expression="[Mesai.Zam01Saat]" Evaluator="Data1" PrintOn="ReportSummary1"/>
+    <Total Name="GenelZam05" Expression="[Mesai.Zam05Saat]" Evaluator="Data1" PrintOn="ReportSummary1"/>
+    <Total Name="GenelToplam" Expression="[Mesai.ToplamSaat]" Evaluator="Data1" PrintOn="ReportSummary1"/>
+  </Dictionary>
+  <ReportPage Name="Page1" Landscape="true" PaperWidth="297" PaperHeight="210" Watermark.Font="Arial, 60pt">
+    <PageHeaderBand Name="PageHeader1" Width="1047.06" Height="66.15">
+      <TextObject Name="TxtKurum" Left="415.8" Width="1020.6" Height="18.9" Text="GAMABEL YATIRIM LTD" VertAlign="Center" Font="Arial, 14pt, style=Bold" TextFill.Color="30, 58, 138"/>
+      <TextObject Name="TxtBaslik" Top="18.9" Width="1047.06" Height="28.35" Text="[BaslikAdi]" HorzAlign="Center" VertAlign="Center" Font="Arial, 14pt, style=Bold" TextFill.Color="30, 58, 138"/>
+      <TextObject Name="TxtRaporBilgi" Top="47.25" Width="1047.06" Height="18.9" Fill.Color="248, 250, 252" Text="Birim: [Birim]    |    Ay: [Ay] [Yil]    |    Kayıt: [KayitSayisi]" HorzAlign="Center" VertAlign="Center" Font="Arial, 8pt" TextFill.Color="51, 65, 85"/>
+    </PageHeaderBand>
+    <DataBand Name="Data1" Top="100.9" Width="1047.06" Height="22.68" CanGrow="true" DataSource="Mesai">
+      <TextObject Name="ColAdSoyad" Width="160" Height="22.68" Border.Lines="All" Fill.Color="248, 250, 252" GrowToBottom="true" Text=" [Mesai.AdSoyad]" VertAlign="Center" Font="Arial, 8pt, style=Bold"/>
+      <TextObject Name="ColTarih" Left="160" Width="75" Height="22.68" Border.Lines="All" GrowToBottom="true" Text="[Mesai.Tarih]" HorzAlign="Center" VertAlign="Center" Font="Arial, 8pt"/>
+      <TextObject Name="ColGun" Left="235" Width="80" Height="22.68" Border.Lines="All" GrowToBottom="true" Text="[Mesai.Gun]" HorzAlign="Center" VertAlign="Center" Font="Arial, 8pt"/>
+      <TextObject Name="ColBaslangic" Left="315" Width="80" Height="22.68" Border.Lines="All" GrowToBottom="true" Text="[Mesai.Baslangic]" HorzAlign="Center" VertAlign="Center" Font="Arial, 8pt"/>
+      <TextObject Name="ColBitis" Left="395" Width="80" Height="22.68" Border.Lines="All" GrowToBottom="true" Text="[Mesai.Bitis]" HorzAlign="Center" VertAlign="Center" Font="Arial, 8pt"/>
+      <TextObject Name="ColFiili" Left="475" Width="92" Height="22.68" Border.Lines="All" GrowToBottom="true" Text="[Mesai.FiiliSaat]" Format="Number" Format.UseLocale="false" Format.DecimalDigits="2" Format.DecimalSeparator="," Format.GroupSeparator="." Format.NegativePattern="1" HorzAlign="Right" VertAlign="Center" Font="Arial, 8pt"/>
+      <TextObject Name="ColZam01" Left="567" Width="92" Height="22.68" Border.Lines="All" GrowToBottom="true" Text="[Mesai.Zam01Saat]" Format="Number" Format.UseLocale="false" Format.DecimalDigits="2" Format.DecimalSeparator="," Format.GroupSeparator="." Format.NegativePattern="1" HorzAlign="Right" VertAlign="Center" Font="Arial, 8pt"/>
+      <TextObject Name="ColZam05" Left="659" Width="92" Height="22.68" Border.Lines="All" GrowToBottom="true" Text="[Mesai.Zam05Saat]" Format="Number" Format.UseLocale="false" Format.DecimalDigits="2" Format.DecimalSeparator="," Format.GroupSeparator="." Format.NegativePattern="1" HorzAlign="Right" VertAlign="Center" Font="Arial, 8pt"/>
+      <TextObject Name="ColToplam" Left="751" Width="92" Height="22.68" Border.Lines="All" Fill.Color="248, 250, 252" GrowToBottom="true" Text="[Mesai.ToplamSaat]" Format="Number" Format.UseLocale="false" Format.DecimalDigits="2" Format.DecimalSeparator="," Format.GroupSeparator="." Format.NegativePattern="1" HorzAlign="Right" VertAlign="Center" Font="Arial, 8pt, style=Bold"/>
+      <TextObject Name="ColAciklama" Left="843" Width="204.06" Height="22.68" Border.Lines="All" CanGrow="true" GrowToBottom="true" Text="[Mesai.Aciklama]" VertAlign="Center" Font="Arial, 8pt"/>
+      <DataHeaderBand Name="DataHeader1" Top="69.35" Width="1047.06" Height="28.35" RepeatOnEveryPage="true">
+        <TextObject Name="HdrAdSoyad" Width="160" Height="28.35" Border.Lines="All" Fill.Color="30, 58, 138" Text="ADI SOYADI" HorzAlign="Center" VertAlign="Center" Font="Arial, 7pt, style=Bold" TextFill.Color="White"/>
+        <TextObject Name="HdrTarih" Left="160" Width="75" Height="28.35" Border.Lines="All" Fill.Color="30, 58, 138" Text="TARİH" HorzAlign="Center" VertAlign="Center" Font="Arial, 7pt, style=Bold" TextFill.Color="White"/>
+        <TextObject Name="HdrGun" Left="235" Width="80" Height="28.35" Border.Lines="All" Fill.Color="30, 58, 138" Text="GÜN" HorzAlign="Center" VertAlign="Center" Font="Arial, 7pt, style=Bold" TextFill.Color="White"/>
+        <TextObject Name="HdrBaslangic" Left="315" Width="80" Height="28.35" Border.Lines="All" Fill.Color="30, 58, 138" Text="BAŞLANGIÇ" HorzAlign="Center" VertAlign="Center" Font="Arial, 7pt, style=Bold" TextFill.Color="White"/>
+        <TextObject Name="HdrBitis" Left="395" Width="80" Height="28.35" Border.Lines="All" Fill.Color="30, 58, 138" Text="BİTİŞ" HorzAlign="Center" VertAlign="Center" Font="Arial, 7pt, style=Bold" TextFill.Color="White"/>
+        <TextObject Name="HdrFiili" Left="475" Width="92" Height="28.35" Border.Lines="All" Fill.Color="30, 58, 138" Text="FİİLİ SAAT" HorzAlign="Center" VertAlign="Center" Font="Arial, 7pt, style=Bold" TextFill.Color="White"/>
+        <TextObject Name="HdrZam01" Left="567" Width="92" Height="28.35" Border.Lines="All" Fill.Color="30, 58, 138" Text="ZAM 0,1" HorzAlign="Center" VertAlign="Center" Font="Arial, 7pt, style=Bold" TextFill.Color="White"/>
+        <TextObject Name="HdrZam05" Left="659" Width="92" Height="28.35" Border.Lines="All" Fill.Color="30, 58, 138" Text="ZAM 0,5" HorzAlign="Center" VertAlign="Center" Font="Arial, 7pt, style=Bold" TextFill.Color="White"/>
+        <TextObject Name="HdrToplam" Left="751" Width="92" Height="28.35" Border.Lines="All" Fill.Color="30, 58, 138" Text="TOPLAM" HorzAlign="Center" VertAlign="Center" Font="Arial, 7pt, style=Bold" TextFill.Color="White"/>
+        <TextObject Name="HdrAciklama" Left="843" Width="204.06" Height="28.35" Border.Lines="All" Fill.Color="30, 58, 138" Text="AÇIKLAMA" HorzAlign="Center" VertAlign="Center" Font="Arial, 7pt, style=Bold" TextFill.Color="White"/>
+      </DataHeaderBand>
+    </DataBand>
+    <ReportSummaryBand Name="ReportSummary1" Top="126.78" Width="1047.06" Height="150.35" KeepWithData="true">
+      <TextObject Name="TxtGenelToplam" Width="1047.06" Height="24" Border.Lines="All" Fill.Color="233, 238, 248" Text="GENEL TOPLAM    Fiili: [GenelFiili]    |    Zam 0,1: [GenelZam01]    |    Zam 0,5: [GenelZam05]    |    TOPLAM: [GenelToplam] saat" HorzAlign="Right" VertAlign="Center" Font="Arial, 9pt, style=Bold" TextFill.Color="30, 58, 114"/>
+      <TextObject Name="TxtImzaBirimUnvan" Left="60" Top="60.9" Width="400" Height="14" Text="BİRİM SORUMLUSU" HorzAlign="Center" Font="Arial, 8.5pt, style=Bold" TextFill.Color="30, 58, 114"/>
+      <TextObject Name="TxtImzaBirimCizgi" Left="60" Top="96.9" Width="400" Height="19" Border.Lines="Top" Text="[ImzaBirimSorumlusu]" HorzAlign="Center" VertAlign="Center" Font="Arial, 8pt" TextFill.Color="51, 65, 85"/>
+      <TextObject Name="TxtImzaBasUnvan" Left="587.06" Top="60.9" Width="400" Height="14" Text="BELEDİYE BAŞKANI" HorzAlign="Center" Font="Arial, 8.5pt, style=Bold" TextFill.Color="30, 58, 114"/>
+      <TextObject Name="TxtImzaBasCizgi" Left="587.06" Top="96.9" Width="400" Height="19" Border.Lines="Top" Text="[ImzaBelediyeBaskani]" HorzAlign="Center" VertAlign="Center" Font="Arial, 8pt" TextFill.Color="51, 65, 85"/>
+    </ReportSummaryBand>
+    <PageFooterBand Name="PageFooter1" Top="280.33" Width="1047.06" Height="18.9">
+      <TextObject Name="TxtAltSol" Width="800" Height="18.9" Text="[OlusturanAd] · Şablon v[SablonSurum]" VertAlign="Center" Font="Arial, 8pt" TextFill.Color="100, 116, 139"/>
+      <TextObject Name="TxtSayfa" Left="847.26" Width="199.8" Height="18.9" Text="Sayfa [Page#] / [TotalPages#]" HorzAlign="Right" VertAlign="Center" Font="Arial, 8pt" TextFill.Color="100, 116, 139"/>
+      <TextObject Name="TxtTarih" Left="374.76" Width="199.8" Height="18.9" Text="[Tarih]" HorzAlign="Right" VertAlign="Center" Font="Arial, 8pt" TextFill.Color="DimGray"/>
+    </PageFooterBand>
+  </ReportPage>
+</Report>

@@ -332,7 +332,7 @@ namespace gamabelmvc.Controllers.STS
     [HttpPost]
     public async Task<IActionResult> Ekle([FromBody] EksikTopluSatirlarRequest request, bool forceDuplicateSave = false)
     {
-        string satirlarJson = null;
+        string? satirlarJson = null;
         try
         {
             System.IO.Directory.CreateDirectory("E:/gamabelmvc/temp");
@@ -577,7 +577,7 @@ namespace gamabelmvc.Controllers.STS
 
     // POST: Eksik/TopluYukle - Excel dosyasını işle
     [HttpPost]
-    public async Task<IActionResult> TopluYukle(IFormFile file)
+    public IActionResult TopluYukle(IFormFile file)
     {
         try
         {

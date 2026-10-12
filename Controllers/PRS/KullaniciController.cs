@@ -640,7 +640,10 @@ public class KullaniciController : Controller
                 kilitliAylar.Add(new { yil = rdr2.GetInt32(0), ay = rdr2.GetInt32(1) });
             }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            ViewBag.KilitHata = "Ay kilitleri yüklenemedi: " + ex.Message;
+        }
         ViewBag.KilitliAylar = System.Text.Json.JsonSerializer.Serialize(kilitliAylar);
 
         return View(kullanicilar);
@@ -783,6 +786,9 @@ public class KullaniciController : Controller
     [HttpPost]
     public async Task<IActionResult> AyKilidiDegistir([FromBody] AyKilidiRequest request)
     {
+        if (request == null || request.Yil < 1 || request.Ay is < 1 or > 12)
+            return BadRequest(new { basarili = false, mesaj = "Geçerli bir yıl ve ay belirtin." });
+
         if (string.IsNullOrEmpty(HttpContext.Session.GetString("KullaniciAdi")))
             return Json(new { basarili = false, mesaj = "Oturum geçersiz." });
 
@@ -830,21 +836,21 @@ public class KullaniciController : Controller
         if (string.IsNullOrEmpty(HttpContext.Session.GetString("KullaniciAdi")))
             return Unauthorized();
 
+        if (yil < 1 || ay is < 1 or > 12)
+            return BadRequest(new { mesaj = "Geçersiz yıl veya ay." });
+
         try
         {
             await using var connection = new MySqlConnection(_connectionString);
             await connection.OpenAsync();
 
-            await using var cmd = new MySqlCommand(
-                "SELECT COUNT(*) FROM ay_kilitleri WHERE yil = @yil AND ay = @ay", connection);
-            cmd.Parameters.AddWithValue("@yil", yil);
-            cmd.Parameters.AddWithValue("@ay", ay);
-            var count = Convert.ToInt32(await cmd.ExecuteScalarAsync());
-            return Json(new { kilitli = count > 0 });
+            var kilitli = await AyKilitKontrol.KilitliMiAsync(connection, yil, ay);
+            return Json(new { kilitli });
         }
-        catch
+        catch (Exception ex)
         {
-            return Json(new { kilitli = false });
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new { mesaj = "Ay kilit durumu kontrol edilemedi.", hata = ex.Message });
         }
     }
 

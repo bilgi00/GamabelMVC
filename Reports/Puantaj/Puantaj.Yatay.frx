@@ -1,0 +1,249 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Report ScriptLanguage="CSharp" DoublePass="true"
+        ReportInfo.Created="10/12/2026 00:00:00" ReportInfo.Modified="10/12/2026 00:00:00"
+        ReportInfo.CreatorVersion="2026.2.3" ReportInfo.Version="1.1.0" ReportInfo.Description="FastReport A4 Rapor Standardı v3.1 — başlık her sayfada, imza (Birim Sorumlusu + Belediye Başkanı) son sayfada">
+  <Dictionary>
+    <TableDataSource Name="Puantaj" ReferenceName="Data.Puantaj" DataType="System.Int32" Enabled="true">
+      <Column Name="AdSoyad" DataType="System.String"/>
+      <Column Name="Birim" DataType="System.String"/>
+      <Column Name="Gun01" DataType="System.String"/>
+      <Column Name="Gun02" DataType="System.String"/>
+      <Column Name="Gun03" DataType="System.String"/>
+      <Column Name="Gun04" DataType="System.String"/>
+      <Column Name="Gun05" DataType="System.String"/>
+      <Column Name="Gun06" DataType="System.String"/>
+      <Column Name="Gun07" DataType="System.String"/>
+      <Column Name="Gun08" DataType="System.String"/>
+      <Column Name="Gun09" DataType="System.String"/>
+      <Column Name="Gun10" DataType="System.String"/>
+      <Column Name="Gun11" DataType="System.String"/>
+      <Column Name="Gun12" DataType="System.String"/>
+      <Column Name="Gun13" DataType="System.String"/>
+      <Column Name="Gun14" DataType="System.String"/>
+      <Column Name="Gun15" DataType="System.String"/>
+      <Column Name="Gun16" DataType="System.String"/>
+      <Column Name="Gun17" DataType="System.String"/>
+      <Column Name="Gun18" DataType="System.String"/>
+      <Column Name="Gun19" DataType="System.String"/>
+      <Column Name="Gun20" DataType="System.String"/>
+      <Column Name="Gun21" DataType="System.String"/>
+      <Column Name="Gun22" DataType="System.String"/>
+      <Column Name="Gun23" DataType="System.String"/>
+      <Column Name="Gun24" DataType="System.String"/>
+      <Column Name="Gun25" DataType="System.String"/>
+      <Column Name="Gun26" DataType="System.String"/>
+      <Column Name="Gun27" DataType="System.String"/>
+      <Column Name="Gun28" DataType="System.String"/>
+      <Column Name="Gun29" DataType="System.String"/>
+      <Column Name="Gun30" DataType="System.String"/>
+      <Column Name="XSayisi" DataType="System.Int32"/>
+      <Column Name="ISayisi" DataType="System.Int32"/>
+      <Column Name="HSayisi" DataType="System.Int32"/>
+      <Column Name="Hakkedis" DataType="System.Int32"/>
+    </TableDataSource>
+    <Parameter Name="BaslikAdi" DataType="System.String" AsString=""/>
+    <Parameter Name="OlusturanAd" DataType="System.String" AsString=""/>
+    <Parameter Name="Tarih" DataType="System.String" AsString=""/>
+    <Parameter Name="SablonSurum" DataType="System.String" AsString=""/>
+    <Parameter Name="Filigran" DataType="System.String" AsString=""/>
+    <Parameter Name="ImzaBirimSorumlusu" DataType="System.String" AsString=""/>
+    <Parameter Name="ImzaBelediyeBaskani" DataType="System.String" AsString=""/>
+    <Parameter Name="Donem" DataType="System.String" AsString=""/>
+    <Parameter Name="Birim" DataType="System.String" AsString=""/>
+    <Parameter Name="PersonelSayisi" DataType="System.Int32" AsString=""/>
+    <Parameter Name="GenelXSayisi" DataType="System.Int32" AsString=""/>
+    <Parameter Name="GenelISayisi" DataType="System.Int32" AsString=""/>
+    <Parameter Name="GenelHSayisi" DataType="System.Int32" AsString=""/>
+    <Total Name="ToplamX" Expression="[Puantaj.XSayisi]" Evaluator="Data1" PrintOn="ReportSummary1"/>
+    <Total Name="ToplamI" Expression="[Puantaj.ISayisi]" Evaluator="Data1" PrintOn="ReportSummary1"/>
+    <Total Name="ToplamH" Expression="[Puantaj.HSayisi]" Evaluator="Data1" PrintOn="ReportSummary1"/>
+  </Dictionary>
+
+  <ReportPage Name="Page1" Landscape="true" PaperWidth="297" PaperHeight="210"
+              LeftMargin="10" TopMargin="10" RightMargin="10" BottomMargin="10"
+              Watermark.Font="Arial, 60pt">
+
+    <PageHeaderBand Name="PageHeader1" Width="1047.06" Height="66.15">
+      <TextObject Name="TxtKurum" Width="500" Height="18.9" Text="GAMABEL YATIRIM LTD"
+                  VertAlign="Center" Font="Arial, 9pt, style=Bold" TextFill.Color="30, 58, 138"/>
+      <TextObject Name="TxtTarih" Left="847.26" Width="199.8" Height="18.9" Text="[Tarih]"
+                  HorzAlign="Right" VertAlign="Center" Font="Arial, 7pt"/>
+      <TextObject Name="TxtBaslik" Top="18.9" Width="1047.06" Height="28.35" Text="[BaslikAdi]"
+                  HorzAlign="Center" VertAlign="Center" Font="Arial, 13pt, style=Bold" TextFill.Color="30, 58, 138"/>
+      <TextObject Name="TxtRaporBilgi" Top="47.25" Width="1047.06" Height="18.9" Fill.Color="248, 250, 252"
+                  Text="Dönem: [Donem]    |    Birim: [Birim]    |    Personel: [PersonelSayisi]"
+                  HorzAlign="Center" VertAlign="Center" Font="Arial, 7.75pt" TextFill.Color="51, 65, 85"/>
+    </PageHeaderBand>
+
+    <DataBand Name="Data1" Width="1047.06" Height="20" CanGrow="true" DataSource="Puantaj">
+      <TextObject Name="ColAdSoyad" Width="150" Height="20" Border.Lines="All" Fill.Color="248, 250, 252"
+                  GrowToBottom="true" Text="[Puantaj.AdSoyad]" VertAlign="Center" Font="Arial, 6.75pt, style=Bold"/>
+      <TextObject Name="ColBirim" Left="150" Width="90" Height="20" Border.Lines="All" GrowToBottom="true"
+                  Text="[Puantaj.Birim]" VertAlign="Center" Font="Arial, 6.75pt"/>
+      <TextObject Name="ColGun01" Left="240" Width="20" Height="20" Border.Lines="All" GrowToBottom="true"
+                  Text="[Puantaj.Gun01]" HorzAlign="Center" VertAlign="Center" Font="Arial, 6.75pt"/>
+      <TextObject Name="ColGun02" Left="260" Width="20" Height="20" Border.Lines="All" GrowToBottom="true"
+                  Text="[Puantaj.Gun02]" HorzAlign="Center" VertAlign="Center" Font="Arial, 6.75pt"/>
+      <TextObject Name="ColGun03" Left="280" Width="20" Height="20" Border.Lines="All" GrowToBottom="true"
+                  Text="[Puantaj.Gun03]" HorzAlign="Center" VertAlign="Center" Font="Arial, 6.75pt"/>
+      <TextObject Name="ColGun04" Left="300" Width="20" Height="20" Border.Lines="All" GrowToBottom="true"
+                  Text="[Puantaj.Gun04]" HorzAlign="Center" VertAlign="Center" Font="Arial, 6.75pt"/>
+      <TextObject Name="ColGun05" Left="320" Width="20" Height="20" Border.Lines="All" GrowToBottom="true"
+                  Text="[Puantaj.Gun05]" HorzAlign="Center" VertAlign="Center" Font="Arial, 6.75pt"/>
+      <TextObject Name="ColGun06" Left="340" Width="20" Height="20" Border.Lines="All" GrowToBottom="true"
+                  Text="[Puantaj.Gun06]" HorzAlign="Center" VertAlign="Center" Font="Arial, 6.75pt"/>
+      <TextObject Name="ColGun07" Left="360" Width="20" Height="20" Border.Lines="All" GrowToBottom="true"
+                  Text="[Puantaj.Gun07]" HorzAlign="Center" VertAlign="Center" Font="Arial, 6.75pt"/>
+      <TextObject Name="ColGun08" Left="380" Width="20" Height="20" Border.Lines="All" GrowToBottom="true"
+                  Text="[Puantaj.Gun08]" HorzAlign="Center" VertAlign="Center" Font="Arial, 6.75pt"/>
+      <TextObject Name="ColGun09" Left="400" Width="20" Height="20" Border.Lines="All" GrowToBottom="true"
+                  Text="[Puantaj.Gun09]" HorzAlign="Center" VertAlign="Center" Font="Arial, 6.75pt"/>
+      <TextObject Name="ColGun10" Left="420" Width="20" Height="20" Border.Lines="All" GrowToBottom="true"
+                  Text="[Puantaj.Gun10]" HorzAlign="Center" VertAlign="Center" Font="Arial, 6.75pt"/>
+      <TextObject Name="ColGun11" Left="440" Width="20" Height="20" Border.Lines="All" GrowToBottom="true"
+                  Text="[Puantaj.Gun11]" HorzAlign="Center" VertAlign="Center" Font="Arial, 6.75pt"/>
+      <TextObject Name="ColGun12" Left="460" Width="20" Height="20" Border.Lines="All" GrowToBottom="true"
+                  Text="[Puantaj.Gun12]" HorzAlign="Center" VertAlign="Center" Font="Arial, 6.75pt"/>
+      <TextObject Name="ColGun13" Left="480" Width="20" Height="20" Border.Lines="All" GrowToBottom="true"
+                  Text="[Puantaj.Gun13]" HorzAlign="Center" VertAlign="Center" Font="Arial, 6.75pt"/>
+      <TextObject Name="ColGun14" Left="500" Width="20" Height="20" Border.Lines="All" GrowToBottom="true"
+                  Text="[Puantaj.Gun14]" HorzAlign="Center" VertAlign="Center" Font="Arial, 6.75pt"/>
+      <TextObject Name="ColGun15" Left="520" Width="20" Height="20" Border.Lines="All" GrowToBottom="true"
+                  Text="[Puantaj.Gun15]" HorzAlign="Center" VertAlign="Center" Font="Arial, 6.75pt"/>
+      <TextObject Name="ColGun16" Left="540" Width="20" Height="20" Border.Lines="All" GrowToBottom="true"
+                  Text="[Puantaj.Gun16]" HorzAlign="Center" VertAlign="Center" Font="Arial, 6.75pt"/>
+      <TextObject Name="ColGun17" Left="560" Width="20" Height="20" Border.Lines="All" GrowToBottom="true"
+                  Text="[Puantaj.Gun17]" HorzAlign="Center" VertAlign="Center" Font="Arial, 6.75pt"/>
+      <TextObject Name="ColGun18" Left="580" Width="20" Height="20" Border.Lines="All" GrowToBottom="true"
+                  Text="[Puantaj.Gun18]" HorzAlign="Center" VertAlign="Center" Font="Arial, 6.75pt"/>
+      <TextObject Name="ColGun19" Left="600" Width="20" Height="20" Border.Lines="All" GrowToBottom="true"
+                  Text="[Puantaj.Gun19]" HorzAlign="Center" VertAlign="Center" Font="Arial, 6.75pt"/>
+      <TextObject Name="ColGun20" Left="620" Width="20" Height="20" Border.Lines="All" GrowToBottom="true"
+                  Text="[Puantaj.Gun20]" HorzAlign="Center" VertAlign="Center" Font="Arial, 6.75pt"/>
+      <TextObject Name="ColGun21" Left="640" Width="20" Height="20" Border.Lines="All" GrowToBottom="true"
+                  Text="[Puantaj.Gun21]" HorzAlign="Center" VertAlign="Center" Font="Arial, 6.75pt"/>
+      <TextObject Name="ColGun22" Left="660" Width="20" Height="20" Border.Lines="All" GrowToBottom="true"
+                  Text="[Puantaj.Gun22]" HorzAlign="Center" VertAlign="Center" Font="Arial, 6.75pt"/>
+      <TextObject Name="ColGun23" Left="680" Width="20" Height="20" Border.Lines="All" GrowToBottom="true"
+                  Text="[Puantaj.Gun23]" HorzAlign="Center" VertAlign="Center" Font="Arial, 6.75pt"/>
+      <TextObject Name="ColGun24" Left="700" Width="20" Height="20" Border.Lines="All" GrowToBottom="true"
+                  Text="[Puantaj.Gun24]" HorzAlign="Center" VertAlign="Center" Font="Arial, 6.75pt"/>
+      <TextObject Name="ColGun25" Left="720" Width="20" Height="20" Border.Lines="All" GrowToBottom="true"
+                  Text="[Puantaj.Gun25]" HorzAlign="Center" VertAlign="Center" Font="Arial, 6.75pt"/>
+      <TextObject Name="ColGun26" Left="740" Width="20" Height="20" Border.Lines="All" GrowToBottom="true"
+                  Text="[Puantaj.Gun26]" HorzAlign="Center" VertAlign="Center" Font="Arial, 6.75pt"/>
+      <TextObject Name="ColGun27" Left="760" Width="20" Height="20" Border.Lines="All" GrowToBottom="true"
+                  Text="[Puantaj.Gun27]" HorzAlign="Center" VertAlign="Center" Font="Arial, 6.75pt"/>
+      <TextObject Name="ColGun28" Left="780" Width="20" Height="20" Border.Lines="All" GrowToBottom="true"
+                  Text="[Puantaj.Gun28]" HorzAlign="Center" VertAlign="Center" Font="Arial, 6.75pt"/>
+      <TextObject Name="ColGun29" Left="800" Width="20" Height="20" Border.Lines="All" GrowToBottom="true"
+                  Text="[Puantaj.Gun29]" HorzAlign="Center" VertAlign="Center" Font="Arial, 6.75pt"/>
+      <TextObject Name="ColGun30" Left="820" Width="20" Height="20" Border.Lines="All" GrowToBottom="true"
+                  Text="[Puantaj.Gun30]" HorzAlign="Center" VertAlign="Center" Font="Arial, 6.75pt"/>
+      <TextObject Name="ColX" Left="840" Width="50" Height="20" Border.Lines="All" Fill.Color="248, 250, 252"
+                  GrowToBottom="true" Text="[Puantaj.XSayisi]" HorzAlign="Center" VertAlign="Center" Font="Arial, 6.75pt, style=Bold"/>
+      <TextObject Name="ColI" Left="890" Width="50" Height="20" Border.Lines="All" GrowToBottom="true"
+                  Text="[Puantaj.ISayisi]" HorzAlign="Center" VertAlign="Center" Font="Arial, 6.75pt"/>
+      <TextObject Name="ColH" Left="940" Width="50" Height="20" Border.Lines="All" GrowToBottom="true"
+                  Text="[Puantaj.HSayisi]" HorzAlign="Center" VertAlign="Center" Font="Arial, 6.75pt"/>
+      <TextObject Name="ColHakkedis" Left="990" Width="57.06" Height="20" Border.Lines="All" Fill.Color="232, 244, 248"
+                  GrowToBottom="true" Text="[Puantaj.Hakkedis]" HorzAlign="Center" VertAlign="Center" Font="Arial, 6.75pt, style=Bold"/>
+
+      <DataHeaderBand Name="DataHeader1" Width="1047.06" Height="20" RepeatOnEveryPage="true">
+        <TextObject Name="HdrAdSoyad" Width="150" Height="20" Border.Lines="All" Fill.Color="30, 58, 138"
+                    Text="ADI SOYADI" HorzAlign="Center" VertAlign="Center" Font="Arial, 6.5pt, style=Bold" TextFill.Color="White"/>
+        <TextObject Name="HdrBirim" Left="150" Width="90" Height="20" Border.Lines="All" Fill.Color="30, 58, 138"
+                    Text="BİRİM" HorzAlign="Center" VertAlign="Center" Font="Arial, 6.5pt, style=Bold" TextFill.Color="White"/>
+        <TextObject Name="HdrGun01" Left="240" Width="20" Height="20" Border.Lines="All" Fill.Color="30, 58, 138"
+                    Text="1" HorzAlign="Center" VertAlign="Center" Font="Arial, 5.5pt, style=Bold" TextFill.Color="White"/>
+        <TextObject Name="HdrGun02" Left="260" Width="20" Height="20" Border.Lines="All" Fill.Color="30, 58, 138"
+                    Text="2" HorzAlign="Center" VertAlign="Center" Font="Arial, 5.5pt, style=Bold" TextFill.Color="White"/>
+        <TextObject Name="HdrGun03" Left="280" Width="20" Height="20" Border.Lines="All" Fill.Color="30, 58, 138"
+                    Text="3" HorzAlign="Center" VertAlign="Center" Font="Arial, 5.5pt, style=Bold" TextFill.Color="White"/>
+        <TextObject Name="HdrGun04" Left="300" Width="20" Height="20" Border.Lines="All" Fill.Color="30, 58, 138"
+                    Text="4" HorzAlign="Center" VertAlign="Center" Font="Arial, 5.5pt, style=Bold" TextFill.Color="White"/>
+        <TextObject Name="HdrGun05" Left="320" Width="20" Height="20" Border.Lines="All" Fill.Color="30, 58, 138"
+                    Text="5" HorzAlign="Center" VertAlign="Center" Font="Arial, 5.5pt, style=Bold" TextFill.Color="White"/>
+        <TextObject Name="HdrGun06" Left="340" Width="20" Height="20" Border.Lines="All" Fill.Color="30, 58, 138"
+                    Text="6" HorzAlign="Center" VertAlign="Center" Font="Arial, 5.5pt, style=Bold" TextFill.Color="White"/>
+        <TextObject Name="HdrGun07" Left="360" Width="20" Height="20" Border.Lines="All" Fill.Color="30, 58, 138"
+                    Text="7" HorzAlign="Center" VertAlign="Center" Font="Arial, 5.5pt, style=Bold" TextFill.Color="White"/>
+        <TextObject Name="HdrGun08" Left="380" Width="20" Height="20" Border.Lines="All" Fill.Color="30, 58, 138"
+                    Text="8" HorzAlign="Center" VertAlign="Center" Font="Arial, 5.5pt, style=Bold" TextFill.Color="White"/>
+        <TextObject Name="HdrGun09" Left="400" Width="20" Height="20" Border.Lines="All" Fill.Color="30, 58, 138"
+                    Text="9" HorzAlign="Center" VertAlign="Center" Font="Arial, 5.5pt, style=Bold" TextFill.Color="White"/>
+        <TextObject Name="HdrGun10" Left="420" Width="20" Height="20" Border.Lines="All" Fill.Color="30, 58, 138"
+                    Text="10" HorzAlign="Center" VertAlign="Center" Font="Arial, 5.5pt, style=Bold" TextFill.Color="White"/>
+        <TextObject Name="HdrGun11" Left="440" Width="20" Height="20" Border.Lines="All" Fill.Color="30, 58, 138"
+                    Text="11" HorzAlign="Center" VertAlign="Center" Font="Arial, 5.5pt, style=Bold" TextFill.Color="White"/>
+        <TextObject Name="HdrGun12" Left="460" Width="20" Height="20" Border.Lines="All" Fill.Color="30, 58, 138"
+                    Text="12" HorzAlign="Center" VertAlign="Center" Font="Arial, 5.5pt, style=Bold" TextFill.Color="White"/>
+        <TextObject Name="HdrGun13" Left="480" Width="20" Height="20" Border.Lines="All" Fill.Color="30, 58, 138"
+                    Text="13" HorzAlign="Center" VertAlign="Center" Font="Arial, 5.5pt, style=Bold" TextFill.Color="White"/>
+        <TextObject Name="HdrGun14" Left="500" Width="20" Height="20" Border.Lines="All" Fill.Color="30, 58, 138"
+                    Text="14" HorzAlign="Center" VertAlign="Center" Font="Arial, 5.5pt, style=Bold" TextFill.Color="White"/>
+        <TextObject Name="HdrGun15" Left="520" Width="20" Height="20" Border.Lines="All" Fill.Color="30, 58, 138"
+                    Text="15" HorzAlign="Center" VertAlign="Center" Font="Arial, 5.5pt, style=Bold" TextFill.Color="White"/>
+        <TextObject Name="HdrGun16" Left="540" Width="20" Height="20" Border.Lines="All" Fill.Color="30, 58, 138"
+                    Text="16" HorzAlign="Center" VertAlign="Center" Font="Arial, 5.5pt, style=Bold" TextFill.Color="White"/>
+        <TextObject Name="HdrGun17" Left="560" Width="20" Height="20" Border.Lines="All" Fill.Color="30, 58, 138"
+                    Text="17" HorzAlign="Center" VertAlign="Center" Font="Arial, 5.5pt, style=Bold" TextFill.Color="White"/>
+        <TextObject Name="HdrGun18" Left="580" Width="20" Height="20" Border.Lines="All" Fill.Color="30, 58, 138"
+                    Text="18" HorzAlign="Center" VertAlign="Center" Font="Arial, 5.5pt, style=Bold" TextFill.Color="White"/>
+        <TextObject Name="HdrGun19" Left="600" Width="20" Height="20" Border.Lines="All" Fill.Color="30, 58, 138"
+                    Text="19" HorzAlign="Center" VertAlign="Center" Font="Arial, 5.5pt, style=Bold" TextFill.Color="White"/>
+        <TextObject Name="HdrGun20" Left="620" Width="20" Height="20" Border.Lines="All" Fill.Color="30, 58, 138"
+                    Text="20" HorzAlign="Center" VertAlign="Center" Font="Arial, 5.5pt, style=Bold" TextFill.Color="White"/>
+        <TextObject Name="HdrGun21" Left="640" Width="20" Height="20" Border.Lines="All" Fill.Color="30, 58, 138"
+                    Text="21" HorzAlign="Center" VertAlign="Center" Font="Arial, 5.5pt, style=Bold" TextFill.Color="White"/>
+        <TextObject Name="HdrGun22" Left="660" Width="20" Height="20" Border.Lines="All" Fill.Color="30, 58, 138"
+                    Text="22" HorzAlign="Center" VertAlign="Center" Font="Arial, 5.5pt, style=Bold" TextFill.Color="White"/>
+        <TextObject Name="HdrGun23" Left="680" Width="20" Height="20" Border.Lines="All" Fill.Color="30, 58, 138"
+                    Text="23" HorzAlign="Center" VertAlign="Center" Font="Arial, 5.5pt, style=Bold" TextFill.Color="White"/>
+        <TextObject Name="HdrGun24" Left="700" Width="20" Height="20" Border.Lines="All" Fill.Color="30, 58, 138"
+                    Text="24" HorzAlign="Center" VertAlign="Center" Font="Arial, 5.5pt, style=Bold" TextFill.Color="White"/>
+        <TextObject Name="HdrGun25" Left="720" Width="20" Height="20" Border.Lines="All" Fill.Color="30, 58, 138"
+                    Text="25" HorzAlign="Center" VertAlign="Center" Font="Arial, 5.5pt, style=Bold" TextFill.Color="White"/>
+        <TextObject Name="HdrGun26" Left="740" Width="20" Height="20" Border.Lines="All" Fill.Color="30, 58, 138"
+                    Text="26" HorzAlign="Center" VertAlign="Center" Font="Arial, 5.5pt, style=Bold" TextFill.Color="White"/>
+        <TextObject Name="HdrGun27" Left="760" Width="20" Height="20" Border.Lines="All" Fill.Color="30, 58, 138"
+                    Text="27" HorzAlign="Center" VertAlign="Center" Font="Arial, 5.5pt, style=Bold" TextFill.Color="White"/>
+        <TextObject Name="HdrGun28" Left="780" Width="20" Height="20" Border.Lines="All" Fill.Color="30, 58, 138"
+                    Text="28" HorzAlign="Center" VertAlign="Center" Font="Arial, 5.5pt, style=Bold" TextFill.Color="White"/>
+        <TextObject Name="HdrGun29" Left="800" Width="20" Height="20" Border.Lines="All" Fill.Color="30, 58, 138"
+                    Text="29" HorzAlign="Center" VertAlign="Center" Font="Arial, 5.5pt, style=Bold" TextFill.Color="White"/>
+        <TextObject Name="HdrGun30" Left="820" Width="20" Height="20" Border.Lines="All" Fill.Color="30, 58, 138"
+                    Text="30" HorzAlign="Center" VertAlign="Center" Font="Arial, 5.5pt, style=Bold" TextFill.Color="White"/>
+        <TextObject Name="HdrX" Left="840" Width="50" Height="20" Border.Lines="All" Fill.Color="30, 58, 138"
+                    Text="X" HorzAlign="Center" VertAlign="Center" Font="Arial, 6.5pt, style=Bold" TextFill.Color="White"/>
+        <TextObject Name="HdrI" Left="890" Width="50" Height="20" Border.Lines="All" Fill.Color="30, 58, 138"
+                    Text="İZİN" HorzAlign="Center" VertAlign="Center" Font="Arial, 6.5pt, style=Bold" TextFill.Color="White"/>
+        <TextObject Name="HdrH" Left="940" Width="50" Height="20" Border.Lines="All" Fill.Color="30, 58, 138"
+                    Text="HAST." HorzAlign="Center" VertAlign="Center" Font="Arial, 6.5pt, style=Bold" TextFill.Color="White"/>
+        <TextObject Name="HdrHakkedis" Left="990" Width="57.06" Height="20" Border.Lines="All" Fill.Color="30, 58, 138"
+                    Text="HAKEDİŞ" HorzAlign="Center" VertAlign="Center" Font="Arial, 6.5pt, style=Bold" TextFill.Color="White"/>
+      </DataHeaderBand>
+    </DataBand>
+
+    <ReportSummaryBand Name="ReportSummary1" Width="1047.06" Height="122" KeepWithData="true">
+      <TextObject Name="TxtGenelToplam" Width="1047.06" Height="22" Border.Lines="All" Fill.Color="233, 238, 248"
+                  Text="GENEL TOPLAM    X (çalışma): [ToplamX]    |    İzin: [ToplamI]    |    Hastalık: [ToplamH]"
+                  HorzAlign="Right" VertAlign="Center" Font="Arial, 8.5pt, style=Bold" TextFill.Color="30, 58, 114"/>
+      <TextObject Name="TxtImzaBirimUnvan" Left="60" Top="42" Width="400" Height="14" Text="BİRİM SORUMLUSU"
+                  HorzAlign="Center" Font="Arial, 8.5pt, style=Bold" TextFill.Color="30, 58, 114"/>
+      <TextObject Name="TxtImzaBirimCizgi" Left="60" Top="78" Width="400" Height="19" Border.Lines="Top"
+                  Text="[ImzaBirimSorumlusu]" HorzAlign="Center" VertAlign="Center" Font="Arial, 8pt" TextFill.Color="51, 65, 85"/>
+      <TextObject Name="TxtImzaBasUnvan" Left="587.06" Top="42" Width="400" Height="14" Text="BELEDİYE BAŞKANI"
+                  HorzAlign="Center" Font="Arial, 8.5pt, style=Bold" TextFill.Color="30, 58, 114"/>
+      <TextObject Name="TxtImzaBasCizgi" Left="587.06" Top="78" Width="400" Height="19" Border.Lines="Top"
+                  Text="[ImzaBelediyeBaskani]" HorzAlign="Center" VertAlign="Center" Font="Arial, 8pt" TextFill.Color="51, 65, 85"/>
+    </ReportSummaryBand>
+
+    <PageFooterBand Name="PageFooter1" Width="1047.06" Height="18.9">
+      <TextObject Name="TxtAltSol" Width="800" Height="18.9" Text="[OlusturanAd] · Şablon v[SablonSurum]"
+                  VertAlign="Center" Font="Arial, 7.75pt" TextFill.Color="100, 116, 139"/>
+      <TextObject Name="TxtSayfa" Left="847.26" Width="199.8" Height="18.9" Text="Sayfa [Page#] / [TotalPages#]"
+                  HorzAlign="Right" VertAlign="Center" Font="Arial, 7.75pt" TextFill.Color="100, 116, 139"/>
+    </PageFooterBand>
+  </ReportPage>
+</Report>

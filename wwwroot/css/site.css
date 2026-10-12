@@ -146,6 +146,211 @@
 /* ============================================
    GAMABEL MVC - COMPONENT STYLES
    ============================================ */
+
+/* -------- SAYFA ÜST BAŞLIĞI (standart taslak v3.1) --------
+   <sayfa-baslik> TagHelper ile üretilir.
+   Kullanım ve kurallar: CSS_DESIGN_SYSTEM.md → "Sayfa Üst Başlığı" */
+.page-header-card {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px 20px;
+    background: #fff;
+    border: 1px solid #e8ecf3;
+    border-radius: 16px;
+    padding: 18px 24px;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+    margin-bottom: 16px;
+}
+
+.page-header-card .page-header-text { min-width: 240px; flex: 1 1 280px; }
+
+.page-header-card .page-header-title {
+    margin: 0;
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #1e3a8a;
+    line-height: 1.25;
+}
+
+.page-header-card .page-header-title i { color: #2563eb; }
+
+.page-header-card .page-header-sub {
+    margin-top: 4px;
+    font-size: 0.85rem;
+    color: #5b6678;
+}
+
+.page-header-card .page-header-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+}
+
+/* -------- GENEL TASARIM: KART + FİLTRE ÇUBUĞU + TAKVİM GEZİNME (standart v3.3) --------
+   Ölçü/renkler HizliMesaiGirisi filtre çubuğu (hm-card / hm-filters / hm-filter-unit /
+   hm-filter-search / hm-month-nav / hm-action-message) baz alınarak standartlaştırıldı;
+   tüm PRS/STS sayfalarında kullanılır.
+   Kurallar: CSS_DESIGN_SYSTEM.md → "Genel Tasarım Standardı".
+   Temel: Bootstrap 5.3.8 (CDN) form-select/form-control/btn üzerine ince katman. */
+
+/* Kart — sayfa içi tüm bölümler için ortak kap */
+.sayfa-karti {
+    background: #fff;
+    border: 1px solid #e1e6ef;
+    border-radius: 16px;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, .05);
+    margin: 0 0 16px;
+}
+
+.sayfa-karti.baslikli > .kart-basligi {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 20px;
+}
+
+.sayfa-karti .kart-basligi h2,
+.kart-baslik {
+    color: #1f2937;
+    font-size: 18px;
+    font-weight: 700;
+    margin: 0;
+}
+
+.kart-alt-yazi {
+    color: #5b6678;
+    font-size: 13px;
+    margin: 4px 0 0;
+}
+
+/* Filtre çubuğu — kartın içindeki yatay kontrol sırası */
+.filtre-cubugu {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+}
+
+/* Esnek genişlik: normal alan / geniş alan (arama kutusu)
+   Ölçüler HizliMesaiGirisi filtre çubuğu baz alınarak standartlaştırıldı (hm-filter-unit / hm-filter-search). */
+.filtre-alan       { flex: 1 1 180px; min-width: 0; }
+.filtre-alan-genis { flex: 2 1 230px; min-width: 0; }
+
+/* Tüm filtre kontrolleri aynı ölçülerde: 38px yükseklik, 10px radius */
+.filtre-cubugu .form-select,
+.filtre-cubugu .form-control,
+.filtre-cubugu .filtre-sabit,
+.filtre-sabit {
+    height: 38px;
+    min-width: 0;
+    padding: 0 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    background-color: #fff;
+    box-shadow: none;
+    color: #1f2937;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+/* Değişmeyen değer gösterimi (ör. kullanıcının birimi) */
+.filtre-cubugu .filtre-sabit {
+    display: flex;
+    align-items: center;
+    padding-right: 12px;
+    background-color: #f8fafc;
+    font-weight: 600;
+}
+
+/* Arama kutusu — ikonlu input-group (hm-filter-search standardı) */
+.filtre-cubugu .input-group {
+    flex-wrap: nowrap;
+}
+
+.filtre-cubugu .input-group .input-group-text {
+    display: grid;
+    width: 40px;
+    place-items: center;
+    border: 1px solid #cbd5e1;
+    border-right: 0;
+    border-radius: 10px 0 0 10px;
+    background-color: #fff;
+    color: #64748b;
+    font-size: 14px;
+    box-shadow: none;
+}
+
+.filtre-cubugu .input-group .form-control {
+    min-width: 0;
+    height: 38px;
+    padding: 0 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 0 10px 10px 0;
+    background-color: #fff;
+    color: #1f2937;
+    font-size: 14px;
+    font-weight: 500;
+    box-shadow: none;
+}
+
+/* Filtre çubuğundaki butonlar da aynı ölçülerde: 38px yükseklik, 10px radius */
+.filtre-cubugu .btn {
+    min-height: 38px;
+    padding: 0 13px;
+    border-radius: 10px;
+    box-shadow: none;
+}
+
+/* Filtre satırına sığan uyarı/bilgi mesajı (hm-action-message standardı) */
+.filtre-cubugu .filtre-mesaj {
+    flex: 1 0 100%;
+    min-height: 16px;
+    text-align: right;
+}
+
+/* Dönem (ay/yıl) gezinme grubu */
+.takvim-gezinme {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+}
+
+.takvim-gezinme .takvim-ok {
+    display: grid;
+    width: 38px;
+    height: 38px;
+    place-items: center;
+    padding: 0;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    background: #fff;
+    color: #1d3a8a;
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.takvim-gezinme .takvim-ay {
+    display: grid;
+    min-width: 130px;
+    height: 38px;
+    place-items: center;
+    padding: 0 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    background: #fff;
+    color: #1f2937;
+    font-size: 14px;
+    font-weight: 700;
+}
+
 /* -------- BUTTONS -------- */
 
 .btn {
@@ -3204,7 +3409,7 @@ body {
             background: #E2E8F0;
         }
 
-        /* Toplam hücresi - 88 saat uyarısı */
+        /* Toplam hücresi */
         .personel-toplam {
             min-width: 50px;
             position: sticky;
@@ -3215,11 +3420,6 @@ body {
             font-size: 11px;
             text-align: center;
             padding: 3px 4px;
-        }
-
-        .personel-toplam.uyari-aylik {
-            background: #FECACA !important;
-            color: #DC2626;
         }
 
         /* Fiili saat + hafta sonu ek mesai sütunu */
@@ -3343,7 +3543,6 @@ body {
             .mesai-cell .badge-pill { background: #2563eb !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .sticky-personel { background: #f8fafc !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .stats-mini-card { border: 1px solid #e2e8f0; box-shadow: none; }
-            .personel-toplam.uyari-aylik { background: #fecaca !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         }
 
 /* ===== puantaj.css ===== */
@@ -3403,26 +3602,7 @@ body {
         border-color: #93c5fd;
         box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
     }
-    .btn-puantaj {
-        border-radius: 40px;
-        padding: 7px 14px;
-        font-size: 13px;
-        font-weight: 600;
-        border: none;
-        transition: all 0.2s;
-        cursor: pointer;
-        white-space: nowrap;
-    }
-    .btn-puantaj:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 16px rgba(37,99,235,0.12);
-    }
-    .btn-primary-puantaj { background: var(--puantaj-primary); color: white; }
-    .btn-success-puantaj { background: #16a34a; color: white; }
-    .btn-info-puantaj { background: var(--puantaj-soft); color: var(--puantaj-primary); border: 1px solid #dbeafe; }
-    .btn-warning-puantaj { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
-    .btn-secondary-puantaj { background: #e2e8f0; color: #475569; }
-    .btn-outline-puantaj { background: var(--puantaj-soft); border: 1px solid #dbeafe; color: var(--puantaj-primary); }
+
 
     .calendar-nav { display: flex; align-items: center; gap: 8px; }
     .month-nav-button {
@@ -3804,7 +3984,6 @@ body {
         .puantaj-table thead th { font-size: 8px; padding: 2px 1px; }
         .puantaj-table tbody td { font-size: 9px; padding: 1px; }
         .footer { flex-direction: column; text-align: center; gap: 4px; }
-        .btn-group-icon .btn-puantaj { font-size: 11px; padding: 4px 10px; }
         .modal-content { padding: 20px 16px; }
     }
 .puantaj-wrapper .month-badge { min-width: 142px; font-size: 15px; padding: 5px 14px; text-align: center; }

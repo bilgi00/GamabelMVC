@@ -1,5 +1,6 @@
 using gamabelmvc.Configuration;
 using gamabelmvc.Services;
+using gamabelmvc.Services.Raporlama;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
@@ -17,7 +18,7 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddFastReport();
 builder.Services.AddSession(options =>
 {
-    options.IdleTimeout = TimeSpan.FromMinutes(15);
+    options.IdleTimeout = TimeSpan.FromMinutes(60);
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
     options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
@@ -31,7 +32,7 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.Cookie.HttpOnly = true;
         options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
         options.Cookie.SameSite = SameSiteMode.Lax;
-        options.ExpireTimeSpan = TimeSpan.FromMinutes(15);
+        options.ExpireTimeSpan = TimeSpan.FromMinutes(60);
         options.SlidingExpiration = true;
         options.LoginPath = "/Account/Login";
         options.AccessDeniedPath = "/Account/AccessDenied";
@@ -151,6 +152,9 @@ builder.Services.AddSingleton<IWebHostEnvironment>(builder.Environment);
 // PRS hizmetleri
 builder.Services.AddSingleton<OdemeFaturaImportService>();
 builder.Services.AddSingleton<OdemeTalimatService>();
+
+// FastReport A4 Rapor Standardı (v3) ortak rapor servisi
+builder.Services.AddScoped<IRaporServisi, RaporServisi>();
 
 // Sistem bilgileri servisi (IP, MAC, Bilgisayar Adı vb.)
 builder.Services.AddSingleton<ISystemInfoService, SystemInfoService>();

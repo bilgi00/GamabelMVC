@@ -1,0 +1,38 @@
+@model FastReport.Web.WebReport
+@using gamabelmvc.Services.Raporlama
+@{
+    Layout = null;
+    var yon = (RaporYonu)ViewBag.Yon;
+    var desteklenen = ViewBag.DesteklenenYonler as RaporYonu[]
+        ?? new[] { RaporYonu.Dikey, RaporYonu.Yatay };
+    var sorgu = ViewBag.RaporQuery as string ?? string.Empty;
+    var ayrac = string.IsNullOrEmpty(sorgu) ? string.Empty : "&";
+}
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Rapor Önizleme</title>
+    <style>
+        html, body { margin: 0; padding: 0; height: 100%; font-family: Arial, sans-serif; }
+        .rapor-cubuk { height: 24px; line-height: 24px; padding: 0 8px; background: #f1f3f5; font-size: 12px; }
+        .rapor-cubuk a { margin-right: 10px; text-decoration: none; color: #0b5ed7; }
+        .rapor-cubuk a.aktif { font-weight: bold; color: #000; pointer-events: none; }
+    </style>
+</head>
+<body>
+    <div class="rapor-cubuk">
+        Yön:
+        @foreach (var d in desteklenen)
+        {
+            <a class="@(d == yon ? "aktif" : "")" href="?@sorgu@(ayrac)yon=@d.ToString().ToLowerInvariant()">@d.Ad()</a>
+        }
+        @if (ViewBag.PdfUrl is string pdfUrl)
+        {
+            <a href="@pdfUrl">PDF indir</a>
+        }
+    </div>
+    @await Model.Render()
+</body>
+</html>

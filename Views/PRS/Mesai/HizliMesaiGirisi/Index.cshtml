@@ -11,9 +11,13 @@
     var secilenBirim = (string?)ViewBag.SecilenBirim ?? "";
     var secilenStatu = (string?)ViewBag.SecilenStatu ?? "__TUMU__";
     var gunSayisi = (int?)ViewBag.GunSayisi ?? DateTime.DaysInMonth(secilenYil, secilenAy);
+    var topluMesaiTarihi = DateTime.Today.Year == secilenYil && DateTime.Today.Month == secilenAy
+        ? DateTime.Today
+        : new DateTime(secilenYil, secilenAy, 1);
     var rol = ViewBag.Rol ?? "";
     var kullaniciBirim = ViewBag.KullaniciBirim ?? "";
     var isAdmin = ViewBag.Rol == "admin";
+    var ayKilitli = (bool?)ViewBag.AyKilitli ?? true;
     
     // Ay adlarını tanımla
     var ayAdlari = new[] { "", "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", 
@@ -363,8 +367,11 @@
                     <div class="hm-subtitle">Personel mesai saatlerini hızlıca giriniz.</div>
                 </div>
                 <div class="hm-actions no-print">
-                    <button class="btn btn-batch" onclick="acBatchModal()">
+                    <button class="btn btn-batch" onclick="acBatchModal()" @(ayKilitli ? "disabled" : null)>
                         <i class="bi bi-grid-3x3-gap-fill me-1"></i>Toplu Giriş
+                    </button>
+                    <button class="btn btn-batch" onclick="acPersonelTopluModal()" @(ayKilitli ? "disabled" : null)>
+                        <i class="bi bi-people-fill me-1"></i>Personel Toplu Giriş
                     </button>
                     <button class="btn btn-success" onclick="takvimKaydet()"><i class="bi bi-check-lg me-1"></i>Kaydet</button>
                     <span class="hm-separator" aria-hidden="true"></span>
@@ -374,6 +381,8 @@
                     <button class="btn" onclick="acReportModal()"><i class="bi bi-bar-chart-fill me-1"></i>Rapor</button>
                 </div>
             </div>
+
+//arama kısmı başı
 
             <section class="hm-card hm-filters" aria-label="Filtreler">
                 <select id="subeSelect" class="form-select hm-filter-unit" aria-label="Birim" onchange="birimSecildi()">
@@ -426,6 +435,12 @@
 
                 <div id="takvimActionMsg" class="hm-action-message text-muted small fst-italic" aria-live="polite"></div>
             </section>
+            @if (ayKilitli)
+            {
+                <div class="alert alert-warning mx-3 mb-3" role="status">
+                    @ayAdlari[secilenAy] @secilenYil ayı kilitli veya kilit durumu doğrulanamadı. Mesai ekleme, değiştirme ve silme işlemleri kapalıdır.
+                </div>
+            }
 
             <section class="hm-card hm-calendar" aria-labelledby="mesaiTakvimBaslik">
                 <header class="hm-calendar-head">
@@ -483,17 +498,35 @@
                                             var mesai = personelMesaiVerileri[personel.PerNo][gun.ToString()];
                                             var saatStr = FormatSaatDakika(mesai.ToplamSaat);
                                             <td class="@haftaSinif @(bugunMu ? "cell-today" : "")" data-gun="@gun" data-saat="@mesai.ToplamSaat.ToString(System.Globalization.CultureInfo.InvariantCulture)" style="padding:1px;">
+                                                @if (ayKilitli)
+                                                {
+                                                <div class="mesai-cell" aria-disabled="true" title="Ay kilitli" style="min-height:30px; font-size:11px;">
+                                                    <span class="badge-pill" style="font-size:10px; padding:2px 8px;">@saatStr</span>
+                                                </div>
+                                                }
+                                                else
+                                                {
                                                 <div class="mesai-cell" onclick="mesaiDetay('@personel.PerNo', @gun, @mesai.Id)" oncontextmenu="silMesai(event, '@personel.PerNo', @gun, @mesai.Id)" title="Tıkla düzenle, Sağ tık sil" data-bs-toggle="tooltip" style="min-height:30px; font-size:11px;">
                                                     <span class="badge-pill" style="font-size:10px; padding:2px 8px;">@saatStr</span>
                                                 </div>
+                                                }
                                             </td>
                                         }
                                         else
                                         {
                                             <td class="@haftaSinif @(bugunMu ? "cell-today" : "")" data-gun="@gun" data-saat="0" style="padding:1px;">
+                                                @if (ayKilitli)
+                                                {
+                                                <div class="mesai-cell" aria-disabled="true" title="Ay kilitli" style="min-height:30px;">
+                                                    <span class="empty-plus" style="font-size:16px;">+</span>
+                                                </div>
+                                                }
+                                                else
+                                                {
                                                 <div class="mesai-cell" onclick="yeniMesaiEkle('@personel.PerNo', @gun)" title="Mesai Gir" data-bs-toggle="tooltip" style="min-height:30px;">
                                                     <span class="empty-plus" style="font-size:16px;">+</span>
                                                 </div>
+                                                }
                                             </td>
                                         }
                                     }
@@ -581,9 +614,6 @@
                         <div class="col-6">
                             <div id="mesaiSureBilgi" class="text-muted small" style="font-size:12px;">Süre: —</div>
                         </div>
-                        <div class="col-6 text-end">
-                            <div id="mesaiAylikUyari" class="text-danger small" style="font-size:11px; display:none;"></div>
-                        </div>
                     </div>
                     <div class="mb-2 mt-2">
                         <label class="form-label fw-semibold" style="font-size:13px;"><i class="bi bi-pencil me-2"></i>Açıklama</label>
@@ -665,6 +695,75 @@
         </div>
     </div>
 
+    <!-- PERSONEL TOPLU MESAI GIRISI MODAL -->
+    <div class="modal fade modal-custom" id="personelTopluModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content" style="border-radius:20px; padding:6px 2px;">
+                <div class="modal-header" style="padding:16px 20px 0 20px;">
+                    <h5 class="modal-title" style="font-size:18px;">
+                        <i class="bi bi-people-fill me-2"></i>Personel Toplu Mesai Girişi
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" style="padding:20px;">
+                    <div class="mb-3">
+                        <label for="personelTopluTarih" class="form-label fw-semibold" style="font-size:14px;">Mesai Tarihi</label>
+                        <input id="personelTopluTarih" type="date" class="form-control"
+                               min="@($"{secilenYil:D4}-{secilenAy:D2}-01")"
+                               max="@($"{secilenYil:D4}-{secilenAy:D2}-{gunSayisi:D2}")"
+                               value="@topluMesaiTarihi.ToString("yyyy-MM-dd")"
+                               style="font-size:14px; padding:8px 12px; border-radius:12px;" />
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <label class="form-label fw-semibold mb-0" style="font-size:14px;">Personel Seçiniz</label>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="personelTopluSec(true)">Tümünü Seç</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="personelTopluSec(false)">Seçimi Temizle</button>
+                            </div>
+                        </div>
+                        <div id="personelTopluListe" style="max-height:260px; overflow-y:auto; border:1px solid #E2E8F0; border-radius:12px; padding:8px;">
+                            @foreach (var personel in personeller)
+                            {
+                                <label class="d-flex align-items-center gap-2 px-2 py-2 border-bottom" style="font-size:13px; cursor:pointer;">
+                                    <input type="checkbox" class="form-check-input personel-toplu-check m-0" value="@personel.PerNo" />
+                                    <span>@personel.AdSoyad</span>
+                                </label>
+                            }
+                        </div>
+                        <div id="personelTopluSecimSayisi" class="form-text">0 personel seçildi</div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label for="personelTopluBaslangic" class="form-label fw-semibold" style="font-size:14px;">Mesai Başlangıç</label>
+                            <input id="personelTopluBaslangic" type="time" class="form-control" value="08:00"
+                                   style="font-size:14px; padding:8px 12px; border-radius:12px;" />
+                        </div>
+                        <div class="col-6">
+                            <label for="personelTopluBitis" class="form-label fw-semibold" style="font-size:14px;">Mesai Bitiş</label>
+                            <input id="personelTopluBitis" type="time" class="form-control" value="13:00"
+                                   style="font-size:14px; padding:8px 12px; border-radius:12px;" />
+                        </div>
+                    </div>
+                    <div class="mb-2">
+                        <label for="personelTopluAciklama" class="form-label fw-semibold" style="font-size:14px;">Açıklama (Ortak)</label>
+                        <input id="personelTopluAciklama" type="text" class="form-control" maxlength="500"
+                               placeholder="Tüm kayıtlar için ortak açıklama"
+                               style="font-size:13px; padding:8px 12px; border-radius:12px;" />
+                    </div>
+                    <div id="personelTopluModalMsg" class="small mt-2" aria-live="polite"
+                         style="font-size:12px; white-space:pre-line;"></div>
+                </div>
+                <div class="modal-footer border-0" style="padding:0 20px 20px 20px;">
+                    <button type="button" class="btn-soft-cancel" data-bs-dismiss="modal" style="font-size:13px; padding:6px 20px;">Vazgeç</button>
+                    <button type="button" class="btn-primary-custom" id="personelTopluKaydetBtn" onclick="kaydetPersonelTopluMesai()" style="font-size:13px; padding:6px 20px;">
+                        <i class="bi bi-check-lg me-1"></i>Seçilenlere Kaydet
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- MESAI RAPOR MODAL -->
     <div class="modal fade modal-custom" id="reportModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-xl">
@@ -730,6 +829,7 @@
         let seciliKayitId = 0;
         let modalInstance = null;
         let batchModalInstance = null;
+        let personelTopluModalInstance = null;
         let reportModalInstance = null;
         let silModu = false;
 
@@ -740,6 +840,12 @@
             
             const batchModalEl = document.getElementById('batchModal');
             batchModalInstance = new bootstrap.Modal(batchModalEl);
+
+            const personelTopluModalEl = document.getElementById('personelTopluModal');
+            personelTopluModalInstance = new bootstrap.Modal(personelTopluModalEl);
+            document.querySelectorAll('.personel-toplu-check').forEach(function(checkbox) {
+                checkbox.addEventListener('change', personelTopluSecimSayisiniGuncelle);
+            });
             
             const reportModalEl = document.getElementById('reportModal');
             reportModalInstance = new bootstrap.Modal(reportModalEl);
@@ -757,7 +863,6 @@
             hesaplaToplamlar();
             istatistikleriGuncelle();
             hesaplaDetayliToplamlar();
-            kontrol88SaatUyarisi();
 
             // tooltipleri aktif et
             const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
@@ -949,33 +1054,11 @@
             }
         }
 
-        // ----- 88 SAAT UYARISI -----
-        function kontrol88SaatUyarisi() {
-            document.querySelectorAll('.personel-toplam').forEach(el => {
-                const span = el.querySelector('span');
-                if (!span) return;
-                const txt = span.textContent.trim();
-                const parts = txt.split(':');
-                let toplam = 0;
-                if (parts.length === 2) {
-                    toplam = parseInt(parts[0]) || 0;
-                }
-                if (toplam > 88) {
-                    el.classList.add('uyari-aylik');
-                    el.title = 'Aylık 88 saat kotası aşıldı!';
-                } else {
-                    el.classList.remove('uyari-aylik');
-                    el.title = '';
-                }
-            });
-        }
-
         // ----- SAAT HESAPLAMA (Canlı) -----
         function hesaplaSure() {
             const baslangic = document.getElementById('mesaiBaslangic').value;
             const bitis = document.getElementById('mesaiBitis').value;
             const bilgiEl = document.getElementById('mesaiSureBilgi');
-            const uyariEl = document.getElementById('mesaiAylikUyari');
             
             if (!baslangic || !bitis) {
                 bilgiEl.textContent = 'Süre: —';
@@ -1016,26 +1099,6 @@
             const saat = Math.floor(farkDk / 60);
             const dakika = farkDk % 60;
             bilgiEl.textContent = 'Süre: ' + saat + ' saat ' + dakika + ' dk';
-
-            // Aylık 88 saat kontrolü
-            if (seciliHucre.personelId) {
-                const toplamSpan = document.querySelector('.personel-toplam[data-personel-id="' + seciliHucre.personelId + '"] span');
-                if (toplamSpan) {
-                    const txt = toplamSpan.textContent.trim();
-                    const parts = txt.split(':');
-                    let mevcutToplam = 0;
-                    if (parts.length === 2) {
-                        mevcutToplam = parseInt(parts[0]) || 0;
-                    }
-                    const yeniToplam = mevcutToplam + (farkDk / 60);
-                    if (yeniToplam > 88) {
-                        uyariEl.style.display = 'block';
-                        uyariEl.textContent = '⚠️ Bu kayıt ile aylık 88 saat aşılıyor! (Mevcut: ' + formatSaatDakika(mevcutToplam) + ')';
-                    } else {
-                        uyariEl.style.display = 'none';
-                    }
-                }
-            }
 
             return farkDk;
         }
@@ -1082,7 +1145,6 @@
             document.getElementById('mesaiAciklama').value = '';
             document.getElementById('mesaiSureBilgi').textContent = 'Süre: —';
             document.getElementById('mesaiSureBilgi').style.color = '#475569';
-            document.getElementById('mesaiAylikUyari').style.display = 'none';
             document.getElementById('btnSilMesai').style.display = 'none';
             hesaplaSure();
             modalInstance.show();
@@ -1099,7 +1161,6 @@
             document.getElementById('btnSilMesai').style.display = 'inline-block';
             document.getElementById('mesaiSureBilgi').textContent = 'Süre: —';
             document.getElementById('mesaiSureBilgi').style.color = '#475569';
-            document.getElementById('mesaiAylikUyari').style.display = 'none';
             
             // Verileri getir
             mesaiVerileriniGetir(kayitId);
@@ -1183,24 +1244,6 @@
                 return;
             }
 
-            // 88 saat aylık kontrolü
-            if (seciliHucre.personelId) {
-                const toplamSpan = document.querySelector('.personel-toplam[data-personel-id="' + seciliHucre.personelId + '"] span');
-                if (toplamSpan) {
-                    const txt = toplamSpan.textContent.trim();
-                    const parts = txt.split(':');
-                    let mevcutToplam = 0;
-                    if (parts.length === 2) {
-                        mevcutToplam = parseInt(parts[0]) || 0;
-                    }
-                    const yeniToplam = mevcutToplam + (farkDk / 60);
-                    if (yeniToplam > 88) {
-                        msg.textContent = '⚠️ Bu kayıt ile aylık 88 saat aşılıyor! (Mevcut: ' + formatSaatDakika(mevcutToplam) + ')';
-                        return;
-                    }
-                }
-            }
-
             const payload = {
                 personelId: seciliHucre.personelId,
                 tarih: document.getElementById('mesaiTarih').value,
@@ -1271,38 +1314,6 @@
                 return;
             }
 
-            // 88 saat kontrolü için mevcut toplamı al
-            let mevcutToplam = 0;
-            const toplamSpan = document.querySelector('.personel-toplam[data-personel-id="' + personelId + '"] span');
-            if (toplamSpan) {
-                const txt = toplamSpan.textContent.trim();
-                const parts = txt.split(':');
-                if (parts.length === 2) {
-                    mevcutToplam = parseInt(parts[0]) || 0;
-                }
-            }
-
-            // Seçilen günlerin toplam saatini hesapla
-            let eklenecekToplam = 0;
-            for (const day of selectedDays) {
-                const basParts = day.start.split(':');
-                const bitParts = day.end.split(':');
-                const basSaat = parseInt(basParts[0]);
-                const basDak = parseInt(basParts[1]);
-                const bitSaat = parseInt(bitParts[0]);
-                const bitDak = parseInt(bitParts[1]);
-                const farkDk = (bitSaat * 60 + bitDak) - (basSaat * 60 + basDak);
-                if (farkDk > 0) {
-                    eklenecekToplam += farkDk / 60;
-                }
-            }
-
-            if (mevcutToplam + eklenecekToplam > 88) {
-                msg.textContent = '⚠️ Bu kayıtlar ile aylık 88 saat aşılıyor! (Mevcut: ' + formatSaatDakika(mevcutToplam) + ')';
-                msg.style.color = '#DC2626';
-                return;
-            }
-
             msg.textContent = 'Kaydediliyor...';
             msg.style.color = '#2563EB';
 
@@ -1346,6 +1357,123 @@
                 msg.textContent = `⚠️ ${basarili} gün kaydedildi, ${hatali} günde hata oluştu.`;
                 msg.style.color = '#DC2626';
             }
+        }
+
+        function personelTopluSec(tumunuSec) {
+            document.querySelectorAll('.personel-toplu-check').forEach(function(checkbox) {
+                checkbox.checked = tumunuSec;
+            });
+            personelTopluSecimSayisiniGuncelle();
+        }
+
+        function personelTopluSecimSayisiniGuncelle() {
+            const secilenSayisi = document.querySelectorAll('.personel-toplu-check:checked').length;
+            document.getElementById('personelTopluSecimSayisi').textContent = secilenSayisi + ' personel seçildi';
+        }
+
+        function acPersonelTopluModal() {
+            personelTopluSec(false);
+            document.getElementById('personelTopluTarih').value = '@topluMesaiTarihi.ToString("yyyy-MM-dd")';
+            document.getElementById('personelTopluBaslangic').value = '08:00';
+            document.getElementById('personelTopluBitis').value = '13:00';
+            document.getElementById('personelTopluAciklama').value = '';
+            document.getElementById('personelTopluModalMsg').textContent = '';
+            document.getElementById('personelTopluKaydetBtn').disabled = false;
+            personelTopluModalInstance.show();
+        }
+
+        async function kaydetPersonelTopluMesai() {
+            const msg = document.getElementById('personelTopluModalMsg');
+            const saveButton = document.getElementById('personelTopluKaydetBtn');
+            const selectedPersonnel = Array.from(document.querySelectorAll('.personel-toplu-check:checked'));
+            const tarih = document.getElementById('personelTopluTarih').value;
+            const baslangicSaati = document.getElementById('personelTopluBaslangic').value;
+            const bitisSaati = document.getElementById('personelTopluBitis').value;
+            const notlar = document.getElementById('personelTopluAciklama').value.trim();
+
+            msg.textContent = '';
+            msg.style.color = '#DC2626';
+
+            if (!tarih) {
+                msg.textContent = 'Lütfen mesai tarihini seçiniz.';
+                return;
+            }
+            if (selectedPersonnel.length === 0) {
+                msg.textContent = 'Lütfen en az bir personel seçiniz.';
+                return;
+            }
+            if (!baslangicSaati || !bitisSaati) {
+                msg.textContent = 'Başlangıç ve bitiş saati zorunludur.';
+                return;
+            }
+            if (!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(baslangicSaati) ||
+                !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(bitisSaati)) {
+                msg.textContent = 'Geçerli başlangıç ve bitiş saatleri giriniz.';
+                return;
+            }
+
+            const tarihObjesi = new Date(tarih + 'T00:00:00');
+            if (Number.isNaN(tarihObjesi.getTime()) ||
+                tarihObjesi.getFullYear() !== @secilenYil ||
+                tarihObjesi.getMonth() + 1 !== @secilenAy) {
+                msg.textContent = 'Tarih, seçili ayın içinde olmalıdır.';
+                return;
+            }
+
+            const baslangicDakika = Number(baslangicSaati.slice(0, 2)) * 60 + Number(baslangicSaati.slice(3, 5));
+            const bitisDakika = Number(bitisSaati.slice(0, 2)) * 60 + Number(bitisSaati.slice(3, 5));
+            const sureDakika = bitisDakika - baslangicDakika;
+            if (sureDakika <= 0 || sureDakika > 480) {
+                msg.textContent = 'Bitiş saati başlangıçtan sonra olmalı ve mesai süresi 8 saati aşmamalıdır.';
+                return;
+            }
+
+            saveButton.disabled = true;
+            msg.style.color = '#2563EB';
+            msg.textContent = 'Kayıtlar ekleniyor...';
+
+            let basarili = 0;
+            const hatalar = [];
+            for (const checkbox of selectedPersonnel) {
+                const personelAdi = checkbox.parentElement.querySelector('span').textContent.trim();
+                try {
+                    const response = await fetch('/HizliMesaiGirisi/KayitEkle', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            personelId: checkbox.value,
+                            tarih: tarih,
+                            baslangicSaati: baslangicSaati,
+                            bitisSaati: bitisSaati,
+                            notlar: notlar
+                        })
+                    });
+                    if (response.ok) {
+                        basarili++;
+                        checkbox.checked = false;
+                    } else {
+                        const hata = (await response.text()).trim();
+                        hatalar.push(personelAdi + ': ' + (hata || 'Kayıt oluşturulamadı.'));
+                    }
+                } catch (error) {
+                    hatalar.push(personelAdi + ': Sunucuya bağlanılamadı.');
+                }
+            }
+            personelTopluSecimSayisiniGuncelle();
+
+            if (hatalar.length === 0) {
+                msg.style.color = '#16A34A';
+                msg.textContent = '✅ ' + basarili + ' personel için mesai kaydı oluşturuldu.';
+                setTimeout(function() {
+                    personelTopluModalInstance.hide();
+                    window.location.reload();
+                }, 1200);
+                return;
+            }
+
+            msg.style.color = '#DC2626';
+            msg.textContent = basarili + ' kayıt oluşturuldu, ' + hatalar.length + ' kayıt başarısız:\n' + hatalar.join('\n');
+            saveButton.disabled = false;
         }
 
         // ----- MESAI RAPORU -----

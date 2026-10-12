@@ -348,7 +348,7 @@ public class OdemeTalimatController : Controller
     // -----------------------------------------------------------------------
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> TalimatOlustur(List<int> secilenFaturaIdleri, int bankaId, int batchId = 0, DateTime? talimatTarihi = null)
+    public IActionResult TalimatOlustur(List<int> secilenFaturaIdleri, int bankaId, int batchId = 0, DateTime? talimatTarihi = null)
     {
         if (!IsLoggedIn()) return RedirectToAction("Login", "Account");
         if (!IsAdmin()) return Forbid();

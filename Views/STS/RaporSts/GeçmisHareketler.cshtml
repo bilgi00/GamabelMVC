@@ -1,5 +1,6 @@
 @{
     ViewData["Title"] = "Geçmiş Hareketler";
+    var hareketler = Model as IEnumerable<dynamic>;
 }
 
 <div class="container-fluid mt-4">
@@ -10,7 +11,7 @@
         </div>
     </div>
 
-    @if (Model != null && Model.Count > 0)
+    @if (hareketler != null && hareketler.Any())
     {
         <div class="table-responsive">
             <table class="table table-sm table-striped">
@@ -26,7 +27,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var hareket in Model)
+                    @foreach (var hareket in hareketler)
                     {
                         <tr>
                             <td>@hareket.IslemTarihi.ToString("dd.MM.yyyy HH:mm")</td>

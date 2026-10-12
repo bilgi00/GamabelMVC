@@ -29,9 +29,33 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="**/obj/**/*.cs;**/obj-validation/**/*.cs" />
     <None Update="Reports\**\*.frx" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
+  <Target Name="GenerateGitCommitInfo" BeforeTargets="CoreCompile">
+    <Exec Condition="'$(GitCommitHash)' == ''"
+          Command="git rev-parse --short=12 HEAD"
+          WorkingDirectory="$(MSBuildProjectDirectory)"
+          ConsoleToMSBuild="true"
+          IgnoreExitCode="true">
+      <Output TaskParameter="ConsoleOutput" PropertyName="_GitCommitCommandOutput" />
+      <Output TaskParameter="ExitCode" PropertyName="_GitCommitExitCode" />
+    </Exec>
+
+    <PropertyGroup>
+      <_ResolvedGitCommitHash Condition="'$(GitCommitHash)' != ''">$(GitCommitHash)</_ResolvedGitCommitHash>
+      <_ResolvedGitCommitHash Condition="'$(_ResolvedGitCommitHash)' == '' and '$(_GitCommitExitCode)' == '0'">$([System.String]::Copy('$(_GitCommitCommandOutput)').Trim())</_ResolvedGitCommitHash>
+      <_ResolvedGitCommitHash Condition="'$(_ResolvedGitCommitHash)' == ''">unknown</_ResolvedGitCommitHash>
+    </PropertyGroup>
+
+    <MakeDir Directories="$(IntermediateOutputPath)" />
+    <WriteLinesToFile File="$(IntermediateOutputPath)GitCommitInfo.g.cs"
+                      Lines="namespace gamabelmvc { public static class GitCommitInfo { public const string CommitHash = &quot;$(_ResolvedGitCommitHash)&quot;%3B } }"
+                      Overwrite="true" />
+    <ItemGroup>
+      <Compile Include="$(IntermediateOutputPath)GitCommitInfo.g.cs" />
+    </ItemGroup>
+  </Target>
+
 </Project>
-
-

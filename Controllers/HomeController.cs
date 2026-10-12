@@ -17,6 +17,11 @@ public class HomeController : Controller
         _dbFactory = dbFactory;
     }
 
+    public IActionResult Test()
+    {
+        return View("~/Views/Home/test.cshtml");
+    }
+
     public async Task<IActionResult> Index(string? donem)
     {
         var activeModule = HttpContext.Session.GetString("ActiveModule");

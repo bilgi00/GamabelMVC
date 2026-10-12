@@ -1047,7 +1047,7 @@ public class SevkiyatController : Controller
                     var exists = Convert.ToInt32(await cmd.ExecuteScalarAsync() ?? 0) > 0;
                     if (!exists)
                     {
-                        string alterSql = col switch
+                        string? alterSql = col switch
                         {
                             "SilindiMi" => "ALTER TABLE stk_EksikKaydi ADD COLUMN SilindiMi BOOLEAN DEFAULT FALSE AFTER Durum",
                             "SilmeSebebi" => "ALTER TABLE stk_EksikKaydi ADD COLUMN SilmeSebebi VARCHAR(500) NULL AFTER SilindiMi",

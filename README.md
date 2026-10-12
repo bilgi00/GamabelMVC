@@ -457,10 +457,10 @@ http://localhost:5010/STS/Home/Index    # STS Dashboard
 | Dosya | İçerik | Güncelleme |
 |-------|--------|----------|
 | **README.md** | Hızlı başlangıç (bu dosya) | 7 Temmuz |
-| **CSS_DESIGN_SYSTEM.md** | ✨ **YENİ** CSS mimarisi, komponentler, utilities (500+ satır) | 25 Mayıs |
+| **CSS_DESIGN_SYSTEM.md** | CSS mimarisi (tek `site.css`, 7 bölüm), tokenler, komponentler | 12 Ekim |
 | **TECHNICAL_DOCUMENTATION.md** | Kapsamlı teknik detaylar + 7 Temmuz admin güncellemeleri | 7 Temmuz |
-| **IMPLEMENTATION_SUMMARY_TR.md** | Uygulama değişiklikleri + CSS modernizasyon (1000+ satır) | 25 Mayıs |
-| **FILTER_FEATURE_DOCUMENTATION.md** | Filtre özellikleri + CSS güncellemeleri (1000+ satır) | 25 Mayıs |
+| **IMPLEMENTATION_SUMMARY_TR.md** | Uygulama değişiklik günlüğü (kısaltılmış özetler) | 12 Ekim |
+| **FILTER_FEATURE_DOCUMENTATION.md** | Sevkiyat filtreleri ve session davranışı | 12 Ekim |
 | **PROJECT_ANALYSIS_TR.md** | Sorun ve çözüm önerileri (200+ satır) | 25 Mayıs |
 | **HIZLI_MESAI_GIRISI_KILAVUZ.md** | Hızlı mesai modülü rehberi | 15 Mayıs |
 | **DEPLOYMENT_GUIDE.md** | Deploy prosedürü | 🆕 Planlı |

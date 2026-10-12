@@ -4,183 +4,13 @@
 }
 
 <style>
-    .puantaj-wrapper .pz-card {
-        background: #fff;
-        border: 1px solid #e1e6ef;
-        border-radius: 16px;
-        box-shadow: 0 1px 2px rgba(16, 24, 40, .05);
-        margin: 0 0 16px;
-    }
+    /* Sayfa-özel stiller (takvim ızgarası, lejant, tablo).
+       Genel kart / filtre çubuğu / takvim gezinme standartı site.css'tedir:
+       .sayfa-karti, .filtre-cubugu, .filtre-alan(-genis), .takvim-gezinme, .page-header-card
+       (bkz. CSS_DESIGN_SYSTEM.md → Genel Tasarım Standardı) */
 
     .puantaj-wrapper .pz-clip {
         overflow: hidden;
-    }
-
-    .puantaj-wrapper .pz-card-head {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        padding: 16px 20px;
-    }
-
-    .puantaj-wrapper .pz-h2 {
-        color: #1f2937;
-        font-size: 18px;
-        font-weight: 700;
-        margin: 0;
-    }
-
-    .puantaj-wrapper .pz-sub {
-        color: #5b6678;
-        font-size: 13px;
-        margin: 4px 0 0;
-    }
-
-    .puantaj-wrapper .puantaj-header.pz-head {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        padding: 10px 16px;
-        margin: 0 0 16px;
-        background: #fff;
-        border: 1px solid #e1e6ef;
-        border-radius: 16px;
-        box-shadow: 0 1px 2px rgba(16, 24, 40, .05);
-    }
-
-    .puantaj-wrapper .pz-head .page-headline {
-        color: #1d3a8a;
-        font-size: 20px;
-        font-weight: 800;
-        line-height: 1.2;
-        margin: 0;
-    }
-
-    .puantaj-wrapper .pz-head .page-sub {
-        color: #5b6678;
-        font-size: 13px;
-        margin: 2px 0 0;
-    }
-
-    .puantaj-wrapper .pz-actions {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 10px;
-    }
-
-    .puantaj-wrapper .pz-actions .btn-puantaj {
-        min-height: 38px;
-        padding: 0 14px;
-        border: 1px solid #cbd5e1;
-        border-radius: 10px;
-        background: #fff;
-        box-shadow: none;
-        color: #1d3a8a;
-        font-size: 14px;
-        font-weight: 600;
-    }
-
-    .puantaj-wrapper .pz-actions .btn-puantaj:hover {
-        filter: brightness(.96);
-    }
-
-    .puantaj-wrapper .pz-actions .btn-warning-puantaj {
-        background: #eef2ff;
-        border-color: #c7d2fe;
-        color: #3730a3;
-    }
-
-    .puantaj-wrapper .pz-actions .btn-success-puantaj {
-        background: #15803d;
-        border-color: #15803d;
-        color: #fff;
-    }
-
-    .puantaj-wrapper .pz-sep {
-        width: 1px;
-        align-self: stretch;
-        background: #e1e6ef;
-        margin: 0 2px;
-    }
-
-    .puantaj-wrapper .pz-filters {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 10px;
-        padding: 10px 16px;
-    }
-
-    .puantaj-wrapper .pz-f1 {
-        flex: 1 1 200px;
-    }
-
-    .puantaj-wrapper .pz-f2 {
-        flex: 2 1 240px;
-    }
-
-    .puantaj-wrapper .pz-filters .form-select,
-    .puantaj-wrapper .pz-filters .form-control,
-    .puantaj-wrapper .pz-filters .filter-static {
-        height: 38px;
-        min-width: 0;
-        padding: 0 12px;
-        border: 1px solid #cbd5e1;
-        border-radius: 10px;
-        background-color: #fff;
-        box-shadow: none;
-        color: #1f2937;
-        font-size: 14px;
-        font-weight: 500;
-    }
-
-    .puantaj-wrapper .pz-filters .filter-static {
-        display: flex;
-        align-items: center;
-        padding-right: 12px;
-        background-color: #f8fafc;
-        font-weight: 600;
-    }
-
-    .puantaj-wrapper .pz-filters .calendar-nav {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin: 0;
-    }
-
-    .puantaj-wrapper .pz-filters .month-nav-button {
-        display: grid;
-        width: 38px;
-        height: 38px;
-        place-items: center;
-        padding: 0;
-        border: 1px solid #cbd5e1;
-        border-radius: 10px;
-        background: #fff;
-        color: #1d3a8a;
-        font-size: 18px;
-        font-weight: 700;
-        cursor: pointer;
-    }
-
-    .puantaj-wrapper .pz-filters .month-badge {
-        display: grid;
-        min-width: 130px;
-        height: 38px;
-        place-items: center;
-        padding: 0 12px;
-        border: 1px solid #cbd5e1;
-        border-radius: 10px;
-        background: #fff;
-        color: #1f2937;
-        font-size: 15px;
-        font-weight: 700;
     }
 
     .puantaj-wrapper .pz-legend {
@@ -252,25 +82,18 @@
 
 <div class="puantaj-wrapper">
 
-    <div class="puantaj-header pz-head">
-        <div>
-            <div class="page-headline"><i class="fas fa-calendar-alt me-2"></i>Puantaj Takvimi</div>
-            <div class="page-sub">Personel çalışma ve izin durumlarını aylık olarak görüntüleyin.</div>
-        </div>
-        <div class="pz-actions no-print">
-            <button class="btn-puantaj btn-warning-puantaj" id="batchIzinBtn"><i class="fas fa-users me-1"></i>Toplu İzin</button>
-            <button class="btn-puantaj btn-success-puantaj" id="saveBtn"><i class="fas fa-save me-1"></i>Kaydet</button>
-            <span class="pz-sep" aria-hidden="true"></span>
-            <button class="btn-puantaj btn-info-puantaj" id="exportBtn"><i class="fas fa-file-excel me-1"></i>Dışa Aktar</button>
-            <button class="btn-puantaj btn-outline-puantaj" id="previewBtn" type="button">Önizle</button>
-            <button class="btn-puantaj btn-outline-puantaj" id="pdfExportBtn" type="button">PDF Kaydet</button>
-        </div>
-    </div>
+    <sayfa-baslik baslik="Puantaj Takvimi"
+                  aciklama="Personel çalışma ve izin durumlarını aylık olarak görüntüleyin."
+                  ikon="fa-calendar-alt">
+        <button type="button" class="btn btn-sm btn-warning text-dark" id="batchIzinBtn"><i class="fas fa-users me-1"></i>Toplu İzin</button>
+        <button type="button" class="btn btn-sm btn-primary" id="previewBtn">Önizleme (Yatay)</button>
+        <button type="button" class="btn btn-sm btn-danger" id="pdfExportBtn">PDF</button>
+    </sayfa-baslik>
 
-    <section class="pz-card pz-filters" aria-label="Filtreler">
+    <section class="sayfa-karti filtre-cubugu" aria-label="Filtreler">
         @if (ViewBag.Rol == "admin")
         {
-            <select id="birimSelect" class="form-select pz-f1" aria-label="Birim">
+            <select id="birimSelect" class="form-select filtre-alan" aria-label="Birim">
                 <option value="all">Tüm Birimler</option>
                 @if (ViewBag.Birimler != null)
                 {
@@ -283,29 +106,30 @@
         }
         else
         {
-            <span class="filter-static pz-f1" title="Birim">@(ViewBag.KullaniciBirim ?? "Biriminiz")</span>
+            <span class="filtre-sabit filtre-alan" title="Birim">@(ViewBag.KullaniciBirim ?? "Biriminiz")</span>
         }
 
-        <select id="statuSelect" class="form-select pz-f1" aria-label="Personel Statüsü">
+        <select id="statuSelect" class="form-select filtre-alan" aria-label="Personel Statüsü">
             <option value="__TUMU__">Tüm Personeller</option>
         </select>
 
-        <input id="personelArama" type="search" class="form-control pz-f2" placeholder="Ad veya soyad yazın..." autocomplete="off" aria-label="Personel ara" />
+        <input id="personelArama" type="search" class="form-control filtre-alan-genis" placeholder="Ad veya soyad yazın..." autocomplete="off" aria-label="Personel ara" />
 
-        <div class="calendar-nav" role="group" aria-label="Ay ve yıl">
-            <button type="button" class="month-nav-button" id="previousMonthBtn" aria-label="Önceki ay" title="Önceki ay"><span aria-hidden="true">←</span></button>
-            <span class="month-badge" id="monthTitle">Mart 2026</span>
-            <button type="button" class="month-nav-button" id="nextMonthBtn" aria-label="Sonraki ay" title="Sonraki ay"><span aria-hidden="true">→</span></button>
+        <div class="takvim-gezinme" role="group" aria-label="Ay ve yıl">
+            <button type="button" class="takvim-ok" id="previousMonthBtn" aria-label="Önceki ay" title="Önceki ay"><span aria-hidden="true">←</span></button>
+            <span class="takvim-ay" id="monthTitle">Mart 2026</span>
+            <button type="button" class="takvim-ok" id="nextMonthBtn" aria-label="Sonraki ay" title="Sonraki ay"><span aria-hidden="true">→</span></button>
         </div>
 
         <span class="birim-badge d-none" id="birimBadge" aria-hidden="true">Tüm Birimler</span>
     </section>
+    <div id="ayKilitUyari" class="alert alert-warning d-none" role="status"></div>
 
-    <section class="pz-card pz-cal" aria-labelledby="puantajTakvimBaslik">
-        <div class="pz-card-head">
+    <section class="sayfa-karti" aria-labelledby="puantajTakvimBaslik">
+        <div class="kart-basligi">
             <div>
-                <h2 class="pz-h2" id="puantajTakvimBaslik">Aylık Puantaj</h2>
-                <p class="pz-sub no-print"><strong>Hücreye tıklayarak düzenleyin.</strong> Klavyeden X, İ, G, Ç, V, Ö veya H tuşlarını kullanabilirsiniz.</p>
+                <h2 class="kart-baslik" id="puantajTakvimBaslik">Aylık Puantaj</h2>
+                <p class="kart-alt-yazi no-print"><strong>Hücreye tıklayarak düzenleyin.</strong> Klavyeden X, İ, G, Ç, V, Ö veya H tuşlarını kullanabilirsiniz.</p>
             </div>
         </div>
 
@@ -338,11 +162,11 @@
         </div>
     </section>
 
-    <section class="pz-card pz-clip" aria-labelledby="aylikIzinKayitlariBaslik">
-        <div class="pz-card-head">
+    <section class="sayfa-karti pz-clip" aria-labelledby="aylikIzinKayitlariBaslik">
+        <div class="kart-basligi">
             <div>
-                <h2 class="pz-h2" id="aylikIzinKayitlariBaslik">Seçili Ayın İzin Kayıtları</h2>
-                <p class="pz-sub">Seçili ay için girilmiş izinler.</p>
+                <h2 class="kart-baslik" id="aylikIzinKayitlariBaslik">Seçili Ayın İzin Kayıtları</h2>
+                <p class="kart-alt-yazi">Seçili ay için girilmiş izinler.</p>
             </div>
             <span class="badge bg-secondary" id="aylikIzinKayitSayisi">0 kayıt</span>
         </div>
@@ -461,8 +285,11 @@
     var personeller = [];
     var calismaVerileri = {};
     var degisenler = {};
-    var currentYear = 2026;
-    var currentMonth = 3;
+    var today = new Date();
+    var currentYear = today.getFullYear();
+    var currentMonth = today.getMonth() + 1;
+    var isMonthLocked = true;
+    var monthLockKnown = false;
     var seciliStatu = '__TUMU__';
     var personelAramaMetni = '';
     var kullaniciRol = '@(ViewBag.Rol ?? "birim_amiri")';
@@ -626,6 +453,22 @@
         document.getElementById('kilitPopupMesaj').textContent = msg;
         document.getElementById('kilitPopupOverlay').classList.add('active');
     }
+    function setMonthLockState(kilitli, verified) {
+        isMonthLocked = kilitli;
+        monthLockKnown = verified;
+        var uyari = document.getElementById('ayKilitUyari');
+        document.getElementById('batchIzinBtn').disabled = !verified || kilitli;
+        if (!verified) {
+            uyari.textContent = 'Ay kilit durumu doğrulanamadı. Güvenlik için puantaj değişiklikleri devre dışı bırakıldı.';
+            uyari.classList.remove('d-none');
+        } else if (kilitli) {
+            uyari.textContent = getMonthName(currentMonth) + ' ' + currentYear + ' ayı kilitli. Puantaj kaydı veya değişikliği yapılamaz.';
+            uyari.classList.remove('d-none');
+        } else {
+            uyari.textContent = '';
+            uyari.classList.add('d-none');
+        }
+    }
     function kilitPopupKapat() {
         document.getElementById('kilitPopupOverlay').classList.remove('active');
     }
@@ -663,11 +506,25 @@
         var yil = currentYear;
         var ay = currentMonth;
         var yuklemeNo = ++izinYuklemeNo;
+        setMonthLockState(true, false);
         document.getElementById('aylikIzinKayitSayisi').textContent = '...';
         document.getElementById('aylikIzinKayitlariBody').innerHTML =
             '<tr><td colspan="5" class="text-center text-muted">Veriler yükleniyor...</td></tr>';
-        fetch('/Puantaj/GetIzinler?yil='+yil+'&ay='+ay)
-            .then(function(r){return r.json();})
+        fetch('/Puantaj/AyKilitliMi?yil='+yil+'&ay='+ay)
+            .then(function(r) {
+                if (!r.ok) throw new Error('Ay kilit durumu kontrol edilemedi.');
+                return r.json();
+            })
+            .then(function(durum) {
+                if (yuklemeNo !== izinYuklemeNo) return Promise.reject(new Error('stale'));
+                setMonthLockState(!!durum.kilitli, true);
+                if (durum.kilitli) showKilitPopup(getMonthName(ay)+' '+yil+' ayı kilitli. Puantaj değişiklikleri yapılamaz.');
+                return fetch('/Puantaj/GetIzinler?yil='+yil+'&ay='+ay);
+            })
+            .then(function(r) {
+                if (!r.ok) throw new Error('Puantaj kayıtları alınamadı.');
+                return r.json();
+            })
             .then(function(data){
                 if (yuklemeNo !== izinYuklemeNo) return;
                 if (data.hata) {
@@ -697,12 +554,13 @@
                 renderTable();
                 showToast(getMonthName(ay)+' '+yil+' puantaj verileri yüklendi','info');
             })
-            .catch(function(){
+            .catch(function(error){
                 if (yuklemeNo === izinYuklemeNo) {
+                    setMonthLockState(true, false);
                     document.getElementById('aylikIzinKayitSayisi').textContent = 'Hata';
                     document.getElementById('aylikIzinKayitlariBody').innerHTML =
                         '<tr><td colspan="5" class="text-center text-danger">Puantaj verisi alınamadı.</td></tr>';
-                    showToast('Puantaj verisi alınamadı','error');
+                    showToast(error.message || 'Puantaj verisi alınamadı','error');
                 }
             });
     }
@@ -714,6 +572,12 @@
         if (Object.keys(degisenler).length === 0) {
             if (showMsg) showToast('Kaydedilecek değişiklik yok','info');
             return Promise.resolve(true);
+        }
+        if (!monthLockKnown || isMonthLocked) {
+            showKilitPopup(isMonthLocked
+                ? 'Seçili ay kilitli. Puantaj kaydı veya değişikliği yapılamaz.'
+                : 'Ay kilit durumu doğrulanamadı. Puantaj kaydı veya değişikliği yapılamaz.');
+            return Promise.resolve(false);
         }
         if (isSaving) return Promise.resolve(false);
 
@@ -773,6 +637,10 @@
     }
 
     function updateDurum(pid, gun, yeniDurum, aciklama) {
+        if (!monthLockKnown || isMonthLocked) {
+            showKilitPopup('Seçili ay kilitli veya kilit durumu doğrulanamadı. Puantaj değiştirilemez.');
+            return false;
+        }
         if (!calismaVerileri[pid]) calismaVerileri[pid] = {};
         var eski = calismaVerileri[pid][gun];
         if (eski === yeniDurum) return false;
@@ -797,6 +665,10 @@
     // TOPLU İZİN
     // ============================================================
     function openBatchModal() {
+        if (!monthLockKnown || isMonthLocked) {
+            showKilitPopup('Seçili ay kilitli veya kilit durumu doğrulanamadı. Toplu izin eklenemez.');
+            return;
+        }
         var sel = document.getElementById('batchPersonelSelect');
         sel.innerHTML = '';
         getFilteredPersoneller().forEach(function(p) {
@@ -818,6 +690,10 @@
     }
 
     function saveBatchIzin() {
+        if (!monthLockKnown || isMonthLocked) {
+            showKilitPopup('Seçili ay kilitli veya kilit durumu doğrulanamadı. Toplu izin eklenemez.');
+            return;
+        }
         var opts = document.getElementById('batchPersonelSelect').selectedOptions;
         var pids = Array.from(opts).map(function(o){return o.value;});
         var bas = new Date(document.getElementById('baslangicTarih').value);
@@ -887,7 +763,10 @@
                 var extraCls = '';
                 if (wk) extraCls += ' weekend';
                 if (isCurrentMonth && gun === todayDay) extraCls += ' today-col';
-                body += '<td class="durum-cell '+cls+extraCls+'" data-gun="'+gun+'" data-personel="'+p.personelId+'" onclick="openModal(\''+p.personelId+'\','+gun+',\''+durum.replace(/'/g,"\\'")+'\')">'+disp+'</td>';
+                var editAttrs = monthLockKnown && !isMonthLocked
+                    ? ' onclick="openModal(\''+p.personelId+'\','+gun+',\''+durum.replace(/'/g,"\\'")+'\')"'
+                    : ' aria-disabled="true" title="Ay kilitli veya kilit durumu doğrulanamadı"';
+                body += '<td class="durum-cell '+cls+extraCls+'" data-gun="'+gun+'" data-personel="'+p.personelId+'"'+editAttrs+'>'+disp+'</td>';
             }
                 var hak = calculateHakkedis(p.personelId);
             var hakCls = hak >= 28 ? 'hakkedis-good' : (hak >= 25 ? 'hakkedis-mid' : 'hakkedis-low');
@@ -925,6 +804,10 @@
     var modalPersonelId = null, modalGun = null;
 
     function openModal(pid, gun, cur) {
+        if (!monthLockKnown || isMonthLocked) {
+            showKilitPopup('Seçili ay kilitli veya kilit durumu doğrulanamadı. Puantaj değiştirilemez.');
+            return;
+        }
         modalPersonelId = pid;
         modalGun = gun;
         var adi = getPersonelAdi(pid);
@@ -940,6 +823,11 @@
     }
 
     function saveModal() {
+        if (!monthLockKnown || isMonthLocked) {
+            showKilitPopup('Seçili ay kilitli veya kilit durumu doğrulanamadı. Puantaj değiştirilemez.');
+            closeModal();
+            return;
+        }
         var dur = document.getElementById('modalDurum').value;
         var acik = document.getElementById('modalAciklama').value;
         if (updateDurum(modalPersonelId, modalGun, dur, acik)) {
@@ -954,6 +842,7 @@
     // KLAVYE
     // ============================================================
     document.addEventListener('keydown', function(e) {
+        if (!monthLockKnown || isMonthLocked) return;
         var t = e.target;
         if (t.classList && t.classList.contains('durum-cell')) {
             var pid = t.dataset.personel, gun = parseInt(t.dataset.gun), nd = null;
@@ -980,10 +869,25 @@
     // ============================================================
     // DIŞA AKTAR
     // ============================================================
-    function openCiktiPage() {
+    function downloadPuantajPdf() {
         if (Object.keys(degisenler).length > 0) saveChanges(false);
-        var url = '/Puantaj/Cikti?yil='+currentYear+'&ay='+currentMonth+'&birim='+encodeURIComponent(seciliBirim);
-        window.open(url, '_blank');
+        var url = '/Puantaj/RaporPdf?yil='+currentYear+
+            '&ay='+currentMonth+
+            '&birim='+encodeURIComponent(seciliBirim)+
+            '&statu='+encodeURIComponent(seciliStatu)+
+            '&arama='+encodeURIComponent(personelAramaMetni)+
+            '&yon=yatay&indir=true';
+        window.open(url, '_blank', 'noopener');
+    }
+    function previewPuantajReport() {
+        if (Object.keys(degisenler).length > 0) saveChanges(false);
+        var url = '/Puantaj/Rapor?yil='+currentYear+
+            '&ay='+currentMonth+
+            '&birim='+encodeURIComponent(seciliBirim)+
+            '&statu='+encodeURIComponent(seciliStatu)+
+            '&arama='+encodeURIComponent(personelAramaMetni)+
+            '&yon=yatay';
+        window.open(url, '_blank', 'noopener');
     }
 
     function downloadPuantajPdf() {
@@ -1031,8 +935,8 @@
         renderTable();
     });
 
-    document.getElementById('saveBtn').addEventListener('click', function(){ saveChanges(true); });
-    document.getElementById('exportBtn').addEventListener('click', openCiktiPage);
+    // FastReport A4 Rapor Standardı (v3): Önizleme ve PDF aynı .frx şablonundan üretilir.
+    // Kaydet butonu ve Excel çıktısı kaldırıldı (otomatik kayıt sürer; Excel .frx'ten üretilmez).
     document.getElementById('previewBtn').addEventListener('click', previewPuantajReport);
     document.getElementById('pdfExportBtn').addEventListener('click', downloadPuantajPdf);
     document.getElementById('batchIzinBtn').addEventListener('click', openBatchModal);

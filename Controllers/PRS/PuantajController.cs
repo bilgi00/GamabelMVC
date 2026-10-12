@@ -2,12 +2,10 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using System.Data;
 using System.Globalization;
-using FastReport;
-using FastReport.Export.PdfSimple;
-using FastReport.Web;
-using ClosedXML.Excel;
 using MySqlConnector;
 using gamabelmvc.Models.PRS;
+using gamabelmvc.Services;
+using gamabelmvc.Services.Raporlama;
 
 namespace gamabelmvc.Controllers.PRS;
 
@@ -15,10 +13,14 @@ namespace gamabelmvc.Controllers.PRS;
 public class PuantajController : Controller
 {
     private readonly string _connectionString;
+    private readonly IRaporServisi _raporServisi;
 
-    public PuantajController(IConfiguration configuration)
+    private static readonly RaporTanimi PuantajRaporTanimi = RaporKaydi.Puantaj;
+
+    public PuantajController(IConfiguration configuration, IRaporServisi raporServisi)
     {
         _connectionString = configuration.GetConnectionString("MyConnection")!;
+        _raporServisi = raporServisi;
     }
 
     public async Task<IActionResult> Index()
@@ -60,6 +62,27 @@ public class PuantajController : Controller
         ViewBag.Rol = rol;
         ViewBag.KullaniciBirim = kullaniciBirim;
         return View();
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> AyKilitliMi(int yil, int ay)
+    {
+        if (string.IsNullOrEmpty(HttpContext.Session.GetString("KullaniciAdi")))
+            return Unauthorized();
+        if (yil < 1 || ay is < 1 or > 12)
+            return BadRequest(new { mesaj = "Geçersiz yıl veya ay." });
+
+        try
+        {
+            await using var connection = new MySqlConnection(_connectionString);
+            await connection.OpenAsync();
+            return Json(new { kilitli = await AyKilitKontrol.KilitliMiAsync(connection, yil, ay) });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new { mesaj = "Ay kilit durumu kontrol edilemedi.", hata = ex.Message });
+        }
     }
 
     // Birime göre personel listesi
@@ -172,40 +195,27 @@ public class PuantajController : Controller
 
         if (izinler == null || izinler.Count == 0)
             return Json(new { basarili = false, mesaj = "Kaydedilecek veri yok" });
-        if (izinler.Any(izin => string.IsNullOrWhiteSpace(izin.PersonelId)))
+        if (izinler.Any(izin => izin is null || string.IsNullOrWhiteSpace(izin.PersonelId)))
             return Json(new { basarili = false, mesaj = "Geçersiz personel kimliği." });
 
-        // Ay kilidi kontrolü
-        var ilkIzin = izinler.First();
-        try
-        {
-            await using var kilitConn = new MySqlConnection(_connectionString);
-            await kilitConn.OpenAsync();
-
-            // ✅ kilitli sütununu kontrol et
-            await using var kilitCmd = new MySqlCommand(
-                "SELECT kilitli FROM ay_kilitleri WHERE yil = @yil AND ay = @ay", kilitConn);
-            kilitCmd.Parameters.AddWithValue("@yil", ilkIzin.Yil);
-            kilitCmd.Parameters.AddWithValue("@ay", ilkIzin.Ay);
-
-            var result = await kilitCmd.ExecuteScalarAsync();
-
-            // ✅ Kayıt varsa ve kilitli = 1 ise kilitli
-            if (result != null && Convert.ToInt32(result) == 1)
-            {
-                return Json(new { basarili = false, mesaj = "Bu ay kilitlenmiştir. Kayıt yapılamaz." });
-            }
-        }
-        catch
-        {
-            // Tablo veya sütun yoksa kilit yok say
-        }
+        if (izinler.Any(izin =>
+                izin.Yil < 1 ||
+                izin.Ay is < 1 or > 12 ||
+                izin.Gun < 1 ||
+                izin.Gun > DateTime.DaysInMonth(izin.Yil, izin.Ay)))
+            return Json(new { basarili = false, mesaj = "Geçersiz yıl, ay veya gün." });
 
         int eklenen = 0, silinen = 0;
         try
         {
             await using var connection = new MySqlConnection(_connectionString);
             await connection.OpenAsync();
+
+            foreach (var donem in izinler.Select(izin => (izin.Yil, izin.Ay)).Distinct())
+            {
+                if (await AyKilitKontrol.KilitliMiAsync(connection, donem.Yil, donem.Ay))
+                    return Json(new { basarili = false, mesaj = $"{donem.Yil} yılı {donem.Ay}. ay kilitlenmiştir. Kayıt veya değişiklik yapılamaz." });
+            }
 
             foreach (var izin in izinler)
             {
@@ -286,43 +296,67 @@ public class PuantajController : Controller
         return Json(tatiller);
     }
 
-    // Excel/PDF çıktı sayfası
-    public IActionResult Cikti(int? yil, int? ay, string? birim)
+    // ---- FastReport A4 Rapor Standardı (v3) ----
+    // Önizleme ve PDF aynı .frx şablonundan üretilir: Reports/Puantaj/Puantaj.Yatay.frx
+    // Excel çıktısı kaldırıldı (standart Bölüm 12: Excel .frx'ten üretilmez).
+
+    [HttpGet]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+    public async Task<IActionResult> Rapor(int yil, int ay, string? birim, string? statu, string? arama, string yon = "yatay")
     {
-        if (string.IsNullOrEmpty(HttpContext.Session.GetString("KullaniciAdi")))
-            return RedirectToAction("Login", "Account");
+        if (!RaporYon.TryCoz(yon, out var y))
+            return BadRequest("Geçersiz yön. Geçerli değerler: dikey | yatay");
+        if (!PuantajRaporTanimi.YonDestekliyor(y))
+            return BadRequest("Puantaj raporu için yalnızca 'yatay' şablonu mevcuttur.");
 
-        var rol = HttpContext.Session.GetString("Rol") ?? "birim_amiri";
-        var kullaniciBirim = HttpContext.Session.GetString("Birim") ?? "";
-
-        // Admin değilse birim kısıtla
-        if (rol != "admin" && !string.IsNullOrEmpty(kullaniciBirim))
-            birim = kullaniciBirim;
-
-        ViewBag.Yil = yil ?? DateTime.Now.Year;
-        ViewBag.Ay = ay ?? DateTime.Now.Month;
-        ViewBag.Birim = birim ?? (rol == "admin" ? "all" : kullaniciBirim);
-        ViewBag.Rol = rol;
-        ViewBag.KullaniciBirim = kullaniciBirim;
-        return View();
-    }
-
-    [HttpGet]
-    public Task<IActionResult> Preview(int yil, int ay, string? birim, string? statu, string? arama) =>
-        Pdf(yil, ay, birim, statu, arama, preview: true);
-
-    [HttpGet]
-    public Task<IActionResult> Excel(int yil, int ay, string? birim, string? statu, string? arama) =>
-        Pdf(yil, ay, birim, statu, arama, excel: true);
-
-    [HttpGet]
-    public async Task<IActionResult> Pdf(int yil, int ay, string? birim, string? statu, string? arama, bool preview = false, bool excel = false)
-    {
         if (string.IsNullOrEmpty(HttpContext.Session.GetString("KullaniciAdi")))
             return RedirectToAction("Login", "Account");
         if (yil < 2000 || yil > 2100 || ay < 1 || ay > 12)
             return BadRequest("Geçersiz puantaj dönemi.");
 
+        var (tablo, genel) = await GetPuantajRaporTablosuAsync(yil, ay, birim, statu, arama);
+        var (ds, prm) = PuantajRaporVerisiHazirla(tablo, yil, ay, birim, genel);
+
+        var web = _raporServisi.Onizleme(PuantajRaporTanimi, y, ds, prm);
+        ViewBag.Yon = y;
+        ViewBag.DesteklenenYonler = PuantajRaporTanimi.Yonler();
+        ViewBag.RaporQuery = $"yil={yil}&ay={ay}&birim={Uri.EscapeDataString(birim ?? "all")}"
+            + $"&statu={Uri.EscapeDataString(statu ?? "__TUMU__")}&arama={Uri.EscapeDataString(arama ?? "")}";
+        ViewBag.PdfUrl = Url.Action(nameof(RaporPdf), new { yil, ay, birim, statu, arama, yon = y.ToString().ToLowerInvariant(), indir = true });
+        return View("~/Views/Shared/Rapor.cshtml", web);
+    }
+
+    // PDF İNDİR / TARAYICIDA AÇ — aynı .frx şablonundan üretilir (A4 yatay).
+    [HttpGet]
+    public async Task<IActionResult> RaporPdf(int yil, int ay, string? birim, string? statu, string? arama, string yon = "yatay", bool indir = false)
+    {
+        if (!RaporYon.TryCoz(yon, out var y))
+            return BadRequest("Geçersiz yön. Geçerli değerler: dikey | yatay");
+        if (!PuantajRaporTanimi.YonDestekliyor(y))
+            return BadRequest("Puantaj raporu için yalnızca 'yatay' şablonu mevcuttur.");
+
+        if (string.IsNullOrEmpty(HttpContext.Session.GetString("KullaniciAdi")))
+            return Unauthorized();
+        if (yil < 2000 || yil > 2100 || ay < 1 || ay > 12)
+            return BadRequest("Geçersiz puantaj dönemi.");
+
+        var (tablo, genel) = await GetPuantajRaporTablosuAsync(yil, ay, birim, statu, arama);
+        var (ds, prm) = PuantajRaporVerisiHazirla(tablo, yil, ay, birim, genel);
+        var cikti = _raporServisi.Pdf(PuantajRaporTanimi, y, ds, prm);
+
+        // Hassas rapor yanıtı istemci/proxy önbelleğine alınmaz.
+        Response.Headers["Cache-Control"] = "no-store, no-cache, must-revalidate";
+        Response.Headers["Pragma"] = "no-cache";
+
+        return indir ? File(cikti.Icerik, "application/pdf", $"puantaj-{yil}-{ay:D2}.pdf")
+                     : File(cikti.Icerik, "application/pdf");
+    }
+
+    // Rapor verisi: personel + izin işaretleri + satır/genel toplamlar.
+    // Yetki kuralı: admin olmayan kullanıcının birimi zorunlu olarak kullanılır.
+    private async Task<(DataTable Tablo, (int X, int I, int H) Genel)> GetPuantajRaporTablosuAsync(
+        int yil, int ay, string? birim, string? statu, string? arama)
+    {
         var rol = (HttpContext.Session.GetString("Rol") ?? "birim_amiri").Trim().ToLowerInvariant();
         var kullaniciBirim = HttpContext.Session.GetString("Birim") ?? "";
         if (rol != "admin")
@@ -336,58 +370,51 @@ public class PuantajController : Controller
         var personeller = new List<(string Id, string AdSoyad, string Birim, string Statu)>();
         var izinler = new Dictionary<(string PersonelId, int Gun), string>();
 
-        try
+        await using var connection = new MySqlConnection(_connectionString);
+        await connection.OpenAsync();
+
+        var tumBirimler = rol == "admin" && birim == "all";
+        var personelSql = tumBirimler
+            ? "SELECT per_no, ad, soyad, birim_adi, per_statu FROM personeller ORDER BY birim_adi, ad, soyad"
+            : "SELECT per_no, ad, soyad, birim_adi, per_statu FROM personeller WHERE birim_adi = @birim ORDER BY ad, soyad";
+        await using (var personelCmd = new MySqlCommand(personelSql, connection))
         {
-            await using var connection = new MySqlConnection(_connectionString);
-            await connection.OpenAsync();
+            if (!tumBirimler)
+                personelCmd.Parameters.AddWithValue("@birim", birim ?? "");
 
-            var tumBirimler = rol == "admin" && birim == "all";
-            var personelSql = tumBirimler
-                ? "SELECT per_no, ad, soyad, birim_adi, per_statu FROM personeller ORDER BY birim_adi, ad, soyad"
-                : "SELECT per_no, ad, soyad, birim_adi, per_statu FROM personeller WHERE birim_adi = @birim ORDER BY ad, soyad";
-            await using (var personelCmd = new MySqlCommand(personelSql, connection))
+            await using var reader = await personelCmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
             {
-                if (!tumBirimler)
-                    personelCmd.Parameters.AddWithValue("@birim", birim ?? "");
+                var id = reader.IsDBNull(0) ? "" : Convert.ToString(reader.GetValue(0), CultureInfo.InvariantCulture) ?? "";
+                var adSoyad = (reader.IsDBNull(1) ? "" : reader.GetString(1)) + " " +
+                              (reader.IsDBNull(2) ? "" : reader.GetString(2));
+                var personelBirim = reader.IsDBNull(3) ? "" : reader.GetString(3);
+                var personelStatu = reader.IsDBNull(4) ? "" : reader.GetString(4).Trim();
 
-                await using var reader = await personelCmd.ExecuteReaderAsync();
-                while (await reader.ReadAsync())
-                {
-                    var id = reader.IsDBNull(0) ? "" : Convert.ToString(reader.GetValue(0), CultureInfo.InvariantCulture) ?? "";
-                    var adSoyad = (reader.IsDBNull(1) ? "" : reader.GetString(1)) + " " +
-                                  (reader.IsDBNull(2) ? "" : reader.GetString(2));
-                    var personelBirim = reader.IsDBNull(3) ? "" : reader.GetString(3);
-                    var personelStatu = reader.IsDBNull(4) ? "" : reader.GetString(4).Trim();
+                if (statu != null && statu != "__TUMU__" && personelStatu != statu)
+                    continue;
+                if (!string.IsNullOrEmpty(aramaMetni) &&
+                    compareInfo.IndexOf(adSoyad, aramaMetni, CompareOptions.IgnoreCase) < 0)
+                    continue;
 
-                    if (statu != null && statu != "__TUMU__" && personelStatu != statu)
-                        continue;
-                    if (!string.IsNullOrEmpty(aramaMetni) &&
-                        compareInfo.IndexOf(adSoyad, aramaMetni, CompareOptions.IgnoreCase) < 0)
-                        continue;
-
-                    personeller.Add((id, adSoyad.Trim(), personelBirim, personelStatu));
-                }
-            }
-
-            await using (var izinCmd = new MySqlCommand(
-                "SELECT personel_id, gun, izin_tipi FROM puantaj_izin WHERE yil = @yil AND ay = @ay", connection))
-            {
-                izinCmd.Parameters.AddWithValue("@yil", yil);
-                izinCmd.Parameters.AddWithValue("@ay", ay);
-                await using var reader = await izinCmd.ExecuteReaderAsync();
-                while (await reader.ReadAsync())
-                {
-                    var personelId = reader.IsDBNull(0) ? "" : Convert.ToString(reader.GetValue(0), CultureInfo.InvariantCulture) ?? "";
-                    var gun = reader.GetInt32(1);
-                    var izinTipi = reader.IsDBNull(2) ? "X" : reader.GetString(2);
-                    if (gun is >= 1 and <= 30)
-                        izinler[(personelId, gun)] = izinTipi;
-                }
+                personeller.Add((id, adSoyad.Trim(), personelBirim, personelStatu));
             }
         }
-        catch
+
+        await using (var izinCmd = new MySqlCommand(
+            "SELECT personel_id, gun, izin_tipi FROM puantaj_izin WHERE yil = @yil AND ay = @ay", connection))
         {
-            return Problem("Puantaj PDF verileri alınamadı.");
+            izinCmd.Parameters.AddWithValue("@yil", yil);
+            izinCmd.Parameters.AddWithValue("@ay", ay);
+            await using var reader = await izinCmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                var personelId = reader.IsDBNull(0) ? "" : Convert.ToString(reader.GetValue(0), CultureInfo.InvariantCulture) ?? "";
+                var gun = reader.GetInt32(1);
+                var izinTipi = reader.IsDBNull(2) ? "X" : reader.GetString(2);
+                if (gun is >= 1 and <= 30)
+                    izinler[(personelId, gun)] = izinTipi;
+            }
         }
 
         var table = new DataTable("Puantaj") { Locale = culture };
@@ -433,150 +460,35 @@ public class PuantajController : Controller
             genelH += hSayisi;
         }
 
-        if (excel)
-            return CreatePuantajExcel(table, yil, ay, birim, rol, personeller.Count, genelX, genelI, genelH);
-
-        var reportPath = Path.Combine(AppContext.BaseDirectory, "Reports", "Puantaj", "Puantaj.frx");
-        if (!System.IO.File.Exists(reportPath))
-            reportPath = Path.Combine(Directory.GetCurrentDirectory(), "Reports", "Puantaj", "Puantaj.frx");
-        if (!System.IO.File.Exists(reportPath))
-            return NotFound("Puantaj PDF şablonu bulunamadı.");
-
-        var report = new Report();
-        try
-        {
-            report.Load(reportPath);
-            report.RegisterData(table, "Puantaj");
-            report.GetDataSource("Puantaj")!.Enabled = true;
-            report.SetParameterValue("Donem", $"{culture.DateTimeFormat.GetMonthName(ay)} {yil}");
-            report.SetParameterValue("Birim", rol == "admin" && birim == "all" ? "Tüm Birimler" : birim ?? "");
-            report.SetParameterValue("PersonelSayisi", personeller.Count);
-            report.SetParameterValue("GenelXSayisi", genelX);
-            report.SetParameterValue("GenelISayisi", genelI);
-            report.SetParameterValue("GenelHSayisi", genelH);
-            report.Prepare();
-
-            if (preview)
-            {
-                var webReport = new WebReport { Report = report };
-                webReport.Width = "100%";
-                webReport.Height = "calc(100vh - 48px)";
-                webReport.Inline = false;
-                webReport.Toolbar.Show = true;
-                webReport.Toolbar.ShowPrint = true;
-                webReport.Toolbar.Exports.Show = true;
-                webReport.Toolbar.Exports.ShowPreparedReport = true;
-                return View("~/Views/PRS/Puantaj/Preview.cshtml", webReport);
-            }
-
-            await using var stream = new MemoryStream();
-            using var export = new PDFSimpleExport();
-            report.Export(export, stream);
-
-            var safeBirim = new string((birim ?? "all").Where(char.IsLetterOrDigit).ToArray());
-            var fileName = $"puantaj-{yil}-{ay:D2}-{(string.IsNullOrEmpty(safeBirim) ? "birim" : safeBirim)}.pdf";
-            report.Dispose();
-            return File(stream.ToArray(), "application/pdf", fileName);
-        }
-        catch
-        {
-            report.Dispose();
-            return Problem("Puantaj PDF raporu oluşturulamadı.");
-        }
+        return (table, (genelX, genelI, genelH));
     }
 
-    private IActionResult CreatePuantajExcel(DataTable table, int yil, int ay, string? birim, string rol,
-        int personelSayisi, int genelX, int genelI, int genelH)
+    /// Tablo ve kolon adları .frx ile birebir eşleşir: DataTable "Puantaj" → ReferenceName "Data.Puantaj".
+    private (DataSet, Dictionary<string, object?>) PuantajRaporVerisiHazirla(
+        DataTable tablo, int yil, int ay, string? birim, (int X, int I, int H) genel)
     {
-        using var workbook = new XLWorkbook();
-        var sheet = workbook.Worksheets.Add("Puantaj");
-        var sonKolon = table.Columns.Count;
-        var donem = $"{CultureInfo.GetCultureInfo("tr-TR").DateTimeFormat.GetMonthName(ay)} {yil}";
-        var birimAdi = rol == "admin" && birim == "all" ? "Tüm Birimler" : birim ?? "";
+        var rol = (HttpContext.Session.GetString("Rol") ?? "birim_amiri").Trim().ToLowerInvariant();
+        var culture = CultureInfo.GetCultureInfo("tr-TR");
 
-        sheet.Range(1, 1, 1, sonKolon).Merge();
-        sheet.Cell(1, 1).Value = "PUANTAJ TAKVİMİ";
-        sheet.Cell(1, 1).Style.Font.Bold = true;
-        sheet.Cell(1, 1).Style.Font.FontSize = 15;
-        sheet.Cell(1, 1).Style.Font.FontColor = XLColor.White;
-        sheet.Cell(1, 1).Style.Fill.BackgroundColor = XLColor.FromHtml("#1E3A8A");
-        sheet.Cell(1, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-        sheet.Row(1).Height = 28;
+        var ds = new DataSet("Data");
+        ds.Tables.Add(tablo);
 
-        sheet.Range(2, 1, 2, sonKolon).Merge();
-        sheet.Cell(2, 1).Value = $"Dönem: {donem}    |    Birim: {birimAdi}";
-        sheet.Cell(2, 1).Style.Font.Bold = true;
-        sheet.Cell(2, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-
-        var baslikSatiri = 4;
-        sheet.Cell(baslikSatiri, 1).Value = "Adı Soyadı";
-        sheet.Cell(baslikSatiri, 2).Value = "Birim";
-        for (var gun = 1; gun <= 30; gun++)
-            sheet.Cell(baslikSatiri, gun + 2).Value = gun.ToString("D2", CultureInfo.InvariantCulture);
-        sheet.Cell(baslikSatiri, 33).Value = "X";
-        sheet.Cell(baslikSatiri, 34).Value = "İ";
-        sheet.Cell(baslikSatiri, 35).Value = "H";
-        sheet.Cell(baslikSatiri, 36).Value = "Hakediş";
-
-        var header = sheet.Range(baslikSatiri, 1, baslikSatiri, sonKolon);
-        header.Style.Font.Bold = true;
-        header.Style.Font.FontColor = XLColor.White;
-        header.Style.Fill.BackgroundColor = XLColor.FromHtml("#2563EB");
-        header.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-        header.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
-
-        for (var rowIndex = 0; rowIndex < table.Rows.Count; rowIndex++)
+        var prm = new Dictionary<string, object?>
         {
-            for (var columnIndex = 0; columnIndex < table.Columns.Count; columnIndex++)
-            {
-                var value = table.Rows[rowIndex][columnIndex];
-                var cell = sheet.Cell(baslikSatiri + rowIndex + 1, columnIndex + 1);
-                if (value is int intValue)
-                    cell.Value = intValue;
-                else
-                    cell.Value = Convert.ToString(value, CultureInfo.InvariantCulture) ?? "";
-            }
-        }
-
-        var sonSatir = baslikSatiri + table.Rows.Count;
-        if (sonSatir > baslikSatiri)
-        {
-            var body = sheet.Range(baslikSatiri + 1, 1, sonSatir, sonKolon);
-            body.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
-            body.Style.Border.InsideBorder = XLBorderStyleValues.Hair;
-            body.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
-            sheet.Range(baslikSatiri + 1, 3, sonSatir, sonKolon).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-            sheet.Range(baslikSatiri + 1, 33, sonSatir, 36).Style.Font.Bold = true;
-        }
-
-        sheet.Column(1).Width = 28;
-        sheet.Column(2).Width = 18;
-        for (var column = 3; column <= 32; column++)
-            sheet.Column(column).Width = 4.5;
-        for (var column = 33; column <= 35; column++)
-            sheet.Column(column).Width = 6;
-        sheet.Column(36).Width = 10;
-        sheet.SheetView.FreezeRows(baslikSatiri);
-        sheet.PageSetup.PageOrientation = XLPageOrientation.Landscape;
-        sheet.PageSetup.PaperSize = XLPaperSize.A4Paper;
-        sheet.PageSetup.PagesWide = 1;
-        sheet.PageSetup.PagesTall = 0;
-        sheet.PageSetup.Margins.Top = 0.25;
-        sheet.PageSetup.Margins.Bottom = 0.25;
-        sheet.PageSetup.Margins.Left = 0.2;
-        sheet.PageSetup.Margins.Right = 0.2;
-        sheet.PageSetup.SetRowsToRepeatAtTop(baslikSatiri, baslikSatiri);
-
-        var summaryRow = sonSatir + 2;
-        sheet.Range(summaryRow, 1, summaryRow, sonKolon).Merge();
-        sheet.Cell(summaryRow, 1).Value = $"Personel: {personelSayisi}    |    Toplam X: {genelX}    |    Toplam İ: {genelI}    |    Toplam H: {genelH}";
-        sheet.Cell(summaryRow, 1).Style.Font.Bold = true;
-        sheet.Cell(summaryRow, 1).Style.Fill.BackgroundColor = XLColor.FromHtml("#E9EEF8");
-
-        using var stream = new MemoryStream();
-        workbook.SaveAs(stream);
-        var safeBirim = new string((birim ?? "all").Where(char.IsLetterOrDigit).ToArray());
-        var fileName = $"puantaj-{yil}-{ay:D2}-{(string.IsNullOrEmpty(safeBirim) ? "birim" : safeBirim)}.xlsx";
-        return File(stream.ToArray(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+            ["BaslikAdi"]     = "PUANTAJ TAKVİMİ",
+            ["OlusturanAd"]   = HttpContext.Session.GetString("KullaniciAdi") ?? "GAMABEL YATIRIM LTD",
+            ["Tarih"]         = DateTime.Now.ToString("dd.MM.yyyy HH:mm"),
+            ["Donem"]         = $"{culture.DateTimeFormat.GetMonthName(ay)} {yil}",
+            ["Birim"]         = rol == "admin" && birim == "all" ? "Tüm Birimler" : birim ?? "",
+            ["PersonelSayisi"] = tablo.Rows.Count,
+            ["GenelXSayisi"]  = genel.X,
+            ["GenelISayisi"]  = genel.I,
+            ["GenelHSayisi"]  = genel.H,
+            ["Filigran"]      = null, // Yalnızca taslak/onay durumu güvenilir şekilde belirlenebiliyorsa doldurun.
+            // İmza isimleri: biliniyorsa doldurulur; boş bırakılırsa .frx'te yalnızca imza çizgisi görünür (elle imza).
+            ["ImzaBirimSorumlusu"]   = "",
+            ["ImzaBelediyeBaskani"]  = ""
+        };
+        return (ds, prm);
     }
 }

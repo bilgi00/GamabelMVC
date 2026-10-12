@@ -1,5 +1,6 @@
 @{
     ViewData["Title"] = "Kullanıcı Yönetimi";
+    var kullanicilar = Model as IEnumerable<dynamic>;
 }
 
 <div class="container-fluid mt-4">
@@ -22,7 +23,7 @@
         <div class="alert alert-danger">@TempData["Hata"]</div>
     }
 
-    @if (Model != null && Model.Count > 0)
+    @if (kullanicilar != null && kullanicilar.Any())
     {
         <div class="table-responsive">
             <table class="table table-striped">
@@ -37,7 +38,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var kullanici in Model)
+                    @foreach (var kullanici in kullanicilar)
                     {
                         <tr>
                             <td>@kullanici.AdSoyad</td>

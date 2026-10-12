@@ -74,9 +74,10 @@ public class MailQueueService : BackgroundService
         }
     }
 
-    private async Task LogMailAsync(MailModel mail, string durum, bool basarili, string? hata = null)
+    private Task LogMailAsync(MailModel mail, string durum, bool basarili, string? hata = null)
     {
         // Veritabanına log kaydı ekle
         // Bu kısmı veritabanı bağlantınıza göre uyarlayın
+        return Task.CompletedTask;
     }
 }

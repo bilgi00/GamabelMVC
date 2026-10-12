@@ -535,3 +535,27 @@ public async Task<IActionResult> Index()
 **Hazırlayan:** Kod Analiz Sistemi  
 **Sonraki Adım:** Rol kontrolü eksiklikleri düzeltme  
 **Öncelik:** RaporStsController yetkilendirme kontrolü ekleme
+
+---
+
+## 4️⃣ AY KİLİDİ İLE KAYIT KISITLAMASI (12 Ekim 2026)
+
+`ay_kilitleri` tablosunda ilgili `yil` ve `ay` satırı bulunduğunda dönem kilitli kabul edilir. Kilit kontrolü ortak `Services/AyKilitKontrol.cs` yardımcı metodu ile yapılır; veritabanı kontrolü başarısız olursa yazma işlemi güvenlik için devam etmez.
+
+### Etkilenen ekranlar ve işlemler
+
+| Ekran | Kilitli dönemde kısıtlanan işlemler |
+|---|---|
+| `HizliMesaiGirisi/Index` | Takvim hücresinden tekli mesai girişi/düzenlemesi, toplu giriş, kayıt silme ve Excel/CSV aktarımından kayıt ekleme |
+| `Mesai/Index` | Satır ekleme, satır alanlarını değiştirme ve satır silme |
+| `Puantaj/Index` | Takvim hücresinden tekli veya toplu izin girişi/değişikliği; `X` ile mevcut izin kaydını kaldırma |
+
+Bu kısıtlar yalnızca ekrandaki buton ve hücrelerle uygulanmaz; aşağıdaki POST uçları da her kayıt/değişiklikte ay kilidini sunucu tarafında doğrular:
+
+- `HizliMesaiGirisi/KayitEkle`, `Guncelle`, `Sil` ve `ImportExcel`
+- `Mesai/KaydetMesai` ve `SilMesai`
+- `Puantaj/KaydetIzin`
+
+Puantaj toplu isteklerinde her kayıt için yıl/ay kontrol edilir. Mesai kaydı güncellenirken hem kaydın mevcut dönemi hem istenen yeni dönem kilide karşı kontrol edilir. Hızlı mesai toplu dosya aktarımında dosyada kilitli bir aya ait satır varsa aktarım başlamadan reddedilir.
+
+Ay kilidi yönetiminde ayın açılması, aynı yıl/ay satırının `ay_kilitleri` tablosundan silinmesiyle çalışır; tekrar açıldıktan sonra ilgili ekran yenilendiğinde kayıt işlemleri kullanılabilir. Ekranların kilit durumu sorgulama adresleri `GET /Mesai/AyKilitliMi` ve `GET /Puantaj/AyKilitliMi` uçlarıdır. Kilit durumu doğrulanamazsa bu iki ekranda giriş/değişiklik kontrolleri devre dışı bırakılır.

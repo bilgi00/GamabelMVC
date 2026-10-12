@@ -222,10 +222,11 @@ public class MailService : IMailService
         return template.ToString();
     }
 
-    public async Task LogMailAsync(int logId, string durum, string? hataMesaji = null)
+    public Task LogMailAsync(int logId, string durum, string? hataMesaji = null)
     {
         // Log kaydını güncelle
         // Veritabanı güncelleme kodu
+        return Task.CompletedTask;
     }
 }
 

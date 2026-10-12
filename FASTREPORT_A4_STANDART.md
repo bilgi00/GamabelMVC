@@ -132,12 +132,12 @@ Bu route ve adlandırmalar **yeni raporlar için hedef örnektir**, GamabelMVC'n
 
 | Mevcut öğe | Yeni standartta | Yapılacak |
 |---|---|---|
-| `Reports/OdemeTalimat/OdemeTalimat.frx` | Gerekirse yönlü şablon çifti | Önce çıktıyı ve bankaya verilen belge düzenini karşılaştır. Eski dosyayı hemen yeniden adlandırma; geçişte eski ad için uyumluluk sağla. |
-| `Reports/Mesai.frx`, `Reports/Mesai/*.frx` | Rapor bazında yönlü şablon(lar) | `MesaiController`'ın `DataTable("Mesai")` bağlama biçimini ve birim/personel bazlı çıktıları koru. |
-| `Reports/Puantaj/Puantaj.frx` | Mevcut yatay rapor veya yönlü adlandırma | 6 mm kenar boşluğu ve 1077.3 px kullanılabilir alanı koruyup PDF çıktısında doğrula; 10 mm varsayılanını zorla uygulama. |
-| `RaporPdf2/{id}` action | Var olan davranış korunur | Şu an ödeme talimatı `RaporPdf2` önizlemeye yönlendiriyor. PDF indirmeye çevirmeyin; route'u ancak çağrı yerleri ve iş davranışı doğrulandıktan sonra değiştirin. Kalıcı yönlendirme kullanıcı/bookmark bağlantılarını kalıcılaştıracağından varsayılan geçiş yöntemi değildir. |
-| `Views/PRS/OdemeTalimat/Rapor.cshtml` ve modüle özel preview view'ları | İhtiyaç varsa ortak view | Ortak view'e geçişte controller/view davranışını doğrulayın; kullanılmayan dosya olduğu teyit edilmeden silmeyin. |
-| `Detay.cshtml` ve rapor açan diğer butonlar | Uyumlu bağlantılar | Her bağlantının mevcut önizleme/PDF davranışını ve yetkisini koruyun. |
+| `Reports/Mesai.frx`, `Reports/Mesai/*.frx` | `Reports/Mesai/Mesai.Yatay.frx` (v3) | ✅ **Tamamlandı (12 Eki).** `Mesai/Rapor` + `Mesai/RaporPdf` uçları ortak katmandan üretiyor; eski 3 uç ve 4 dosya kaldırıldı. |
+| `Reports/Puantaj/Puantaj.frx` | `Reports/Puantaj/Puantaj.Yatay.frx` (v3) | ✅ **Tamamlandı (12 Eki).** `Puantaj/Rapor` + `Puantaj/RaporPdf` uçları ortak katmandan üretiyor; `Preview/Pdf/Excel/Cikti` uçları ve 3 dosya kaldırıldı. |
+| `Reports/OdemeTalimat/OdemeTalimat.frx` | Gerekirse yönlü şablon çifti | ⏳ **Bekliyor.** Önce çıktıyı ve bankaya verilen belge düzenini karşılaştır; eski dosyayı hemen yeniden adlandırma. |
+| `RaporPdf2/{id}` action | Var olan davranış korunur | ⏳ Ödeme talimatı `RaporPdf2` önizlemeye yönlendiriyor. Route'u ancak çağrı yerleri ve iş davranışı doğrulandıktan sonra değiştir. |
+| `Views/PRS/OdemeTalimat/Rapor.cshtml` | `Views/Shared/Rapor.cshtml` (Mesai/Puantaj'da kullanılıyor) | ⏳ Modüle özel preview view'ları, kullanılmadıkları teyit edilmeden silinmez. |
+| `Detay.cshtml` ve rapor açan diğer butonlar | Uyumlu bağlantılar | ⏳ Her bağlantının mevcut önizleme/PDF davranışı ve yetkisi korunmalı. |
 
 > **Kural:** Yeni rapor eklemek mevcut raporları toplu yeniden adlandırmayı gerektirmez. Mevcut raporu taşımak gerekiyorsa önce route, buton, yetki ve şablon çağrılarını envanterleyin; geçişi uyumluluğu koruyarak ve rapor bazında yapın.
 
@@ -489,6 +489,8 @@ Detay/Liste sayfasındaki butonlar:
 | Toplam sayfa sayısı gerekiyorsa `DoublePass="true"` kullan ve PDF'de doğrula | `[TotalPages#]` gibi toplam sayfa alanlarının değerlendirilmesi (H7) |
 | Veri bandına bağlı kolon başlığında `DataHeaderBand` ve gerekiyorsa `RepeatOnEveryPage="true"` tercih et | Başlık veri bandıyla birlikte tekrar edebilir; mevcut `PageHeaderBand` tasarımlarını yalnızca bu nedenle zorunlu olarak taşıma (H6) |
 | `PageHeaderBand` kurumsal veya her sayfada tekrarlanması gereken içerik için kullanılabilir | GamabelMVC'nin mevcut Mesai/Puantaj raporlarında kolon başlıkları bu band içindedir; yerleşimi gerçek raporda doğrula |
+| **Sayfa başlığı her sayfada tekrar edecekse** (kurum + rapor başlığı + dönem bilgisi) bunları `PageHeaderBand` içine al | `ReportTitleBand` **yalnızca ilk sayfada** basılır; çok sayfalı raporda başlığın her sayfada görünmesi isteniyorsa doğru band `PageHeaderBand`'tir |
+| **İmza bloğu yalnızca son sayfada** görünecekse `ReportSummaryBand` içine koy (`KeepWithData="true"`) | `ReportSummaryBand` raporun sonunda, veri bittikten sonra **bir kez** basılır; `PageFooter`'a imza koymak her sayfada tekrar eder (istenmez) |
 | Band `Top` değerlerini elle hesaplayıp yazma; Designer'ın oluşturduğu FRX koordinatlarını koru | FastReport FRX mevcut şablonlarda band `Top` koordinatlarını serileştirebilir; bu değerlerin varlığı tek başına hata değildir (H8) |
 | Uzayan metin içeren satırda `CanGrow`, `WordWrap` ve gerekirse `GrowToBottom` davranışını örnek uzun metinlerle test et | Her hücreye koşulsuz `GrowToBottom` eklemek yerine gerçek satır yüksekliği/kenarlık davranışını doğrula (H8) |
 | Sayı/tarih biçimi **açık yazılır** (`Format.UseLocale="false"`) | Sunucu kültüründen bağımsız (Bölüm 11) |
@@ -646,9 +648,14 @@ Detay/Liste sayfasındaki butonlar:
                   Text="[ToplamTutar]" HorzAlign="Right" VertAlign="Center"
                   Format="Number" Format.UseLocale="false" Format.DecimalDigits="2"
                   Format.DecimalSeparator="," Format.GroupSeparator="." Font="Arial, 10pt, style=Bold"/>
-      <TextObject Name="TxtImza1" Top="56.7" Width="330" Height="18.9" Text="Hazırlayan" HorzAlign="Center" Font="Arial, 9pt"/>
-      <TextObject Name="TxtImza2" Left="358.5" Top="56.7" Width="330" Height="18.9" Text="Kontrol" HorzAlign="Center" Font="Arial, 9pt"/>
-      <TextObject Name="TxtImza3" Left="717" Top="56.7" Width="330" Height="18.9" Text="Onaylayan" HorzAlign="Center" Font="Arial, 9pt"/>
+      <TextObject Name="TxtImzaBirimUnvan" Left="60" Top="56.7" Width="400" Height="14" Text="BİRİM SORUMLUSU"
+                  HorzAlign="Center" Font="Arial, 8.5pt, style=Bold"/>
+      <TextObject Name="TxtImzaBirimCizgi" Left="60" Top="94.5" Width="400" Height="18.9" Border.Lines="Top"
+                  Text="[ImzaBirimSorumlusu]" HorzAlign="Center" VertAlign="Center" Font="Arial, 8pt"/>
+      <TextObject Name="TxtImzaBasUnvan" Left="587.06" Top="56.7" Width="400" Height="14" Text="BELEDİYE BAŞKANI"
+                  HorzAlign="Center" Font="Arial, 8.5pt, style=Bold"/>
+      <TextObject Name="TxtImzaBasCizgi" Left="587.06" Top="94.5" Width="400" Height="18.9" Border.Lines="Top"
+                  Text="[ImzaBelediyeBaskani]" HorzAlign="Center" VertAlign="Center" Font="Arial, 8pt"/>
       <BarcodeObject Name="Qr1" Left="0" Top="94.5" Width="37.8" Height="37.8"
                      Text="[BelgeNo]" AllowExpressions="true" Barcode="QR Code"/>
     </ReportSummaryBand>
@@ -762,6 +769,46 @@ public interface IRaporCiktiLogServisi
 
 QR, `/RaporDogrula/{belgeNo}` adresine yönlendirebilir. Bu sayfa **yalnızca** belge no, tarih, modül ve geçerlilik bilgisini gösterir; **tutar veya kişi verisi göstermez** ve giriş gerektirir.
 
+### 10.5 Standart başlık + imza düzeni (v3.1)
+
+**İki kuralla tanımlı düzen:** (1) rapor başlığı **her sayfanın üstünde** tekrar eder, (2) imza bloğu **yalnızca son sayfada** görünür.
+
+| Öğe | Band | Davranış |
+|---|---|---|
+| Kurum adı + tarih | `PageHeaderBand` | Her sayfada |
+| Rapor başlığı + dönem/kapsam bilgisi | `PageHeaderBand` | Her sayfada (`ReportTitleBand` kullanılmaz) |
+| Kolon başlıkları | `DataHeaderBand` + `RepeatOnEveryPage="true"` | Her sayfada, veriyle birlikte |
+| Genel toplam + imza bloğu | `ReportSummaryBand` + `KeepWithData="true"` | **Yalnızca son sayfada** |
+
+**İmza bloğu (varsayılan: 2 imza) — isim parametreleri:**
+
+```xml
+<!-- Dictionary içine eklenecek parametreler -->
+<Parameter Name="ImzaBirimSorumlusu"   DataType="System.String" AsString=""/>
+<Parameter Name="ImzaBelediyeBaskani"  DataType="System.String" AsString=""/>
+
+<!-- ReportSummaryBand içindeki imza alanı: unvan (kalın) + imza çizgisi + çizgi altında isim -->
+<!-- İsim parametresi boşsa yalnızca çizgi görünür → elle imza için uygun -->
+<TextObject Name="TxtImzaBirimUnvan" Left="60" Top="42" Width="400" Height="14" Text="BİRİM SORUMLUSU"
+            HorzAlign="Center" Font="Arial, 8.5pt, style=Bold"/>
+<TextObject Name="TxtImzaBirimCizgi" Left="60" Top="78" Width="400" Height="19" Border.Lines="Top"
+            Text="[ImzaBirimSorumlusu]" HorzAlign="Center" VertAlign="Center" Font="Arial, 8pt"/>
+<TextObject Name="TxtImzaBasUnvan" Left="587.06" Top="42" Width="400" Height="14" Text="BELEDİYE BAŞKANI"
+            HorzAlign="Center" Font="Arial, 8.5pt, style=Bold"/>
+<TextObject Name="TxtImzaBasCizgi" Left="587.06" Top="78" Width="400" Height="19" Border.Lines="Top"
+            Text="[ImzaBelediyeBaskani]" HorzAlign="Center" VertAlign="Center" Font="Arial, 8pt"/>
+```
+
+Kurallar:
+
+1. İmza **asla `PageFooter`'a konmaz** (her sayfada tekrar eder).
+2. Unvan metni şablona sabittir; **isimler parametreden** gelir, veri hazırlama katmanı doldurur.
+3. İsim bilinmiyorsa parametre **boş bırakılır** — çizgi elle imzalanır; unvan/metin kolon genişlikleri (2×400 px, yatay) taşma yapmaz.
+4. `ReportSummary`'nin son sayfada kalması için `KeepWithData="true"` şart; son sayfada veri yoksa yer tutucu satır (bkz. `RaporServisi.BosVeriYerTutucuEkle`) bandı boş bırakmaz.
+5. Üç imzalı (Hazırlayan/Kontrol/Onaylayan) eski düzen **kullanımdan çekildi**; tüm şablonlar 10.5 düzenine taşındı.
+
+**Uygulanan örnekler:** `Reports/Puantaj/Puantaj.Yatay.frx` ve `Reports/Mesai/Mesai.Yatay.frx` (her ikisi v1.1.0) — başlık her sayfada, imza son sayfada.
+
 ---
 
 ## 11. Türkçe Karakter, Font ve Biçim (Ö3)
@@ -779,6 +826,20 @@ QR, `/RaporDogrula/{belgeNo}` adresine yönlendirebilir. Bu sayfa **yalnızca** 
 ---
 
 ## 12. Excel Dışa Aktarma ve PDF Kısıtları (Ö8)
+
+| Çıktı | Tasarım kaynağı | Durum |
+|---|---|---|
+| Önizleme / Yazdırma | `.frx` | `WebReport` hazırlanan raporu şablondan render eder |
+| PDF | `.frx` | `PDFSimpleExport` — ayrı paket (`Export.PdfSimple`) |
+| **HTML** | **`.frx`** | `HTMLExport` — **OpenSource çekirdekte mevcut**; `EmbedPictures = true` ile tek dosyalık çıktı |
+| Excel (XLSX) | ❌ C# kodu | XLSX export sınıfı **ticari pakette**; EPPlus ile elle kurulur (bkz. `MesaiController.RaporExcel`) |
+
+Kurallar:
+
+1. **Excel'in düzeni C#'ta yaşar** — `.frx` değişince `RaporExcel`'deki başlıklar/kolonlar elle eşitlenmelidir. Tek doğruluk kaynağı `.frx`'tir; Excel'i ona göre tutun.
+2. Excel istenmeyen raporlarda EPPlus bloğunu ve butonu **tamamen kaldırmak yeterlidir** (uç + view butonu + JS dinleyici).
+3. HTML çıktısı **şablondan** üretildiği için ek bakım gerektirmez; `.frx` değişikliklerini otomatik izler. `RaporCiktiTuru.Html` ile `IRaporServisi.Cikar(...)` üzerinden alınır.
+4. Ticari lisans alınırsa XLSX export sınıfı gelir; o durumda `RaporExcel` EPPlus kodu silinip `Cikar(..., Xlsx, ...)`'e geçirilir ve Excel de `.frx`'ten üretilir.
 
 | Konu | Karar |
 |---|---|
@@ -978,28 +1039,91 @@ Kullanıcı **"X sayfasındaki verileri raporla"** dediğinde sırayla:
 | `RuntimeBinderException: null reference` | View'de `ViewBag.WebReport.GetHtml()` | `@model WebReport` + `@await Model.Render()` |
 | `BLAZOR106` derleme hatası | Blazor `Toolbar.razor.js` dosyası projede | Dosyayı projeye dahil etme |
 | `ArgumentOutOfRangeException` → `PreparedPages.GetPageSize(0)` önizlemede 500 | Rapor `Prepare()` sonrasında hiç sayfa üretmemiş olabilir (ör. boş DataBand) veya preview isteğinden önce `WebReport.Report` dispose edilmiştir | Boş liste için açık bir satır/boş durum bandı üret; gerçek kayıt sayısını ayrı tut. `Response.RegisterForDispose(web.Report)` ile raporu ilk yanıt bitiminde kapatma. Dolu ve boş veriyle preview/PDF test et. |
-| `PDFSimpleExport` bulunamıyor | `PdfSimple` paketi yok / sürüm uyumsuz | Bölüm 4'teki paketi Web paketiyle aynı sürümde ekle |
-| `InvalidOperationException: '…' tablosu DataSet içinde yok` | Tablo adı `.frx` `ReferenceName` ile uyuşmuyor | `DataTable.TableName` = `ReferenceName` son parçası; `RaporTanimi.Tablolar`'ı güncelle |
-| Kolon başlıkları rapor başlığının üstünde | Band yerleşimi ve tekrar ayarı raporla uyuşmuyor | `DataHeaderBand` veya `PageHeaderBand` yerleşimini Designer'da düzelt; mevcut çalışan band tipini sırf adı nedeniyle değiştirme |
-| "Sayfa 1 / " (toplam boş) | Toplam sayfa alanı şablonun değerlendirme ayarıyla uyumsuz | Kullanılan FastReport sayfa alanını/formatını ve gerekiyorsa `DoublePass`'ı örnek raporda doğrula |
-| Uzayan satırda kenarlıklar kopuk | Büyüyen metin hücreleri bandın geri kalanıyla eşleşmiyor | `CanGrow`, `WordWrap`, gerekirse `GrowToBottom` ayarlarını örnek uzun satırla deneyerek düzelt |
-| PDF'de yatay taşma | Kenar boşluğu sonrası kullanılabilir genişlik aşılmış olabilir | Bölüm 2'ye göre gerçek kullanılabilir alanı hesapla; PDF/Designer'da kontrol et |
-| `FileNotFoundException` (frx) | Şablon yolu/çıktıya kopyalama yanlış | Mevcut ContentRoot/AppContext yolunu ve `.csproj` kopyalama kuralını doğrula; adlandırma geçişini uyumlulukla yap |
-| Başkası id değiştirerek rapor görebiliyor | Kayıt/birim kapsamı kontrolü yok veya policy eksik | Modülün mevcut policy'si ve kayıt kapsamı denetimini birlikte doğrula |
-| Eski PDF geliyor | Önbellek varsa invalidation anahtarı ilişkili veri değişimini kapsamıyor | Önce cache kullanımı gerçekten gerekli mi ölç; anahtarı gerçek güncelleme belirteciyle tasarla |
-| Türkçe karakter bozuk / yanlış para biçimi | Font yok, kültür bağımlı biçim | Bölüm 11 |
-| Değişiklikler görünmüyor | Eski DLL çalışıyor | Uygulamayı durdurup yeniden başlat, **Ctrl + F5** |
-| `dotnet build` dosya kopyalama hatası (iç içe geçici klasörler) | Eski geçici çıktılar | Temiz çıktı klasörü veya `dotnet msbuild /t:Compile` |
 
 ---
 
-## 19. Yapay Zekaya Verilecek Kısa Komut Örneği
+## 19. GamabelMVC Gerçek Uygulama Check-Listesi
+
+Bu proje için gerçek rapor geliştirmede uygulanacak kısa yol haritası:
+
+1. Mevcut raporların eski route ve `.frx` dosyalarını tarayıp çakışma varsa belirle.
+2. Yalnızca yeni rapor için `Reports/{Modul}/{RaporAdi}.{Yon}.frx` ikilisi oluştur.
+3. A4 ölçüleri ve yön seçimi için `PaperWidth/PaperHeight/Landscape` değerlerini kontrol et.
+4. `RaporTanimi`, `IRaporServisi`, `RaporServisi` ve gerekli DI kaydını projeye uygun şekilde ekle.
+5. `Views/Shared/Rapor.cshtml` genel önizleme sayfasını kullan; mevcut modül view'leri bozulmasın.
+6. `RaporPdf` ve `Rapor` action'larında `yon` parametresini doğrula; geçersiz değerlerde `HTTP 400` döndür.
+7. Hassas rapor çıktılarında `Cache-Control: no-store` ayarını koru.
+8. `.frx` içindeki kolonların `Left/Width` hesaplarını gerçek kullanılabilir alan içinde tut.
+9. `PageHeaderBand` / `DataHeaderBand` / `PageFooterBand` için toplam sayfa, Türkçe karakter ve PDF boyutu testini yap.
+10. Her rapor için `ReportInfo.Version` ve `Description` alanını güncelle.
+11. `FastReport.OpenSource.Web` ve `FastReport.OpenSource.Export.PdfSimple` sürüm uyumunu kontrol et.
+12. Dokümantasyonda ve görsel doğrulamada; eski raporlar ve yeni raporlar birlikte çalışsın.
+
+> Bu kontrol listesi, mevcut proje notlarıyla uyumlu şekilde yalnızca uygulama için kullanılır. Bir raporun gerçek üretim için “tamam” sayılabilmesi için aslında FastReport Designer’da ve PDF çıktısında doğrulama yapılmalıdır.
+
+## 20. Projede Uygulanan Raporlar (12 Ekim 2026)
+
+Bu bölüm, standardın projeye **fiilen uygulandığı** raporların ve ortak katmanın gerçek halini belgeler.
+
+### 20.1 Ortak katman (uygulandı)
 
 ```
-OdemeTalimat/Detay sayfasındaki verileri raporla.
+Services/Raporlama/
+├── RaporYonu.cs          enum RaporYonu { Dikey, Yatay } + TryCoz (geçersiz değer → false, HTTP 400)
+├── RaporTanimi.cs        RaporTanimi record + RaporKaydi (proje rapor kayıtları)
+├── IRaporServisi.cs      WebReport Onizleme(...) / RaporCikti Pdf(...)
+└── RaporServisi.cs       şablon yükleme, tablo doğrulama, filigran, boş-veri yer tutucu, PDFSimpleExport
+
+Views/Shared/Rapor.cshtml  ortak önizleme (yön seçici + "PDF indir" çubuğu)
+```
+
+DI kaydı (`Program.cs`): `builder.Services.AddScoped<IRaporServisi, RaporServisi>();`
+
+### 20.2 Rapor kayıtları (`RaporKaydi`)
+
+```csharp
+// EK MESAİ ÇİZELGESİ — 10 kolon; dikey alana sığmaz, yalnızca yatay şablon.
+public static readonly RaporTanimi Mesai =
+    new("Mesai", "Mesai", new[] { "Mesai" }, "PrsMenuMesai", null, RaporYonu.Yatay, new[] { RaporYonu.Yatay });
+
+// PUANTAJ TAKVİMİ — 36 kolon (AdSoyad, Birim, 30 gün, X/İ/H/Hakediş); yalnızca yatay şablon.
+public static readonly RaporTanimi Puantaj =
+    new("Puantaj", "Puantaj", new[] { "Puantaj" }, "PrsMenuPuantaj", null, RaporYonu.Yatay, new[] { RaporYonu.Yatay });
+```
+
+### 20.3 Uçlar, şablonlar ve kaldırılanlar
+
+| Modül | Önizleme | PDF | HTML | Excel | Şablon | Kaldırılan eski uçlar | Silinen dosyalar |
+|---|---|---|---|---|---|---|---|
+| Mesai | `GET /Mesai/Rapor` | `GET /Mesai/RaporPdf` | `GET /Mesai/RaporHtml` | `GET /Mesai/RaporExcel` (C#) | `Reports/Mesai/Mesai.Yatay.frx` | `FastReportPreview`, `FastReportPdf`, `FastReportExcel` | `Reports/Mesai.frx`, `Reports/Mesai/EkMesaiCizelgesi.frx`, `Reports/Mesai/EkMesaiPersonelBazli.frx`, `Views/PRS/Mesai/FastReportPreview.cshtml` |
+| Puantaj | `GET /Puantaj/Rapor` | `GET /Puantaj/RaporPdf` | — | — | `Reports/Puantaj/Puantaj.Yatay.frx` | `Preview`, `Pdf`, `Excel`, `Cikti` | `Reports/Puantaj/Puantaj.frx`, `Views/PRS/Puantaj/Preview.cshtml`, `Views/PRS/Puantaj/Cikti.cshtml` |
+
+Her iki şablon: A4 yatay (297×210), `DoublePass="true"`,
+`<Total>` genel toplamlar, `DataHeaderBand RepeatOnEveryPage="true"`, `Sayfa [Page#] / [TotalPages#]`,
+kolon toplamı tam **1047.06 px**. Excel çıktısı standart uyarınca üretilmez (Bölüm 12).
+
+> **v3.1 (12 Eki 2026):** `Puantaj.Yatay.frx` ve `Mesai.Yatay.frx` **1.1.0**'a yükseltildi —
+> rapor başlığı `PageHeaderBand` içine alındı (**her sayfada tekrar eder**), imza bloğu
+> `ReportSummaryBand`'e taşındı (**yalnızca son sayfada**: BİRİM SORUMLUSU +
+> BELEDİYE BAŞKANI — Bölüm 10.5). Eski üç imzalı (Hazırlayan/Kontrol/Onaylayan)
+> düzen kaldırıldı.
+
+### 20.4 Yeni rapor ekleme — uygulanan adımlar
+
+1. `Services/Raporlama/RaporTanimi.cs` → `RaporKaydi`'na tek kayıt ekle (modül, ad, tablolar, policy, yönler).
+2. `Reports/{Modul}/{Ad}.{Yon}.frx` şablonunu Bölüm 8 kurallarıyla oluştur (bölüm 8.3 yatay örnek).
+3. Controller'da `Rapor` / `RaporPdf` action'larını yaz: `yon` doğrulama → yetki/kapsam → veri → `IRaporServisi`.
+4. Veri hazırlama metodunda `DataSet("Data")` + parametreleri kur; tablo adları `.frx` `ReferenceName` ile birebir eşleşsin.
+5. Önizleme için `Views/Shared/Rapor.cshtml`'i kullan (`ViewBag.Yon`, `ViewBag.DesteklenenYonler`, `ViewBag.RaporQuery`, `ViewBag.PdfUrl`).
+6. PDF yanıtına `Cache-Control: no-store` ekle; `dotnet build` ile doğrula; Designer + PDF görsel kontrolü yap.
+
+---
+
+## 21. Yapay Zekaya Verilecek Kısa Komut Örneği
+
+```
+Mesai/Index sayfasındaki listeyi raporla.
 Standart: FASTREPORT_A4_STANDART.md (v3)
-Yön: dikey ve yatay
-Çıktı: önizleme + PDF + excel
+Yön: yatay (10 kolon dikey alana sığmaz)
+Çıktı: önizleme + PDF (excel üretilmez)
 ```
-
-Beklenen sonuç: Mevcut ödeme talimatı rapor/route/veri hazırlama ve `PrsAdmin` yetkisi önce incelenir; talebe uygun şablon yön(ler)i eklenir. Gerekliyse ortak rapor servisine bağlanır, eski `RaporPdf2` önizleme davranışı korunur, ilgili butonlar doğrulanır ve çalıştırılan test/Designer kontrolleri özette bildirilir.

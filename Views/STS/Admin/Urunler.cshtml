@@ -1,5 +1,6 @@
 @{
     ViewData["Title"] = "Ürün Yönetimi";
+    var urunler = Model as IEnumerable<dynamic>;
 }
 
 <div class="container-fluid mt-4">
@@ -23,7 +24,7 @@
         <div class="alert alert-danger">@TempData["Hata"]</div>
     }
 
-    @if (Model != null && Model.Count > 0)
+    @if (urunler != null && urunler.Any())
     {
         <div class="mb-3">
             <input type="text" id="urunArama" class="form-control" placeholder="Ürünlerde ara..." />
@@ -53,7 +54,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var urun in Model)
+                    @foreach (var urun in urunler)
                     {
                         <tr>
                             <td>@(string.IsNullOrWhiteSpace(urun.Kod) ? "-" : urun.Kod)</td>
