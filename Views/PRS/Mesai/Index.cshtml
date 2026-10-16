@@ -204,7 +204,28 @@
                 </div>
                 <div class="mb-3">
                     <label class="form-label fw-bold">Açıklama</label>
-                    <input type="text" id="modalAciklama" class="form-control" placeholder="İsteğe bağlı açıklama" />
+                    <select id="modalAciklama" class="form-select">
+                        <option value="">-- Boş --</option>
+                        <option value="Vidanjör">Vidanjör</option>
+                        <option value="Süpürge">Süpürge</option>
+                        <option value="Ahtapot aracı">Ahtapot aracı</option>
+                        <option value="Evsel atık">Evsel atık</option>
+                        <option value="Terminal tuvaletler">Terminal tuvaletler</option>
+                        <option value="Akyar Sınır kapısı">Akyar Sınır kapısı</option>
+                        <option value="Derin ya sınır kapısı">Derin ya sınır kapısı</option>
+                        <option value="Dozer kamyon">Dozer kamyon</option>
+                        <option value="Çatalcı">Çatalcı</option>
+                        <option value="Açık Van">Açık Van</option>
+                        <option value="Skip">Skip</option>
+                        <option value="Anıt tuvaletler">Anıt tuvaletler</option>
+                        <option value="Cenaze İşleri">Cenaze İşleri</option>
+                        <option value="Öğrenci kontrol">Öğrenci kontrol</option>
+                        <option value="Otobüs şoförü">Otobüs şoförü</option>
+                        <option value="Tören ekibi">Tören ekibi</option>
+                        <option value="Bayrak ekibi">Bayrak ekibi</option>
+                        <option value="Konteyner tamir ekibi">Konteyner tamir ekibi</option>
+                        <option value="Konteyner yıkama">Konteyner yıkama</option>
+                    </select>
                 </div>
             </div>
             <div class="modal-footer">
@@ -303,6 +324,63 @@
         var d = document.createElement('div');
         d.appendChild(document.createTextNode(t || ''));
         return d.innerHTML;
+    }
+
+    function aciklamaSecenekleri(value) {
+        var secenekler = [
+            { value: '', text: '-- Boş --' },
+            { value: 'Vidanjör', text: 'Vidanjör' },
+            { value: 'Süpürge', text: 'Süpürge' },
+            { value: 'Ahtapot aracı', text: 'Ahtapot aracı' },
+            { value: 'Evsel atık', text: 'Evsel atık' },
+            { value: 'Terminal tuvaletler', text: 'Terminal tuvaletler' },
+            { value: 'Akyar Sınır kapısı', text: 'Akyar Sınır kapısı' },
+            { value: 'Derin ya sınır kapısı', text: 'Derin ya sınır kapısı' },
+            { value: 'Dozer kamyon', text: 'Dozer kamyon' },
+            { value: 'Çatalcı', text: 'Çatalcı' },
+            { value: 'Açık Van', text: 'Açık Van' },
+            { value: 'Skip', text: 'Skip' },
+            { value: 'Anıt tuvaletler', text: 'Anıt tuvaletler' },
+            { value: 'Cenaze İşleri', text: 'Cenaze İşleri' },
+            { value: 'Öğrenci kontrol', text: 'Öğrenci kontrol' },
+            { value: 'Otobüs şoförü', text: 'Otobüs şoförü' },
+            { value: 'Tören ekibi', text: 'Tören ekibi' },
+            { value: 'Bayrak ekibi', text: 'Bayrak ekibi' },
+            { value: 'Konteyner tamir ekibi', text: 'Konteyner tamir ekibi' },
+            { value: 'Konteyner yıkama', text: 'Konteyner yıkama' }
+        ];
+        return secenekler.map(function(secenek) {
+            return '<option value="' + escapeHtml(secenek.value) + '"' +
+                (value === secenek.value ? ' selected' : '') + '>' +
+                escapeHtml(secenek.text) + '</option>';
+        }).join('');
+    }
+
+    function kaydetMesaiKaydi(kayit) {
+        return fetch('/Mesai/KaydetMesai', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                id: kayit.id,
+                personelId: kayit.personelId,
+                perNo: kayit.perNo,
+                tarih: kayit.tarih,
+                gorev: kayit.gorev,
+                baslangic: kayit.baslangic,
+                bitis: kayit.bitis,
+                fiiliSaat: kayit.fiiliSaat,
+                zam01Saat: kayit.zam01Saat,
+                zam05Saat: kayit.zam05Saat,
+                toplamSaat: kayit.toplamSaat,
+                aciklama: kayit.aciklama
+            })
+        }).then(function(response) {
+            if (!response.ok) throw new Error('Kayıt yapılamadı (' + response.status + ')');
+            return response.json();
+        }).then(function(result) {
+            if (!result.basarili) throw new Error(result.mesaj || 'Kayıt yapılamadı.');
+            return result;
+        });
     }
 
     function showToast(msg, type) {
@@ -484,7 +562,7 @@
                 '<td style="width:75px" class="readonly-cell">' + parseFloat(k.zam01Saat).toFixed(2) + '</td>' +
                 '<td style="width:75px" class="readonly-cell">' + parseFloat(k.zam05Saat).toFixed(2) + '</td>' +
                 '<td style="width:85px" class="readonly-cell toplam-cell">' + parseFloat(k.toplamSaat).toFixed(2) + '</td>' +
-                '<td style="width:150px"><input type="text" class="inp-aciklama" value="' + escapeHtml(k.aciklama || '') + '" data-idx="' + i + '" style="width:110px"' + (ayKilitli ? ' disabled' : '') + '></td>' +
+                '<td style="width:150px"><select class="inp-aciklama form-select form-select-sm" data-idx="' + i + '"' + (ayKilitli ? ' disabled' : '') + '>' + aciklamaSecenekleri(k.aciklama || '') + '</select></td>' +
                 '<td style="width:40px" class="no-print"><button class="btn btn-sm btn-danger btn-mesai-sil" data-idx="' + i + '"' + (ayKilitli ? ' disabled' : '') + '>X</button></td>';
 
             tbody.appendChild(tr);
@@ -537,7 +615,26 @@
         tbody.querySelectorAll('.inp-aciklama').forEach(function(el) {
             el.addEventListener('change', function() {
                 var idx = parseInt(this.dataset.idx);
-                mesaiKayitlari[idx].aciklama = this.value;
+                var kayit = mesaiKayitlari[idx];
+                var oncekiAciklama = kayit.aciklama || '';
+                kayit.aciklama = this.value;
+                this.disabled = true;
+                kaydetMesaiKaydi(kayit)
+                    .then(function() {
+                        showToast('Açıklama kaydedildi');
+                    })
+                    .catch(function(error) {
+                        kayit.aciklama = oncekiAciklama;
+                        renderTable();
+                        showToast(error.message || 'Açıklama kaydedilemedi', 'error');
+                    })
+                    .then(function() {
+                        var kayitIndex = mesaiKayitlari.indexOf(kayit);
+                        if (kayitIndex !== -1) {
+                            var secici = tbody.querySelector('.inp-aciklama[data-idx="' + kayitIndex + '"]');
+                            if (secici) secici.disabled = ayKilitli;
+                        }
+                    });
             });
         });
 
@@ -653,7 +750,7 @@
 
         var fiili = saatFarki(bas, bit);
         var z = hesaplaZamlar(tarih, bas, bit);
-        mesaiKayitlari.push({
+        var yeniKayit = {
             id: 0,
             personelId: pid,
             perNo: perNo,
@@ -667,11 +764,24 @@
             zam05Saat: z.zam05,
             toplamSaat: z.toplam,
             aciklama: aciklama
-        });
-        renderTable();
-        document.getElementById('modalAciklama').value = '';
-        bootstrap.Modal.getInstance(document.getElementById('satirEkleModal')).hide();
-        showToast(adSoyad + ' eklendi');
+        };
+        var ekleBtn = this;
+        ekleBtn.disabled = true;
+        kaydetMesaiKaydi(yeniKayit)
+            .then(function(result) {
+                yeniKayit.id = result.id;
+                mesaiKayitlari.push(yeniKayit);
+                renderTable();
+                document.getElementById('modalAciklama').value = '';
+                bootstrap.Modal.getInstance(document.getElementById('satirEkleModal')).hide();
+                showToast(adSoyad + ' kaydedildi');
+            })
+            .catch(function(error) {
+                showToast(error.message || 'Mesai kaydı kaydedilemedi', 'error');
+            })
+            .then(function() {
+                ekleBtn.disabled = false;
+            });
     });
 
     // FastReport A4 Rapor Standardı (v3): Önizleme ve PDF aynı .frx şablonundan üretilir.
