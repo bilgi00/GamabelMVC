@@ -129,7 +129,7 @@
         <div class="kart-basligi">
             <div>
                 <h2 class="kart-baslik" id="puantajTakvimBaslik">Aylık Puantaj</h2>
-                <p class="kart-alt-yazi no-print"><strong>Hücreye tıklayarak düzenleyin.</strong> Klavyeden X, İ, G, Ç, V, Ö veya H tuşlarını kullanabilirsiniz.</p>
+                <p class="kart-alt-yazi no-print"><strong>Hücreye tıklayarak düzenleyin.</strong> Klavyeden X, İ, G, Ç, V, H veya Shift+H tuşlarını kullanabilirsiniz.</p>
             </div>
         </div>
 
@@ -141,7 +141,7 @@
                 <div class="legend-item"><span class="legend-color lgi"></span>Gİ · Görev İzni</div>
                 <div class="legend-item"><span class="legend-color lch"></span>ÇH · Çocuk Hastalık</div>
                 <div class="legend-item"><span class="legend-color lv"></span>Vİ · Vefat İzni</div>
-                <div class="legend-item"><span class="legend-color loz"></span>Öİ · Özel İzin</div>
+                <div class="legend-item"><span class="legend-color lhi"></span>Hİ · Haftalık İzin</div>
                 <div class="legend-item"><span class="legend-color lh"></span>H · Hastalık</div>
                 <div class="legend-item"><span class="legend-color lsi"></span>Sİ · Seferberlik İzni</div>
                 <div class="legend-item"><span class="legend-color lodi"></span>ÖDİ · Ödeneksiz İzin</div>
@@ -199,11 +199,12 @@
             <label class="form-label">Durum</label>
             <select id="modalDurum" class="form-select">
                 <option value="X">✅ Çalıştı (X)</option>
+                <option value="T">🎌 Tatil (T)</option>
                 <option value="İ">🟡 Yıllık İzin (İ)</option>
                 <option value="Gİ">🟠 Görev İzni (Gİ)</option>
                 <option value="ÇH">🟢 Çocuk Hastalık (ÇH)</option>
                 <option value="Vİ">🟣 Vefat İzni (Vİ)</option>
-                <option value="Öİ">🔴 Özel İzin (Öİ)</option>
+                <option value="Hİ">🔴 Haftalık İzin (Hİ)</option>
                 <option value="H">🔴 Hastalık (H)</option>
                 <option value="Sİ">🔵 Seferberlik İzni (Sİ)</option>
                 <option value="ÖDİ">🔷 Ödeneksiz İzin (ÖDİ)</option>
@@ -245,7 +246,7 @@
                 <option value="Gİ">🟠 Görev İzni (Gİ)</option>
                 <option value="ÇH">🟢 Çocuk Hastalık (ÇH)</option>
                 <option value="Vİ">🟣 Vefat İzni (Vİ)</option>
-                <option value="Öİ">🔴 Özel İzin (Öİ)</option>
+                <option value="Hİ">🔴 Haftalık İzin (Hİ)</option>
                 <option value="H">🔴 Hastalık (H)</option>
                 <option value="Sİ">🔵 Seferberlik İzni (Sİ)</option>
                 <option value="ÖDİ">🔷 Ödeneksiz İzin (ÖDİ)</option>
@@ -281,7 +282,7 @@
     // ============================================================
     // KONFIGÜRASYON
     // ============================================================
-    var izinTurleri = ['İ', 'Gİ', 'ÇH', 'Vİ', 'Öİ', 'H', 'Sİ', 'ÖDİ'];
+    var izinTurleri = ['İ', 'Gİ', 'ÇH', 'Vİ', 'Hİ', 'H', 'Sİ', 'ÖDİ'];
     var personeller = [];
     var calismaVerileri = {};
     var degisenler = {};
@@ -306,8 +307,8 @@
     // ============================================================
     function getMonthName(m) { return ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'][m-1]; }
     function isWeekend(y, m, d) { var dt = new Date(y, m-1, d); return dt.getDay()===0 || dt.getDay()===6; }
-    function getDurumClass(d) { return {'X':'x','İ':'i','Gİ':'gi','ÇH':'ch','Vİ':'vi','Öİ':'oi','H':'h','Sİ':'si','ÖDİ':'odi'}[d]||'x'; }
-    function getDurumDisplay(d) { return {'X':'X','İ':'İ','Gİ':'Gİ','ÇH':'ÇH','Vİ':'Vİ','Öİ':'Öİ','H':'H','Sİ':'Sİ','ÖDİ':'ÖDİ'}[d]||'X'; }
+    function getDurumClass(d) { return {'X':'x','T':'t','İ':'i','Gİ':'gi','ÇH':'ch','Vİ':'vi','Hİ':'hi','H':'h','Sİ':'si','ÖDİ':'odi'}[d]||'x'; }
+    function getDurumDisplay(d) { return {'X':'X','T':'T','İ':'İ','Gİ':'Gİ','ÇH':'ÇH','Vİ':'Vİ','Hİ':'Hİ','H':'H','Sİ':'Sİ','ÖDİ':'ÖDİ'}[d]||'X'; }
     function getPersonelBilgisi(pid) {
         return personeller.find(function(x){return String(x.personelId)===String(pid);}) ||
             izinPersonelBilgileri[pid] || null;
@@ -540,7 +541,7 @@
                 for (var idx=0; idx<data.length; idx++) {
                     var iz = data[idx];
                     if (!calismaVerileri[iz.personelId]) calismaVerileri[iz.personelId] = {};
-                    calismaVerileri[iz.personelId][iz.gun] = iz.izinTipi;
+                    calismaVerileri[iz.personelId][iz.gun] = iz.izinTipi === 'Öİ' ? 'Hİ' : iz.izinTipi;
                     if (iz.aciklama) calismaVerileri[iz.personelId]['aciklama_'+iz.gun] = iz.aciklama;
                     izinPersonelBilgileri[iz.personelId] = {
                         personelId: iz.personelId,
@@ -852,7 +853,7 @@
             else if (key==='G') nd='Gİ';
             else if (key==='Ç'||key==='C') nd='ÇH';
             else if (key==='V') nd='Vİ';
-            else if (key==='Ö'||key==='O') nd='Öİ';
+            else if (key==='H' && e.shiftKey) nd='Hİ';
             else if (key==='H') nd='H';
             if (nd) {
                 e.preventDefault();

@@ -133,22 +133,26 @@ public class RaporController : Controller
 
             if (birim == "__TUMU__" && rol == "admin")
             {
-                sql = @"SELECT p.ad, p.soyad, p.birim_adi, pi.izin_tipi, COUNT(*) AS gun_sayisi
+                sql = @"SELECT p.ad, p.soyad, p.birim_adi,
+                               CASE WHEN pi.izin_tipi = 'Öİ' THEN 'Hİ' ELSE pi.izin_tipi END AS izin_tipi,
+                               COUNT(*) AS gun_sayisi
                         FROM puantaj_izin pi
                         INNER JOIN personeller p ON p.per_no = pi.personel_id
                         WHERE pi.yil = @yil AND pi.ay = @ay
-                        GROUP BY pi.personel_id, pi.izin_tipi
-                        ORDER BY p.birim_adi, p.ad, p.soyad, pi.izin_tipi";
+                        GROUP BY pi.personel_id, CASE WHEN pi.izin_tipi = 'Öİ' THEN 'Hİ' ELSE pi.izin_tipi END
+                        ORDER BY p.birim_adi, p.ad, p.soyad, izin_tipi";
                 command = new MySqlCommand(sql, connection);
             }
             else
             {
-                sql = @"SELECT p.ad, p.soyad, p.birim_adi, pi.izin_tipi, COUNT(*) AS gun_sayisi
+                sql = @"SELECT p.ad, p.soyad, p.birim_adi,
+                               CASE WHEN pi.izin_tipi = 'Öİ' THEN 'Hİ' ELSE pi.izin_tipi END AS izin_tipi,
+                               COUNT(*) AS gun_sayisi
                         FROM puantaj_izin pi
                         INNER JOIN personeller p ON p.per_no = pi.personel_id
                         WHERE pi.yil = @yil AND pi.ay = @ay AND p.birim_adi = @birim
-                        GROUP BY pi.personel_id, pi.izin_tipi
-                        ORDER BY p.ad, p.soyad, pi.izin_tipi";
+                        GROUP BY pi.personel_id, CASE WHEN pi.izin_tipi = 'Öİ' THEN 'Hİ' ELSE pi.izin_tipi END
+                        ORDER BY p.ad, p.soyad, izin_tipi";
                 command = new MySqlCommand(sql, connection);
                 command.Parameters.AddWithValue("@birim", birim);
             }

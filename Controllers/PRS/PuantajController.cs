@@ -163,6 +163,10 @@ public class PuantajController : Controller
             await using var reader = await cmd.ExecuteReaderAsync();
             while (await reader.ReadAsync())
             {
+                var izinTipi = reader.IsDBNull(6) ? "" : reader.GetString(6);
+                if (izinTipi == "Öİ")
+                    izinTipi = "Hİ";
+
                 izinler.Add(new
                 {
                     id = reader.GetInt32(0),
@@ -171,7 +175,7 @@ public class PuantajController : Controller
                     ad = reader.IsDBNull(3) ? "" : reader.GetString(3),
                     soyad = reader.IsDBNull(4) ? "" : reader.GetString(4),
                     gun = reader.GetInt32(5),
-                    izinTipi = reader.IsDBNull(6) ? "" : reader.GetString(6),
+                    izinTipi,
                     aciklama = reader.IsDBNull(7) ? "" : reader.GetString(7)
                 });
             }
@@ -234,6 +238,9 @@ public class PuantajController : Controller
                 }
                 else
                 {
+                    if (izin.IzinTipi == "Öİ")
+                        izin.IzinTipi = "Hİ";
+
                     // UPSERT: varsa güncelle, yoksa ekle
                     await using var upsertCmd = new MySqlCommand(
                         @"INSERT INTO puantaj_izin (personel_id, yil, ay, gun, izin_tipi, aciklama)
@@ -412,6 +419,8 @@ public class PuantajController : Controller
                 var personelId = reader.IsDBNull(0) ? "" : Convert.ToString(reader.GetValue(0), CultureInfo.InvariantCulture) ?? "";
                 var gun = reader.GetInt32(1);
                 var izinTipi = reader.IsDBNull(2) ? "X" : reader.GetString(2);
+                if (izinTipi == "Öİ")
+                    izinTipi = "Hİ";
                 if (gun is >= 1 and <= 30)
                     izinler[(personelId, gun)] = izinTipi;
             }
@@ -427,7 +436,7 @@ public class PuantajController : Controller
         table.Columns.Add("HSayisi", typeof(int));
         table.Columns.Add("Hakkedis", typeof(int));
 
-        var izinTurleri = new HashSet<string>(new[] { "İ", "Gİ", "ÇH", "Vİ", "Öİ", "H", "Sİ", "ÖDİ" }, StringComparer.Ordinal);
+        var izinTurleri = new HashSet<string>(new[] { "İ", "Gİ", "ÇH", "Vİ", "Hİ", "H", "Sİ", "ÖDİ" }, StringComparer.Ordinal);
         var genelX = 0;
         var genelI = 0;
         var genelH = 0;

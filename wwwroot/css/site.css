@@ -3662,7 +3662,7 @@ body {
     .legend-color.lgi { background: #ffe5d0; }
     .legend-color.lch { background: #d1f7e9; }
     .legend-color.lv { background: #e2d9f3; }
-    .legend-color.loz { background: #f8d7e6; }
+    .legend-color.lhi { background: #f8d7e6; }
     .legend-color.lh { background: #f8d7da; }
     .legend-color.lsi { background: #dbeafe; }
     .legend-color.lodi { background: #e0e7ff; }
@@ -3802,11 +3802,12 @@ body {
     .durum-cell:active { transform: scale(0.92); }
 
     .durum-x { background: #d4edda; color: #155724; }
+    .durum-t { background: #dbeafe; color: #1e40af; }
     .durum-i { background: #fff3cd; color: #856404; }
     .durum-gi { background: #ffe5d0; color: #b85c00; }
     .durum-ch { background: #d1f7e9; color: #0b5e42; }
     .durum-vi { background: #e2d9f3; color: #4a2f8d; }
-    .durum-oi { background: #f8d7e6; color: #a12a6e; }
+    .durum-hi { background: #f8d7e6; color: #a12a6e; }
     .durum-h { background: #f8d7da; color: #721c24; }
     .durum-si { background: #dbeafe; color: #1e40af; }
     .durum-odi { background: #e0e7ff; color: #3730a3; }

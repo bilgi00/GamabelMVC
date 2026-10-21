@@ -427,7 +427,8 @@
                                     }
                                     <li><hr class="dropdown-divider"></li>
                                     <li>
-                                        <form asp-area="" asp-controller="Account" asp-action="Logout" method="post">
+                                        <form id="session-logout-form" asp-area="" asp-controller="Account" asp-action="Logout" method="post">
+                                            <input type="hidden" name="module" value="@activeModule" />
                                             <button type="submit" class="dropdown-item text-danger">🚪 Çıkış Yap</button>
                                         </form>
                                     </li>
@@ -456,27 +457,44 @@
 
     @if (isLoggedIn)
     {
-        <div id="session-warning" style="display:none; position:fixed; top:0; left:0; right:0; z-index:9999; background:#fff3cd; border-bottom:1px solid #ffecb5; color:#7a4b00; box-shadow:0 2px 10px rgba(0,0,0,0.08);">
+        <div id="session-warning" role="status" aria-live="polite" style="display:none; position:fixed; top:0; left:0; right:0; z-index:9999; background:#fff3cd; border-bottom:1px solid #ffecb5; color:#7a4b00; box-shadow:0 2px 10px rgba(0,0,0,0.08);">
             <div style="max-width:1200px; margin:0 auto; padding:10px 16px; display:flex; align-items:center; justify-content:space-between; gap:12px; font-size:14px;">
                 <div>
-                    <strong>Oturum uyarısı:</strong> 5 dakikadan az kaldı. İşleminize devam etmek için sayfayı yenileyin.
-                    <span style="font-weight:700; margin-left:8px;">Kalan süre: <span id="session-countdown">05:00</span></span>
+                    <strong id="session-warning-message">Oturum süreniz dolmak üzere.</strong>
+                    <span>Son etkinliğinizden itibaren 15 dakika işlem yapılmazsa güvenlik için çıkış yapılır.</span>
+                    <span style="font-weight:700; margin-left:8px;">Kalan süre: <span id="session-countdown">03:00</span></span>
                 </div>
-                <button type="button" id="session-extend-btn" class="btn btn-sm btn-warning" style="white-space:nowrap;">Devam Et</button>
+                <button type="button" id="session-extend-btn" class="btn btn-sm btn-warning" style="white-space:nowrap;">Oturumu sürdür</button>
+            </div>
+        </div>
+        <div id="session-expired-overlay" role="alert" aria-live="assertive" style="display:none; position:fixed; inset:0; z-index:10000; background:rgba(15,23,42,.92); color:#fff; align-items:center; justify-content:center; text-align:center; padding:24px;">
+            <div>
+                <h2>Oturum süreniz doldu</h2>
+                <p>Güvenliğiniz için işlemler durduruldu. Şifre ekranına yönlendiriliyorsunuz…</p>
             </div>
         </div>
 
         <script>
             (() => {
-                const sessionLifetimeMs = 60 * 60 * 1000;
-                const warningWindowMs = 5 * 60 * 1000;
+                const sessionLifetimeMs = 15 * 60 * 1000;
+                const warningWindowMs = 3 * 60 * 1000;
                 const warningBanner = document.getElementById('session-warning');
                 const countdownEl = document.getElementById('session-countdown');
                 const extendBtn = document.getElementById('session-extend-btn');
+                const warningMessage = document.getElementById('session-warning-message');
+                const expiredOverlay = document.getElementById('session-expired-overlay');
+                const logoutForm = document.getElementById('session-logout-form');
 
-                if (!warningBanner || !countdownEl || !extendBtn) return;
+                if (!warningBanner || !countdownEl || !extendBtn || !warningMessage || !expiredOverlay || !logoutForm) return;
 
-                let expiresAt = Date.now() + sessionLifetimeMs;
+                let lastActivityAt = Date.now();
+                let lastKeepAliveAt = lastActivityAt;
+                let lastBroadcastAt = 0;
+                let keepAliveInProgress = false;
+                let expired = false;
+                const activityChannel = typeof BroadcastChannel !== 'undefined'
+                    ? new BroadcastChannel('gamabel-session-activity')
+                    : null;
 
                 function formatTime(ms) {
                     const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
@@ -485,16 +503,75 @@
                     return minutes + ':' + seconds;
                 }
 
+                function expireSession() {
+                    if (expired) return;
+                    expired = true;
+                    extendBtn.disabled = true;
+                    warningBanner.style.display = 'none';
+                    expiredOverlay.style.display = 'flex';
+                    document.body.style.overflow = 'hidden';
+                    window.setTimeout(() => logoutForm.submit(), 300);
+                }
+
+                function sendKeepAlive() {
+                    if (expired || keepAliveInProgress) return;
+                    keepAliveInProgress = true;
+                    extendBtn.disabled = true;
+
+                    fetch('/Account/KeepAlive', {
+                        method: 'POST',
+                        body: new FormData(logoutForm),
+                        credentials: 'same-origin',
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    })
+                        .then(response => {
+                            if (response.status === 401) {
+                                expireSession();
+                                return;
+                            }
+                            if (!response.ok) {
+                                throw new Error('HTTP ' + response.status);
+                            }
+
+                            lastKeepAliveAt = Date.now();
+                            extendBtn.textContent = 'Oturumu sürdür';
+                            warningMessage.textContent = 'Oturum süreniz dolmak üzere.';
+                            recordActivity();
+                        })
+                        .catch(() => {
+                            if (!expired) {
+                                warningMessage.textContent = 'Oturum doğrulanamadı. Bağlantınızı kontrol edip tekrar deneyin.';
+                            }
+                        })
+                        .finally(() => {
+                            keepAliveInProgress = false;
+                            if (!expired) extendBtn.disabled = false;
+                        });
+                }
+
+                function recordActivity(broadcast = true) {
+                    if (expired) return;
+                    const now = Date.now();
+                    if (now - lastActivityAt >= sessionLifetimeMs) {
+                        expireSession();
+                        return;
+                    }
+                    lastActivityAt = now;
+
+                    if (broadcast && activityChannel && now - lastBroadcastAt >= 1000) {
+                        lastBroadcastAt = now;
+                        activityChannel.postMessage({ type: 'activity', at: now });
+                    }
+
+                    if (now - lastKeepAliveAt >= 60 * 1000) sendKeepAlive();
+                }
+
                 function updateTimer() {
-                    const remainingMs = expiresAt - Date.now();
+                    if (expired) return;
+                    const remainingMs = sessionLifetimeMs - (Date.now() - lastActivityAt);
 
                     if (remainingMs <= 0) {
-                        countdownEl.textContent = '00:00';
-                        warningBanner.style.display = 'block';
-                        warningBanner.firstElementChild.firstElementChild.innerHTML = '<strong>Oturum süresi doldu.</strong> Güvenli şekilde çıkış yapılıyor...';
-                        setTimeout(() => {
-                            window.location.href = '/Account/Logout';
-                        }, 1200);
+                        expireSession();
                         return;
                     }
 
@@ -502,12 +579,28 @@
                     warningBanner.style.display = remainingMs <= warningWindowMs ? 'block' : 'none';
                 }
 
+                if (activityChannel) {
+                    activityChannel.addEventListener('message', event => {
+                        const activityAt = event.data?.at;
+                        if (event.data?.type === 'activity'
+                            && Number.isFinite(activityAt)
+                            && activityAt > lastActivityAt
+                            && activityAt <= Date.now() + 5000) {
+                            recordActivity(false);
+                        }
+                    });
+                }
+
+                ['pointerdown', 'keydown', 'scroll', 'touchstart', 'input', 'change'].forEach(eventName => {
+                    document.addEventListener(eventName, () => recordActivity(), { passive: true });
+                });
+
                 extendBtn.addEventListener('click', function () {
-                    window.location.reload();
+                    if (!keepAliveInProgress) sendKeepAlive();
                 });
 
                 updateTimer();
-                setInterval(updateTimer, 1000);
+                window.setInterval(updateTimer, 1000);
             })();
         </script>
     }

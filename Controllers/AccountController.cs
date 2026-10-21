@@ -110,12 +110,27 @@ public class AccountController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Logout()
     {
-        var activeModule = HttpContext.Session.GetString("ActiveModule");
+        var activeModule = HttpContext.Session.GetString("ActiveModule")
+            ?? User.FindFirst("app_module")?.Value
+            ?? Request.Form["module"].ToString();
         HttpContext.Session.Clear();
         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
         return activeModule == "STS"
             ? RedirectToAction("StsLogin")
             : RedirectToAction("Login");
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public IActionResult KeepAlive()
+    {
+        if (User.Identity?.IsAuthenticated != true
+            || string.IsNullOrEmpty(HttpContext.Session.GetString("KullaniciAdi")))
+        {
+            return Unauthorized();
+        }
+
+        return NoContent();
     }
 
     private static async Task EnsureUserEmailColumnAsync(MySqlConnection connection)

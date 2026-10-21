@@ -223,6 +223,8 @@ public class HomeController : Controller
 
         var rol = (HttpContext.Session.GetString("Rol") ?? "").Trim();
         var normalizedRol = rol.Replace(" ", "_").ToLowerInvariant();
+        var isAdmin = normalizedRol == "admin";
+        var kullaniciBirim = HttpContext.Session.GetString("Birim") ?? "";
         var isAdminOrManager = normalizedRol == "admin" || normalizedRol == "birim_amiri";
         var model = new HomeDashboardViewModel
         {
@@ -247,14 +249,18 @@ public class HomeController : Controller
                 using var command = new MySqlCommand(@"
                     SELECT p.per_no, p.ad, p.soyad,
                            COUNT(*) AS izin_gunu,
-                           GROUP_CONCAT(DISTINCT pi.izin_tipi ORDER BY pi.izin_tipi SEPARATOR ', ') AS izin_tipleri
+                           GROUP_CONCAT(DISTINCT CASE WHEN pi.izin_tipi = 'Öİ' THEN 'Hİ' ELSE pi.izin_tipi END
+                                        ORDER BY CASE WHEN pi.izin_tipi = 'Öİ' THEN 'Hİ' ELSE pi.izin_tipi END SEPARATOR ', ') AS izin_tipleri
                     FROM puantaj_izin pi
                     INNER JOIN personeller p ON p.per_no = pi.personel_id
                     WHERE pi.yil = @yil AND pi.ay = @ay
+                      AND (@tumBirimler = 1 OR p.birim_adi = @birim)
                     GROUP BY p.per_no, p.ad, p.soyad
                     ORDER BY p.ad, p.soyad", connection);
                 command.Parameters.AddWithValue("@yil", model.Yil);
                 command.Parameters.AddWithValue("@ay", model.Ay);
+                command.Parameters.AddWithValue("@tumBirimler", isAdmin);
+                command.Parameters.AddWithValue("@birim", kullaniciBirim);
 
                 using var reader = await command.ExecuteReaderAsync();
                 while (await reader.ReadAsync())
@@ -279,10 +285,13 @@ public class HomeController : Controller
                     FROM mesai_kayitlari mk
                     INNER JOIN personeller p ON p.per_no = mk.personel_id
                     WHERE mk.tarih >= @baslangic AND mk.tarih < @sonrakiAy
+                      AND (@tumBirimler = 1 OR p.birim_adi = @birim)
                     GROUP BY p.per_no, p.ad, p.soyad
                     ORDER BY p.ad, p.soyad", connection);
                 command.Parameters.AddWithValue("@baslangic", baslangic);
                 command.Parameters.AddWithValue("@sonrakiAy", sonrakiAy);
+                command.Parameters.AddWithValue("@tumBirimler", isAdmin);
+                command.Parameters.AddWithValue("@birim", kullaniciBirim);
 
                 using var reader = await command.ExecuteReaderAsync();
                 while (await reader.ReadAsync())
