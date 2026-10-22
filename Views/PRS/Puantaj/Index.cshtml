@@ -86,7 +86,7 @@
                   aciklama="Personel çalışma ve izin durumlarını aylık olarak görüntüleyin."
                   ikon="fa-calendar-alt">
         <button type="button" class="btn btn-sm btn-warning text-dark" id="batchIzinBtn"><i class="fas fa-users me-1"></i>Toplu İzin</button>
-        <button type="button" class="btn btn-sm btn-primary" id="previewBtn">Önizleme (Yatay)</button>
+        <button type="button" class="btn btn-sm btn-primary" id="raporlaBtn">Raporla</button>
         <button type="button" class="btn btn-sm btn-danger" id="pdfExportBtn">PDF</button>
     </sayfa-baslik>
 
@@ -117,7 +117,7 @@
 
         <div class="takvim-gezinme" role="group" aria-label="Ay ve yıl">
             <button type="button" class="takvim-ok" id="previousMonthBtn" aria-label="Önceki ay" title="Önceki ay"><span aria-hidden="true">←</span></button>
-            <span class="takvim-ay" id="monthTitle">Mart 2026</span>
+            <span class="takvim-ay" id="monthTitle"></span>
             <button type="button" class="takvim-ok" id="nextMonthBtn" aria-label="Sonraki ay" title="Sonraki ay"><span aria-hidden="true">→</span></button>
         </div>
 
@@ -306,6 +306,9 @@
     // YARDIMCI FONKSİYONLAR
     // ============================================================
     function getMonthName(m) { return ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'][m-1]; }
+    function updateMonthTitle() {
+        document.getElementById('monthTitle').textContent = getMonthName(currentMonth) + ' ' + currentYear;
+    }
     function isWeekend(y, m, d) { var dt = new Date(y, m-1, d); return dt.getDay()===0 || dt.getDay()===6; }
     function getDurumClass(d) { return {'X':'x','T':'t','İ':'i','Gİ':'gi','ÇH':'ch','Vİ':'vi','Hİ':'hi','H':'h','Sİ':'si','ÖDİ':'odi'}[d]||'x'; }
     function getDurumDisplay(d) { return {'X':'X','T':'T','İ':'İ','Gİ':'Gİ','ÇH':'ÇH','Vİ':'Vİ','Hİ':'Hİ','H':'H','Sİ':'Sİ','ÖDİ':'ÖDİ'}[d]||'X'; }
@@ -409,7 +412,7 @@
         currentMonth += offset;
         if (currentMonth > 12) { currentMonth = 1; currentYear++; }
         else if (currentMonth < 1) { currentMonth = 12; currentYear--; }
-        document.getElementById('monthTitle').textContent = getMonthName(currentMonth) + ' ' + currentYear;
+        updateMonthTitle();
         loadIzinler();
     }
     function getFilteredPersoneller() {
@@ -604,10 +607,25 @@
         var kaydetmeBasarili = false;
         return fetch('/Puantaj/KaydetIzin', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
             body: JSON.stringify(izinler)
         })
-        .then(function(r){return r.json();})
+        .then(function(r) {
+            if (r.status === 401) {
+                if (window.gamabelSession) {
+                    window.gamabelSession.expire('Oturum süresi dolduğu için puantaj kaydınız tamamlanamadı. Tekrar giriş yapın.');
+                }
+                var error = new Error('Oturum süresi doldu. Kaydınız tamamlanamadı; tekrar giriş yapın.');
+                error.sessionExpired = true;
+                throw error;
+            }
+            if (!r.ok) throw new Error('Kaydetme isteği başarısız oldu (HTTP ' + r.status + ').');
+            return r.json();
+        })
         .then(function(data){
             if (data.basarili) {
                 kaydetmeBasarili = true;
@@ -630,7 +648,10 @@
                 return false;
             }
         })
-        .catch(function(){ showToast('Kaydetme hatası','error'); return false; })
+        .catch(function(error) {
+            showToast(error.sessionExpired ? error.message : 'Kaydetme hatası: ' + error.message, 'error');
+            return false;
+        })
         .finally(function() {
             isSaving = false;
             if (kaydetmeBasarili && Object.keys(degisenler).length > 0) scheduleAutoSave();
@@ -870,50 +891,35 @@
     // ============================================================
     // DIŞA AKTAR
     // ============================================================
-    function downloadPuantajPdf() {
-        if (Object.keys(degisenler).length > 0) saveChanges(false);
-        var url = '/Puantaj/RaporPdf?yil='+currentYear+
+    function openPuantajReport(isPdf) {
+        var url = (isPdf ? '/Puantaj/RaporPdf?' : '/Puantaj/Rapor?') +
+            'yil='+currentYear+
             '&ay='+currentMonth+
             '&birim='+encodeURIComponent(seciliBirim)+
             '&statu='+encodeURIComponent(seciliStatu)+
             '&arama='+encodeURIComponent(personelAramaMetni)+
-            '&yon=yatay&indir=true';
-        window.open(url, '_blank', 'noopener');
-    }
-    function previewPuantajReport() {
-        if (Object.keys(degisenler).length > 0) saveChanges(false);
-        var url = '/Puantaj/Rapor?yil='+currentYear+
-            '&ay='+currentMonth+
-            '&birim='+encodeURIComponent(seciliBirim)+
-            '&statu='+encodeURIComponent(seciliStatu)+
-            '&arama='+encodeURIComponent(personelAramaMetni)+
-            '&yon=yatay';
-        window.open(url, '_blank', 'noopener');
+            '&yon=yatay' + (isPdf ? '&indir=true' : '');
+
+        if (Object.keys(degisenler).length === 0) {
+            window.open(url, '_blank', 'noopener');
+            return;
+        }
+
+        var reportWindow = window.open('about:blank', '_blank');
+        if (!reportWindow) {
+            showToast('Rapor penceresi açılamadı. Açılır pencere iznini kontrol edin.', 'error');
+            return;
+        }
+        reportWindow.opener = null;
+
+        saveChanges(false).then(function(saved) {
+            if (saved) reportWindow.location.replace(url);
+            else reportWindow.close();
+        });
     }
 
-    function downloadPuantajPdf() {
-        if (Object.keys(degisenler).length > 0) saveChanges(false);
-        var url = '/Puantaj/Pdf?yil='+currentYear+
-            '&ay='+currentMonth+
-            '&birim='+encodeURIComponent(seciliBirim)+
-            '&statu='+encodeURIComponent(seciliStatu)+
-            '&arama='+encodeURIComponent(personelAramaMetni);
-        window.open(url, '_blank');
-    }
-
-    function previewPuantajReport() {
-        if (Object.keys(degisenler).length > 0) saveChanges(false);
-        var url = '/Puantaj/Preview?yil='+currentYear+
-            '&ay='+currentMonth+
-            '&birim='+encodeURIComponent(seciliBirim)+
-            '&statu='+encodeURIComponent(seciliStatu)+
-            '&arama='+encodeURIComponent(personelAramaMetni);
-        var width = Math.min(1400, screen.availWidth - 40);
-        var height = Math.min(900, screen.availHeight - 60);
-        var left = Math.max(0, Math.round((screen.availWidth - width) / 2));
-        var top = Math.max(0, Math.round((screen.availHeight - height) / 2));
-        window.open(url, 'PuantajFastReportPreview', 'popup=yes,width='+width+',height='+height+',left='+left+',top='+top+',resizable=yes,scrollbars=yes');
-    }
+    function reportPuantaj() { openPuantajReport(false); }
+    function downloadPuantajPdf() { openPuantajReport(true); }
 
     // ============================================================
     // OLAY DİNLEYİCİLER
@@ -937,8 +943,7 @@
     });
 
     // FastReport A4 Rapor Standardı (v3): Önizleme ve PDF aynı .frx şablonundan üretilir.
-    // Kaydet butonu ve Excel çıktısı kaldırıldı (otomatik kayıt sürer; Excel .frx'ten üretilmez).
-    document.getElementById('previewBtn').addEventListener('click', previewPuantajReport);
+    document.getElementById('raporlaBtn').addEventListener('click', reportPuantaj);
     document.getElementById('pdfExportBtn').addEventListener('click', downloadPuantajPdf);
     document.getElementById('batchIzinBtn').addEventListener('click', openBatchModal);
     document.getElementById('legendToggleBtn').addEventListener('click', toggleLegend);
@@ -956,5 +961,6 @@
     // ============================================================
     // BAŞLANGIÇ
     // ============================================================
+    updateMonthTitle();
     loadPersoneller();
 </script>

@@ -487,6 +487,8 @@
 
                 if (!warningBanner || !countdownEl || !extendBtn || !warningMessage || !expiredOverlay || !logoutForm) return;
 
+                const activeModule = logoutForm.querySelector('input[name="module"]')?.value;
+                const loginUrl = activeModule === 'STS' ? '/Account/StsLogin' : '/Account/Login';
                 let lastActivityAt = Date.now();
                 let lastKeepAliveAt = lastActivityAt;
                 let lastBroadcastAt = 0;
@@ -503,15 +505,18 @@
                     return minutes + ':' + seconds;
                 }
 
-                function expireSession() {
+                function expireSession(message) {
                     if (expired) return;
                     expired = true;
                     extendBtn.disabled = true;
                     warningBanner.style.display = 'none';
+                    if (message) expiredOverlay.querySelector('p').textContent = message;
                     expiredOverlay.style.display = 'flex';
                     document.body.style.overflow = 'hidden';
-                    window.setTimeout(() => logoutForm.submit(), 300);
+                    window.setTimeout(() => window.location.replace(loginUrl), 300);
                 }
+
+                window.gamabelSession = { expire: expireSession };
 
                 function sendKeepAlive() {
                     if (expired || keepAliveInProgress) return;
@@ -578,6 +583,10 @@
                     countdownEl.textContent = formatTime(remainingMs);
                     warningBanner.style.display = remainingMs <= warningWindowMs ? 'block' : 'none';
                 }
+
+                document.addEventListener('visibilitychange', updateTimer);
+                window.addEventListener('focus', updateTimer);
+                window.addEventListener('pageshow', updateTimer);
 
                 if (activityChannel) {
                     activityChannel.addEventListener('message', event => {

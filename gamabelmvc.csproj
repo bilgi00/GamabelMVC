@@ -24,6 +24,7 @@
     <PackageReference Include="MySql.EntityFrameworkCore" Version="9.0.0" />
     <PackageReference Include="MySqlConnector" Version="2.6.1" />
     <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="9.0.0" />
+    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="8.0.2" />
     <PackageReference Include="System.Formats.Asn1" Version="8.0.1" />
     <PackageReference Include="System.Text.Json" Version="9.0.0" />
   </ItemGroup>
@@ -34,7 +35,7 @@
   </ItemGroup>
 
   <Target Name="GenerateGitCommitInfo" BeforeTargets="CoreCompile">
-    <Exec Condition="'$(GitCommitHash)' == ''"
+    <Exec Condition="'$(GitCommitHash)' == '' and '$(DesignTimeBuild)' != 'true'"
           Command="git rev-parse --short=12 HEAD"
           WorkingDirectory="$(MSBuildProjectDirectory)"
           ConsoleToMSBuild="true"
