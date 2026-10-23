@@ -3666,6 +3666,8 @@ body {
     .legend-color.lh { background: #f8d7da; }
     .legend-color.lsi { background: #dbeafe; }
     .legend-color.lodi { background: #e0e7ff; }
+    .legend-color.loi { background: #e0e7ff; }
+    .legend-color.lrt { background: #fee2e2; }
 
     .btn-legend-toggle {
         background: var(--puantaj-soft);
@@ -3802,7 +3804,6 @@ body {
     .durum-cell:active { transform: scale(0.92); }
 
     .durum-x { background: #d4edda; color: #155724; }
-    .durum-t { background: #dbeafe; color: #1e40af; }
     .durum-i { background: #fff3cd; color: #856404; }
     .durum-gi { background: #ffe5d0; color: #b85c00; }
     .durum-ch { background: #d1f7e9; color: #0b5e42; }
@@ -3811,6 +3812,8 @@ body {
     .durum-h { background: #f8d7da; color: #721c24; }
     .durum-si { background: #dbeafe; color: #1e40af; }
     .durum-odi { background: #e0e7ff; color: #3730a3; }
+    .durum-oi { background: #e0e7ff; color: #3730a3; }
+    .durum-rt { background: #fee2e2; color: #991b1b; }
 
     /* Hafta Sonu */
     .durum-cell.weekend { opacity: 0.6; }

@@ -163,9 +163,7 @@ public class PuantajController : Controller
             await using var reader = await cmd.ExecuteReaderAsync();
             while (await reader.ReadAsync())
             {
-                var izinTipi = reader.IsDBNull(6) ? "" : reader.GetString(6);
-                if (izinTipi == "Öİ")
-                    izinTipi = "Hİ";
+                var izinTipi = NormalizePuantajDurumu(reader.IsDBNull(6) ? null : reader.GetString(6));
 
                 izinler.Add(new
                 {
@@ -223,6 +221,7 @@ public class PuantajController : Controller
 
             foreach (var izin in izinler)
             {
+                izin.IzinTipi = NormalizePuantajDurumu(izin.IzinTipi);
                 // İzin tipi X ise (çalıştı) kaydı sil — sadece izin günleri DB'de tutulur
                 if (izin.IzinTipi == "X" || string.IsNullOrEmpty(izin.IzinTipi))
                 {
@@ -238,9 +237,6 @@ public class PuantajController : Controller
                 }
                 else
                 {
-                    if (izin.IzinTipi == "Öİ")
-                        izin.IzinTipi = "Hİ";
-
                     // UPSERT: varsa güncelle, yoksa ekle
                     await using var upsertCmd = new MySqlCommand(
                         @"INSERT INTO puantaj_izin (personel_id, yil, ay, gun, izin_tipi, aciklama)
@@ -361,7 +357,7 @@ public class PuantajController : Controller
 
     // Rapor verisi: personel + izin işaretleri + satır/genel toplamlar.
     // Yetki kuralı: admin olmayan kullanıcının birimi zorunlu olarak kullanılır.
-    private async Task<(DataTable Tablo, (int X, int I, int H) Genel)> GetPuantajRaporTablosuAsync(
+    private async Task<(DataTable Tablo, (int X, int I, int O) Genel)> GetPuantajRaporTablosuAsync(
         int yil, int ay, string? birim, string? statu, string? arama)
     {
         var rol = (HttpContext.Session.GetString("Rol") ?? "birim_amiri").Trim().ToLowerInvariant();
@@ -418,9 +414,7 @@ public class PuantajController : Controller
             {
                 var personelId = reader.IsDBNull(0) ? "" : Convert.ToString(reader.GetValue(0), CultureInfo.InvariantCulture) ?? "";
                 var gun = reader.GetInt32(1);
-                var izinTipi = reader.IsDBNull(2) ? "X" : reader.GetString(2);
-                if (izinTipi == "Öİ")
-                    izinTipi = "Hİ";
+                var izinTipi = NormalizePuantajDurumu(reader.IsDBNull(2) ? null : reader.GetString(2));
                 if (gun is >= 1 and <= 30)
                     izinler[(personelId, gun)] = izinTipi;
             }
@@ -433,13 +427,13 @@ public class PuantajController : Controller
             table.Columns.Add($"Gun{gun:D2}", typeof(string));
         table.Columns.Add("XSayisi", typeof(int));
         table.Columns.Add("ISayisi", typeof(int));
-        table.Columns.Add("HSayisi", typeof(int));
+        table.Columns.Add("OSayisi", typeof(int));
         table.Columns.Add("Hakkedis", typeof(int));
 
-        var izinTurleri = new HashSet<string>(new[] { "İ", "Gİ", "ÇH", "Vİ", "Hİ", "H", "Sİ", "ÖDİ" }, StringComparer.Ordinal);
+        var izinSayimTurleri = new HashSet<string>(new[] { "İ", "Gİ", "ÇR", "Vİ", "Hİ", "R", "Sİ" }, StringComparer.Ordinal);
         var genelX = 0;
         var genelI = 0;
-        var genelH = 0;
+        var genelO = 0;
         foreach (var personel in personeller)
         {
             var row = table.NewRow();
@@ -447,34 +441,49 @@ public class PuantajController : Controller
             row["Birim"] = personel.Birim;
             var xSayisi = 0;
             var iSayisi = 0;
-            var hSayisi = 0;
+            var oSayisi = 0;
+            var odeneksizIzinSayisi = 0;
 
             for (var gun = 1; gun <= 30; gun++)
             {
                 var durum = izinler.TryGetValue((personel.Id, gun), out var izinTipi) ? izinTipi : "X";
                 row[$"Gun{gun:D2}"] = durum;
                 if (durum == "X") xSayisi++;
-                if (izinTurleri.Contains(durum)) iSayisi++;
-                if (durum == "H") hSayisi++;
+                if (izinSayimTurleri.Contains(durum)) iSayisi++;
+                if (durum is "Öİ" or "ÖDİ")
+                {
+                    oSayisi++;
+                    odeneksizIzinSayisi++;
+                }
             }
 
-            var hakkedis = 30 - iSayisi;
+            var hakkedis = 30 - odeneksizIzinSayisi;
             row["XSayisi"] = xSayisi;
             row["ISayisi"] = iSayisi;
-            row["HSayisi"] = hSayisi;
+            row["OSayisi"] = oSayisi;
             row["Hakkedis"] = hakkedis;
             table.Rows.Add(row);
             genelX += xSayisi;
             genelI += iSayisi;
-            genelH += hSayisi;
+            genelO += oSayisi;
         }
 
-        return (table, (genelX, genelI, genelH));
+        return (table, (genelX, genelI, genelO));
     }
+
+    private static string NormalizePuantajDurumu(string? durum) => durum switch
+    {
+        null or "" => "X",
+        "T" => "X",
+        "ÇH" => "ÇR",
+        "H" => "R",
+        "ÖDİ" => "Öİ",
+        _ => durum
+    };
 
     /// Tablo ve kolon adları .frx ile birebir eşleşir: DataTable "Puantaj" → ReferenceName "Data.Puantaj".
     private (DataSet, Dictionary<string, object?>) PuantajRaporVerisiHazirla(
-        DataTable tablo, int yil, int ay, string? birim, (int X, int I, int H) genel)
+        DataTable tablo, int yil, int ay, string? birim, (int X, int I, int O) genel)
     {
         var rol = (HttpContext.Session.GetString("Rol") ?? "birim_amiri").Trim().ToLowerInvariant();
         var culture = CultureInfo.GetCultureInfo("tr-TR");
@@ -492,11 +501,9 @@ public class PuantajController : Controller
             ["PersonelSayisi"] = tablo.Rows.Count,
             ["GenelXSayisi"]  = genel.X,
             ["GenelISayisi"]  = genel.I,
-            ["GenelHSayisi"]  = genel.H,
+            ["GenelOSayisi"]  = genel.O,
             ["Filigran"]      = null, // Yalnızca taslak/onay durumu güvenilir şekilde belirlenebiliyorsa doldurun.
-            // İmza isimleri: biliniyorsa doldurulur; boş bırakılırsa .frx'te yalnızca imza çizgisi görünür (elle imza).
             ["ImzaBirimSorumlusu"]   = "",
-            ["ImzaBelediyeBaskani"]  = ""
         };
         return (ds, prm);
     }

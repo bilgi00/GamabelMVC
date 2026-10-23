@@ -38,7 +38,7 @@
       <Column Name="Gun30" DataType="System.String"/>
       <Column Name="XSayisi" DataType="System.Int32"/>
       <Column Name="ISayisi" DataType="System.Int32"/>
-      <Column Name="HSayisi" DataType="System.Int32"/>
+      <Column Name="OSayisi" DataType="System.Int32"/>
       <Column Name="Hakkedis" DataType="System.Int32"/>
     </TableDataSource>
     <Parameter Name="BaslikAdi" DataType="System.String" AsString=""/>
@@ -47,16 +47,15 @@
     <Parameter Name="SablonSurum" DataType="System.String" AsString=""/>
     <Parameter Name="Filigran" DataType="System.String" AsString=""/>
     <Parameter Name="ImzaBirimSorumlusu" DataType="System.String" AsString=""/>
-    <Parameter Name="ImzaBelediyeBaskani" DataType="System.String" AsString=""/>
     <Parameter Name="Donem" DataType="System.String" AsString=""/>
     <Parameter Name="Birim" DataType="System.String" AsString=""/>
     <Parameter Name="PersonelSayisi" DataType="System.Int32" AsString=""/>
     <Parameter Name="GenelXSayisi" DataType="System.Int32" AsString=""/>
     <Parameter Name="GenelISayisi" DataType="System.Int32" AsString=""/>
-    <Parameter Name="GenelHSayisi" DataType="System.Int32" AsString=""/>
+    <Parameter Name="GenelOSayisi" DataType="System.Int32" AsString=""/>
     <Total Name="ToplamX" Expression="[Puantaj.XSayisi]" Evaluator="Data1" PrintOn="ReportSummary1"/>
     <Total Name="ToplamI" Expression="[Puantaj.ISayisi]" Evaluator="Data1" PrintOn="ReportSummary1"/>
-    <Total Name="ToplamH" Expression="[Puantaj.HSayisi]" Evaluator="Data1" PrintOn="ReportSummary1"/>
+    <Total Name="ToplamO" Expression="[Puantaj.OSayisi]" Evaluator="Data1" PrintOn="ReportSummary1"/>
   </Dictionary>
 
   <ReportPage Name="Page1" Landscape="true" PaperWidth="297" PaperHeight="210"
@@ -144,8 +143,8 @@
                   GrowToBottom="true" Text="[Puantaj.XSayisi]" HorzAlign="Center" VertAlign="Center" Font="Arial, 6.75pt, style=Bold"/>
       <TextObject Name="ColI" Left="890" Width="50" Height="20" Border.Lines="All" GrowToBottom="true"
                   Text="[Puantaj.ISayisi]" HorzAlign="Center" VertAlign="Center" Font="Arial, 6.75pt"/>
-      <TextObject Name="ColH" Left="940" Width="50" Height="20" Border.Lines="All" GrowToBottom="true"
-                  Text="[Puantaj.HSayisi]" HorzAlign="Center" VertAlign="Center" Font="Arial, 6.75pt"/>
+      <TextObject Name="ColO" Left="940" Width="50" Height="20" Border.Lines="All" GrowToBottom="true"
+                  Text="[Puantaj.OSayisi]" HorzAlign="Center" VertAlign="Center" Font="Arial, 6.75pt"/>
       <TextObject Name="ColHakkedis" Left="990" Width="57.06" Height="20" Border.Lines="All" Fill.Color="232, 244, 248"
                   GrowToBottom="true" Text="[Puantaj.Hakkedis]" HorzAlign="Center" VertAlign="Center" Font="Arial, 6.75pt, style=Bold"/>
 
@@ -218,8 +217,8 @@
                     Text="X" HorzAlign="Center" VertAlign="Center" Font="Arial, 6.5pt, style=Bold" TextFill.Color="White"/>
         <TextObject Name="HdrI" Left="890" Width="50" Height="20" Border.Lines="All" Fill.Color="30, 58, 138"
                     Text="İZİN" HorzAlign="Center" VertAlign="Center" Font="Arial, 6.5pt, style=Bold" TextFill.Color="White"/>
-        <TextObject Name="HdrH" Left="940" Width="50" Height="20" Border.Lines="All" Fill.Color="30, 58, 138"
-                    Text="HAST." HorzAlign="Center" VertAlign="Center" Font="Arial, 6.5pt, style=Bold" TextFill.Color="White"/>
+        <TextObject Name="HdrO" Left="940" Width="50" Height="20" Border.Lines="All" Fill.Color="30, 58, 138"
+                    Text="Ö" HorzAlign="Center" VertAlign="Center" Font="Arial, 6.5pt, style=Bold" TextFill.Color="White"/>
         <TextObject Name="HdrHakkedis" Left="990" Width="57.06" Height="20" Border.Lines="All" Fill.Color="30, 58, 138"
                     Text="HAKEDİŞ" HorzAlign="Center" VertAlign="Center" Font="Arial, 6.5pt, style=Bold" TextFill.Color="White"/>
       </DataHeaderBand>
@@ -227,16 +226,12 @@
 
     <ReportSummaryBand Name="ReportSummary1" Width="1047.06" Height="122" KeepWithData="true">
       <TextObject Name="TxtGenelToplam" Width="1047.06" Height="22" Border.Lines="All" Fill.Color="233, 238, 248"
-                  Text="GENEL TOPLAM    X (çalışma): [ToplamX]    |    İzin: [ToplamI]    |    Hastalık: [ToplamH]"
+                  Text="GENEL TOPLAM    X (çalışma): [ToplamX]    |    İzin: [ToplamI]    |    Ö (ödeneksiz izin): [ToplamO]"
                   HorzAlign="Right" VertAlign="Center" Font="Arial, 8.5pt, style=Bold" TextFill.Color="30, 58, 114"/>
       <TextObject Name="TxtImzaBirimUnvan" Left="60" Top="42" Width="400" Height="14" Text="BİRİM SORUMLUSU"
                   HorzAlign="Center" Font="Arial, 8.5pt, style=Bold" TextFill.Color="30, 58, 114"/>
       <TextObject Name="TxtImzaBirimCizgi" Left="60" Top="78" Width="400" Height="19" Border.Lines="Top"
                   Text="[ImzaBirimSorumlusu]" HorzAlign="Center" VertAlign="Center" Font="Arial, 8pt" TextFill.Color="51, 65, 85"/>
-      <TextObject Name="TxtImzaBasUnvan" Left="587.06" Top="42" Width="400" Height="14" Text="BELEDİYE BAŞKANI"
-                  HorzAlign="Center" Font="Arial, 8.5pt, style=Bold" TextFill.Color="30, 58, 114"/>
-      <TextObject Name="TxtImzaBasCizgi" Left="587.06" Top="78" Width="400" Height="19" Border.Lines="Top"
-                  Text="[ImzaBelediyeBaskani]" HorzAlign="Center" VertAlign="Center" Font="Arial, 8pt" TextFill.Color="51, 65, 85"/>
     </ReportSummaryBand>
 
     <PageFooterBand Name="PageFooter1" Width="1047.06" Height="18.9">
