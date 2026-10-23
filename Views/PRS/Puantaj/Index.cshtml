@@ -146,6 +146,7 @@
                 <div class="legend-item"><span class="legend-color lsi"></span>Sİ · Seferberlik İzni</div>
                 <div class="legend-item"><span class="legend-color loi"></span>Öİ · Ödeneksiz İzin</div>
                 <div class="legend-item"><span class="legend-color lrt"></span>RT · Resmi Tatil</div>
+                <div class="legend-item"><span class="legend-color lpt"></span>PT - Part Time</div>
                 <div class="legend-item"><span class="pz-lweekend"></span>Hafta sonu</div>
             </div>
         </div>
@@ -209,6 +210,7 @@
                 <option value="R">🔴 Hastalık (R)</option>
                 <option value="Sİ">🔵 Seferberlik İzni (Sİ)</option>
                 <option value="Öİ">🔷 Ödeneksiz İzin (Öİ)</option>
+                <option value="PT">PT - Part Time</option>
             </select>
         </div>
         <div class="mb-3">
@@ -284,8 +286,8 @@
     // ============================================================
     // KONFIGÜRASYON
     // ============================================================
-    var izinTurleri = ['İ', 'Gİ', 'ÇR', 'Vİ', 'Hİ', 'R', 'Sİ', 'Öİ', 'RT'];
-    var izinSayimTurleri = ['İ', 'Gİ', 'ÇR', 'Vİ', 'Hİ', 'R', 'Sİ'];
+    var izinTurleri = ['İ', 'Gİ', 'ÇR', 'Vİ', 'Hİ', 'R', 'Sİ', 'Öİ', 'RT', 'PT'];
+    var izinSayimTurleri = ['İ', 'Gİ', 'ÇR', 'Vİ', 'Hİ', 'R', 'Sİ', 'PT'];
     var personeller = [];
     var calismaVerileri = {};
     var degisenler = {};
@@ -315,7 +317,7 @@
     function isWeekend(y, m, d) { var dt = new Date(y, m-1, d); return dt.getDay()===0 || dt.getDay()===6; }
     function isIzinSayilan(d) { return izinSayimTurleri.indexOf(d) >= 0; }
     function normalizeDurum(d) { return {'T':'X','ÇH':'ÇR','H':'R','ÖDİ':'Öİ'}[d] || d || 'X'; }
-    function getDurumClass(d) { return {'X':'x','RT':'rt','İ':'i','Gİ':'gi','ÇR':'ch','Vİ':'vi','Hİ':'hi','R':'h','Sİ':'si','Öİ':'oi'}[normalizeDurum(d)]||'x'; }
+    function getDurumClass(d) { return {'X':'x','RT':'rt','İ':'i','Gİ':'gi','ÇR':'ch','Vİ':'vi','Hİ':'hi','R':'h','Sİ':'si','Öİ':'oi','PT':'pt'}[normalizeDurum(d)]||'x'; }
     function getDurumDisplay(d) { return normalizeDurum(d); }
     function getPersonelBilgisi(pid) {
         return personeller.find(function(x){return String(x.personelId)===String(pid);}) ||
@@ -447,11 +449,11 @@
     }
 
     function calculateHakkedis(pid) {
-        var izinGunleri = 0, data = calismaVerileri[pid] || {};
+        var dusulecekGunler = 0, data = calismaVerileri[pid] || {};
         for (var g = 1; g <= 30; g++) {
-            if (data[g] === 'Öİ' || data[g] === 'ÖDİ') izinGunleri++;
+            if (data[g] === 'Öİ' || data[g] === 'ÖDİ' || data[g] === 'PT') dusulecekGunler++;
         }
-        return 30 - izinGunleri;
+        return 30 - dusulecekGunler;
     }
 
     // ============================================================

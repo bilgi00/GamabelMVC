@@ -1,6 +1,6 @@
 ﻿# Uygulama Özeti ve Değişiklik Günlüğü (TR)
 
-**Son güncelleme:** 12 Ekim 2026
+**Son güncelleme:** 23 Ekim 2026
 **Bu dosya ne işe yarar:** Projeye tarih sırasıyla yapılan büyük değişikliklerin
 özet kaydıdır. Ayrıntılar ilgili uzman dokümanlara yönlendirir.
 
@@ -11,7 +11,17 @@
 
 ---
 
-## 🟢 Güncel Durum (12 Ekim 2026)
+## 🟢 Güncel Durum (23 Ekim 2026)
+
+### Oturum süresi ve Puantaj güncellemeleri
+
+- Oturum süresi dolduğunda PRS/STS modülüne uygun giriş ekranına yönlendirme yapılır. Sekme görünürlüğü, pencere odağı ve sayfanın yeniden gösterilmesi oturum sayacını tekrar kontrol eder.
+- Puantaj eski durum kodlarını (`T`, `ÇH`, `H`, `ÖDİ`) güncel kodlara normalize eder (`X`, `ÇR`, `R`, `Öİ`). Ekran ve rapordaki durum/sayaç hesapları aynı kodları kullanır.
+- Puantaj ekranı ve raporunda `İ` izin sayacı ile `Ö` ödeneksiz izin sayacı ayrılmıştır. Hakediş `30 - Öİ gün sayısı - PT gün sayısı` olarak hesaplanır.
+- PDF raporunda “Hastalık” sayacı “Ö (ödeneksiz izin)” olarak değiştirilmiş ve imza alanı Birim Sorumlusu ile sınırlandırılmıştır.
+- **PT - Part Time**, günlük durum seçeneklerine eklenmiştir; günleri `İ` sayacına dahil edilir ve hakedişten düşülür.
+- Tasarım zamanı derlemesinde Git commit bilgisi komutu çalıştırılmaz; `System.Security.Cryptography.Pkcs` proje bağımlılıklarına eklenmiştir.
+- Ayrıntılar: [SAYFA_GUVENLIK_KURALLARI.md](SAYFA_GUVENLIK_KURALLARI.md) ve uygulama içi Dokümantasyon sayfası.
 
 ### PRS Mesai → FastReport A4 Rapor Standardı (v3)
 
@@ -40,6 +50,7 @@ tüm çıktılar tek standarta bağlandı ([FASTREPORT_A4_STANDART.md](FASTREPOR
 
 | Tarih | Başlık | Özet | Ayrıntı |
 |---|---|---|---|
+| 23 Eki 2026 | Oturum + Puantaj güncellemeleri | Modüle uygun oturum süresi dolum yönlendirmesi; Puantaj durum kodu normalizasyonu, `İ`/`Ö` sayaçları, hakediş ve rapor imza güncellemesi; PT durumu | Yukarıdaki güncel durum; [SAYFA_GUVENLIK_KURALLARI.md](SAYFA_GUVENLIK_KURALLARI.md) |
 | 10 Tem 2026 | Mesai PDF akışı + kayıt/giriş düzeltmeleri | `printBirimPdf`/`printPersonelPdf` ile sayfa içi yazdırma; `aktif_mi=1` ile kayıt sonrası giriş sorunu çözüldü | Bu akış 12 Eki'de **kaldırıldı**; yerine FastReport standardı geldi (yukarıda). Giriş düzeltmesi hâlâ geçerli. |
 | 25 May 2026 | CSS standardizasyonu + yapı modülerleştirme | Controllers/Models/Views `PRS`/`STS` alt klasörlerine ayrıldı; `site.css` tek dosyada 7 bölüme organize edildi | [CSS_DESIGN_SYSTEM.md](CSS_DESIGN_SYSTEM.md) |
 | 25 May 2026 | Sevkiyat filtre formu taşınması | Filtreler `Index`'ten `SevkBekleyenEksikler`'e taşındı | [FILTER_FEATURE_DOCUMENTATION.md](FILTER_FEATURE_DOCUMENTATION.md) |
@@ -87,7 +98,7 @@ tüm çıktılar tek standarta bağlandı ([FASTREPORT_A4_STANDART.md](FASTREPOR
 
 ---
 
-**Sürüm:** 2.1 (12 Ekim 2026 — FastReport standardı ve temizlik)
+**Sürüm:** 2.2 (23 Ekim 2026 — oturum ve Puantaj güncellemeleri)
 **İlgili dosyalar:** [FASTREPORT_A4_STANDART.md](FASTREPORT_A4_STANDART.md) ·
 [FILTER_FEATURE_DOCUMENTATION.md](FILTER_FEATURE_DOCUMENTATION.md) ·
 [CSS_DESIGN_SYSTEM.md](CSS_DESIGN_SYSTEM.md) · [TECHNICAL_DOCUMENTATION.md](TECHNICAL_DOCUMENTATION.md) ·

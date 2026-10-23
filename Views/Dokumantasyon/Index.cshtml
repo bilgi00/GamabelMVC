@@ -261,7 +261,7 @@
                 <p>
                     Kullanıcı kimlik doğrulama ve kayıt işlemlerini yönetir. Giriş yapıldığında <code>admin_kullanicilar</code> tablosundan kullanıcı adı ve şifre kontrol edilir, 
                     aktif olmayan hesaplar reddedilir. Başarılı girişte Session'a <strong>KullaniciAdi</strong>, <strong>Birim</strong>, <strong>Rol</strong> bilgileri atanır. 
-                    Kayıt formunda birim seçimi <code>birimler</code> tablosundan yüklenir.
+                    Kayıt formunda birim seçimi <code>birimler</code> tablosundan yüklenir. 15 dakikalık hareketsizlik sınırında oturum sonlandırılır; kullanıcı PRS veya STS modülüne uygun giriş ekranına yönlendirilir. Sekmeye geri dönüldüğünde oturum süresi yeniden kontrol edilir.
                 </p>
                 <div>
                     <span class="endpoint">GET /Account/Login</span>
@@ -321,15 +321,19 @@
             <div class="page-card">
                 <h6>📊 Puantaj (PuantajController)</h6>
                 <p>
-                    Personel izin/devamsızlık kayıtlarını yönetir. Ay bazlı takvim görünümünde her personel için günlük durum girilir 
-                    (İ=İzin, Gİ=Görevli İzin, ÇH=Çalışma Harici, Vİ=Vizite İzin, Hİ=Haftalık İzin, H=Hasta, Sİ=Seferberlik İzni, ÖDİ=Ödeneksiz İzin). Hafta sonu sütunları
-                    pembe arkaplanla gösterilir. <strong>Hakediş hesabı: 30 - izin günleri</strong>. Otomatik kaydetme ve toplu izin atama desteklenir. 
-                    Kilitli aylara kayıt yapılamaz (popup ile bilgilendirilir). PDF ve Excel çıktı alınabilir.
+                    Personel izin/devamsızlık kayıtlarını yönetir. Ay bazlı takvim görünümünde günlük durumlar girilir:
+                    X=Çalıştı, RT=Resmi Tatil, İ=Yıllık İzin, Gİ=Görev İzni, ÇR=Çocuk Hastalık, Vİ=Vefat İzni,
+                    Hİ=Haftalık İzin, R=Hastalık, Sİ=Seferberlik İzni, Öİ=Ödeneksiz İzin ve PT=Part Time.
+                    Eski T/ÇH/H/ÖDİ kayıtları sırasıyla X/ÇR/R/Öİ olarak gösterilir. <strong>İ sayacı PT dahil izin durumlarını,
+                    Ö sayacı ödeneksiz izin günlerini gösterir; hakediş 30 - Öİ gün sayısı - PT gün sayısı olarak hesaplanır.</strong>
+                    PT dahil durumlar takvim hücresinin düzenleme penceresinden girilir; toplu izin için ayrı form kullanılır.
+                    Klavye kısayolları X, İ, G, Ç, V, R ve Shift+H'dir. Kilitli aylara kayıt yapılamaz (popup ile bilgilendirilir).
+                    Puantaj raporu önizlenebilir ve PDF olarak indirilebilir; raporda X, İ ve Ö toplamları ile Birim Sorumlusu imza alanı bulunur.
                 </p>
                 <div style="margin-top: 10px; padding: 10px; background: #f0f8ff; border-left: 4px solid #0066cc; border-radius: 4px; font-size: 13px;">
-                    <strong>📝 Yazıcı Çıktısı Güncellemesi (9 Nisan 2026):</strong>
+                    <strong>📝 Yazıcı Çıktısı Güncellemesi (9 Nisan 2026; 23 Ekim 2026 revizyonu):</strong>
                     <ul style="margin: 5px 0 0; padding-left: 20px;">
-                        <li>Kontrol eden imzası kaldırılmıştır (2 imza kalacak: Birim Sorumlusu, Başkan)</li>
+                        <li>23 Ekim 2026 itibarıyla raporun son sayfasında yalnızca Birim Sorumlusu imza alanı bulunur</li>
                         <li>Personel adlarının altındaki birim isimleri gizlenmiştir</li>
                         <li>Başlık "BİRİM ADI PUANTAJ CETVELİ" olarak sabitlenmiştir</li>
                         <li>Açıklamalar bölümü tablodan ayrılmış, renkli kutular kaldırılmış, yazı ve font boyutu küçültülmüştür</li>

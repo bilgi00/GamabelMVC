@@ -430,7 +430,7 @@ public class PuantajController : Controller
         table.Columns.Add("OSayisi", typeof(int));
         table.Columns.Add("Hakkedis", typeof(int));
 
-        var izinSayimTurleri = new HashSet<string>(new[] { "İ", "Gİ", "ÇR", "Vİ", "Hİ", "R", "Sİ" }, StringComparer.Ordinal);
+        var izinSayimTurleri = new HashSet<string>(new[] { "İ", "Gİ", "ÇR", "Vİ", "Hİ", "R", "Sİ", "PT" }, StringComparer.Ordinal);
         var genelX = 0;
         var genelI = 0;
         var genelO = 0;
@@ -443,6 +443,7 @@ public class PuantajController : Controller
             var iSayisi = 0;
             var oSayisi = 0;
             var odeneksizIzinSayisi = 0;
+            var partTimeSayisi = 0;
 
             for (var gun = 1; gun <= 30; gun++)
             {
@@ -455,9 +456,10 @@ public class PuantajController : Controller
                     oSayisi++;
                     odeneksizIzinSayisi++;
                 }
+                if (durum == "PT") partTimeSayisi++;
             }
 
-            var hakkedis = 30 - odeneksizIzinSayisi;
+            var hakkedis = 30 - odeneksizIzinSayisi - partTimeSayisi;
             row["XSayisi"] = xSayisi;
             row["ISayisi"] = iSayisi;
             row["OSayisi"] = oSayisi;

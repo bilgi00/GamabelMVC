@@ -1,7 +1,36 @@
 # 📋 CHANGELOG - GAMABEL MVC
 
 **Format**: [VERSION] - [DATE] - [STATUS]  
-**Son Güncelleme**: 23 Ağustos 2026
+**Son Güncelleme**: 23 Ekim 2026
+
+---
+
+## 23 Ekim 2026 — ✅ OTURUM VE PUANTAJ GÜNCELLEMELERİ
+
+### 🔐 Oturum zaman aşımı
+
+- Oturum süresi dolduğunda kullanıcı, aktif modülüne göre PRS veya STS giriş ekranına yönlendirilir.
+- Sekme görünür olduğunda, pencere odak aldığında veya sayfa yeniden gösterildiğinde oturum sayacı güncellenir; süresi dolmuş oturumla ekranda işlem yapılması engellenir.
+- Tasarım zamanı derlemelerinde Git commit bilgisini almak için Git komutu çalıştırılmaz.
+- `System.Security.Cryptography.Pkcs` bağımlılığı projeye eklendi.
+
+### 📅 Puantaj durumları ve sayaçlar
+
+- Eski durum kodları (`T`, `ÇH`, `H`, `ÖDİ`) yeni karşılıklarına (`X`, `ÇR`, `R`, `Öİ`) normalize edilir; okuma ve kayıt akışları aynı eşlemeyi kullanır.
+- Resmi tatil `RT` ayrı bir durum olarak gösterilir. Klavye kısayolları ve durum açıklamaları güncel kodlarla eşleştirilir.
+- `İ` sayacı izin durumlarını, `Ö` sayacı ödeneksiz izin günlerini gösterir. Hakediş `30 - Öİ gün sayısı - PT gün sayısı` olarak hesaplanır.
+- Puantaj PDF raporundaki ek sayaç “Hastalık” yerine “Ö (ödeneksiz izin)” olarak düzenlendi; rapor imza alanında yalnızca Birim Sorumlusu bırakıldı.
+- **PT - Part Time** durumu eklendi; PT günleri ekrandaki ve rapordaki `İ` toplamına dahil edilir ve hakedişten düşülür.
+
+### 📝 İlgili Dosyalar
+
+- `Views/Shared/_Layout.cshtml`
+- `Views/PRS/Puantaj/Index.cshtml`
+- `Controllers/PRS/PuantajController.cs`
+- `Reports/Puantaj/Puantaj.Yatay.frx`
+- `wwwroot/css/site.css`
+- `gamabelmvc.csproj`
+- `deploy-manifest.json`
 
 ---
 

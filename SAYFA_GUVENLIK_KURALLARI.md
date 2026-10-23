@@ -15,6 +15,8 @@ Kimlik dogrulama ve yetki kurallari `Program.cs` icinde tanimlidir; policy deger
 
 - MVC endpoint'leri icin fallback policy giris yapmis kullanici ister. Yeni sayfaya `AllowAnonymous` eklemeyin.
 - Oturum hareketsizligi 15 dakikadir. Kimlik cookie'si kayar sureyle yenilenebilir; `auth_time` claim'i ile mutlak oturum omru 8 saattir.
+- Paylasilan sayfa duzenindeki oturum sayaci, kullanici etkinligini ve 15 dakikalik hareketsizlik sinirini izler. Oturum biterse kullanici aktif modulune gore PRS (`/Account/Login`) veya STS (`/Account/StsLogin`) giris ekranina yonlendirilir.
+- Sekme yeniden gorunur oldugunda, pencere odak aldiginda veya sayfa geri yuklendiginde sure kontrolu yenilenir. `KeepAlive` istegi `401` donerse oturum sona ermis kabul edilir ve giris ekranina gecilir.
 - Kimlik cookie'si HttpOnly, Secure ve SameSite=Lax olarak ayarlanmistir. Uretim ortami HTTPS kullanmalidir.
 - Giris yapmis isteklerin yanitlarina `no-store` onbellek basliklari eklenir.
 - Cikis `POST` ve anti-forgery token ile yapilir.
