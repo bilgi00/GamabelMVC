@@ -14,7 +14,8 @@ public sealed class MobileApiExceptionMiddleware(
             await next(context);
         }
         catch (Exception exception) when (
-            context.Request.Path.StartsWithSegments("/api")
+            (context.Request.Path.StartsWithSegments("/api")
+                || context.Request.Path.StartsWithSegments("/api2"))
             && exception is not OperationCanceledException)
         {
             logger.LogError(exception, "Unhandled error while processing mobile API request.");

@@ -1,6 +1,7 @@
 using gamabelmvc.Configuration;
 using gamabelmvc.Data;
 using gamabelmvc.Services;
+using gamabelmvc.Services.Api2;
 using gamabelmvc.Services.MobileApi;
 using gamabelmvc.Services.Raporlama;
 using gamabelmvc.Services.StokSayim;
@@ -57,6 +58,7 @@ builder.Services.AddScoped<ISistemStokExcelService, SistemStokExcelService>();
 builder.Services.AddScoped<IMobileAuthService, MobileAuthService>();
 builder.Services.AddScoped<IMobileInventoryService, MobileInventoryService>();
 builder.Services.AddScoped<IMobileUserDirectoryService, MobileUserDirectoryService>();
+builder.Services.AddScoped<IPersonelDirectoryService, PersonelDirectoryService>();
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;

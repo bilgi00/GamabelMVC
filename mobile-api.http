@@ -1,5 +1,7 @@
 @baseUrl = http://localhost:5010/api
+@api2BaseUrl = http://localhost:5010/api2
 @token = replace-with-access-token
+@adminToken = replace-with-admin-access-token
 
 ### Readiness: 200 when JWT configuration, database connectivity, and migrations are valid
 GET {{baseUrl}}/health
@@ -18,6 +20,14 @@ Content-Type: application/json
   "username": "depo-kullanici",
   "password": "replace-me"
 }
+
+### List safe user-directory fields (Admin only; other roles receive 403)
+GET {{baseUrl}}/users
+Authorization: Bearer {{adminToken}}
+
+### API2: read active personnel only (Admin token required)
+GET {{api2BaseUrl}}/personeller
+Authorization: Bearer {{adminToken}}
 
 ### List counts
 GET {{baseUrl}}/counts

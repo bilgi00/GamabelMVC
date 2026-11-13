@@ -3,7 +3,7 @@
   "info": {
     "title": "Gamabel Mobile Inventory API",
     "version": "1.0.0",
-    "description": "Mobile endpoints for administrator user directory, stock counts, products, system stock, and count movements."
+    "description": "Mobile inventory endpoints plus the API2 read-only personnel directory."
   },
   "servers": [
     {
@@ -158,6 +158,59 @@
           },
           "503": {
             "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/personeller": {
+      "get": {
+        "operationId": "getApi2Personeller",
+        "summary": "List active personnel (Admin only)",
+        "description": "Returns only per_no, ad, soyad, per_statu, and birim_adi from active rows in the personeller table. This endpoint is read-only.",
+        "servers": [
+          {
+            "url": "/api2"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Active personnel",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Api2Personel"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "500": {
+            "description": "The personnel list could not be loaded",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "API2 is not configured",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -544,6 +597,33 @@
           },
           "isActive": {
             "type": "boolean"
+          }
+        }
+      },
+      "Api2Personel": {
+        "type": "object",
+        "required": [
+          "perNo",
+          "ad",
+          "soyad",
+          "gorev",
+          "birimAdi"
+        ],
+        "properties": {
+          "perNo": {
+            "type": "string"
+          },
+          "ad": {
+            "type": "string"
+          },
+          "soyad": {
+            "type": "string"
+          },
+          "gorev": {
+            "type": "string"
+          },
+          "birimAdi": {
+            "type": "string"
           }
         }
       },

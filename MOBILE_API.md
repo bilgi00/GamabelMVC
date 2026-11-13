@@ -11,9 +11,10 @@ Veri akışı yalnızca şu yönde olmalıdır:
 ```text
 Flutter uygulaması
     └── HTTPS + JSON + Bearer JWT
-          └── ASP.NET Core mobil API (/api)
+          └── ASP.NET Core API (/api, /api2)
                 ├── Stok sayım verileri: StokSayimDbContext / EF Core
-                └── Ürün ve kullanıcı verileri: mevcut MySQL veritabanı
+                ├── Ürün ve mobil kullanıcı verileri: mevcut MySQL veritabanı
+                └── API2 personel listesi: mevcut MySQL veritabanı
 ```
 
 **Mobil uygulama MySQL'e veya SQL Server'a doğrudan bağlanmaz.** Veritabanı adresi,
@@ -30,6 +31,7 @@ sunucu tarafındaki veri akışını ve kurulum gereksinimlerini açıklamak iç
 |---|---|
 | `stk_Kullanici` | Login sırasında etkin STS kullanıcısı ve BCrypt parola hash'i doğrulanır. |
 | `stok_sayim_kullanicilari` | Yalnızca `Admin` rolü için `Id`, `KullaniciAdi`, `AdSoyad`, `AktifMi` alanları okunur. |
+| `personeller` | `GET /api2/personeller` aktif personellerin numara, ad, soyad, görev ve birim alanlarını salt-okunur listeler; yalnızca `Admin` rolü erişebilir. |
 | `stk_Urun` | `GET products` etkin ürünleri okur; `POST products` yeni ürün ekler. |
 | `stok_sayimlar` | `GET counts` sayım oturumlarını listeler; diğer sayım işlemlerinde sayımın varlığı/durumu kontrol edilir. |
 | `stok_sayim_sistem_stok` | `GET counts/{id}/system-stock` sistem stoklarını okur; hareketin sayımda yeni ürün olup olmadığı belirlenir. |
@@ -430,6 +432,31 @@ Oluşturulan hareket:
 * Daha önce başka içerikle kullanılmış UUID `409 Conflict` döndürür.
 * UUID her **yeni** hareket için bir kez üretilir; ağ hatasında aynı hareketi
   tekrar denemek için UUID ve içerik korunur.
+
+### 5.6 API2 personel listesi — `GET /api2/personeller`
+
+API2, mobil stok API'sinden ayrı bir salt-okunur uç noktadır. Geçerli bearer
+token ve `Admin` rolü gerekir. Sunucudaki `ConnectionStrings:MyConnection`
+üzerinden `personeller` tablosundan yalnızca aktif personeller okunur:
+`per_no`, `ad`, `soyad`, `per_statu`, `birim_adi`. Bu uç nokta personel
+kayıtlarını oluşturmaz veya güncellemez.
+
+Örnek yanıt:
+
+```json
+[
+  {
+    "perNo": "P-001",
+    "ad": "Örnek",
+    "soyad": "Personel",
+    "gorev": "Uzman",
+    "birimAdi": "Merkez"
+  }
+]
+```
+
+Token yoksa `401`, Admin rolü yoksa `403`, API anahtarı yapılandırılmamışsa
+`503` döner. İstek örneği [mobile-api.http](./mobile-api.http) dosyasındadır.
 
 ## 6. Hatalar ve mobil istemci davranışı
 
