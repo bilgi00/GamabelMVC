@@ -1,0 +1,142 @@
+@model gamabelmvc.Models.StokSayim.SayimDetayViewModel
+
+@{
+    ViewData["Title"] = "Sayım Detayı";
+    var acikMi = Model.Durum == "Açık";
+}
+
+<div class="container py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+        <div>
+            <a asp-action="Index" class="link-secondary text-decoration-none">← Sayım listesi</a>
+            <h1 class="h3 mt-2 mb-1">@Model.Ad</h1>
+            <span class="badge @(acikMi ? "text-bg-success" : "text-bg-secondary")">@Model.Durum</span>
+        </div>
+        <div class="d-flex gap-2">
+            @if (acikMi)
+            {
+                <form asp-action="Kapat" asp-route-id="@Model.Id" method="post"
+                      onsubmit="return confirm('Bu sayımı kapatmak istiyor musunuz?');">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-outline-danger">Sayımı Kapat</button>
+                </form>
+            }
+            else
+            {
+                <form asp-action="YenidenAc" asp-route-id="@Model.Id" method="post"
+                      onsubmit="return confirm('Kapalı sayım yeniden açılsın mı?');">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-outline-primary">Sayımı Yeniden Aç</button>
+                </form>
+            }
+        </div>
+    </div>
+
+    @if (TempData["SayimBasarili"] is string basarili)
+    {
+        <div class="alert alert-success" role="status">@basarili</div>
+    }
+    @if (TempData["SayimHata"] is string hata)
+    {
+        <div class="alert alert-danger" role="alert">@hata</div>
+    }
+
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3">
+            <div class="card h-100"><div class="card-body">
+                <div class="text-muted small">Toplam sistem ürünü</div>
+                <div class="fs-3 fw-semibold">@Model.ToplamUrunSayisi</div>
+            </div></div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card h-100"><div class="card-body">
+                <div class="text-muted small">Sayılan ürün</div>
+                <div class="fs-3 fw-semibold">@Model.SayilanUrunSayisi</div>
+            </div></div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card h-100"><div class="card-body">
+                <div class="text-muted small">Sayılmayan ürün</div>
+                <div class="fs-3 fw-semibold">@Model.SayilmayanUrunSayisi</div>
+            </div></div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card h-100"><div class="card-body">
+                <div class="text-muted small">Sayımda eklenen ürün</div>
+                <div class="fs-3 fw-semibold">@Model.SayimdaEklenenUrunSayisi</div>
+            </div></div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header fw-semibold">Sayım bilgileri</div>
+        <dl class="card-body row mb-0">
+            <dt class="col-sm-3">Açılış zamanı</dt>
+            <dd class="col-sm-9">@Model.AcilisZamani.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</dd>
+            <dt class="col-sm-3">Kapanış zamanı</dt>
+            <dd class="col-sm-9">@(Model.KapanisZamani?.ToLocalTime().ToString("dd.MM.yyyy HH:mm") ?? "—")</dd>
+            <dt class="col-sm-3">Oluşturan</dt>
+            <dd class="col-sm-9">@Model.OlusturanKullanici</dd>
+            <dt class="col-sm-3">Açıklama</dt>
+            <dd class="col-sm-9">@(string.IsNullOrWhiteSpace(Model.Aciklama) ? "—" : Model.Aciklama)</dd>
+        </dl>
+    </div>
+
+    @if (acikMi)
+    {
+        <div class="card mb-4">
+            <div class="card-header fw-semibold">Sistem stoğu snapshot'ı</div>
+            <div class="card-body">
+                <p class="text-muted">
+                    Excel'deki stok bilgileri bu sayıma özel kopyalanır. Kalan miktar sistem stoğu olarak kullanılır.
+                    İlk sayım hareketi başladıktan sonra snapshot değiştirilemez.
+                    En fazla 50.000 ürün satırı ve 20 MB desteklenir.
+                </p>
+                <div class="d-flex flex-wrap align-items-end gap-3">
+                    <a asp-action="SistemStokSablonu" class="btn btn-outline-secondary">
+                        Örnek şablon indir
+                    </a>
+                    <form asp-action="SistemStokOnizle" asp-route-id="@Model.Id" method="post"
+                          enctype="multipart/form-data" class="d-flex flex-wrap align-items-end gap-2">
+                        @Html.AntiForgeryToken()
+                        <div>
+                            <label for="sistemStokDosya" class="form-label">Sistem stoğu Excel dosyası (.xlsx)</label>
+                            <input id="sistemStokDosya" name="dosya" type="file" accept=".xlsx"
+                                   class="form-control" required />
+                        </div>
+                        <button type="submit" class="btn btn-primary">Yükle ve Önizle</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    }
+
+    <div class="card">
+        <div class="card-header fw-semibold">Son denetim kayıtları</div>
+        @if (Model.DenetimKayitlari.Count == 0)
+        {
+            <div class="card-body text-muted">Denetim kaydı bulunmuyor.</div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-sm table-striped mb-0">
+                    <thead>
+                        <tr><th>Zaman</th><th>Kullanıcı</th><th>İşlem</th><th>Detay</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var kayit in Model.DenetimKayitlari)
+                        {
+                            <tr>
+                                <td>@kayit.Zaman.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss")</td>
+                                <td>@kayit.Kullanici</td>
+                                <td>@kayit.Islem</td>
+                                <td>@kayit.Detay</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

@@ -52,13 +52,14 @@
                     <th>Soyad</th>
                     <th>Birim</th>
                     <th>Statü</th>
+                    <th>Durum</th>
                     <th>İşlem</th>
                 </tr>
             </thead>
             <tbody>
                 @if (Model.Personeller.Count == 0)
                 {
-                    <tr><td colspan="6" class="text-center text-muted py-4">Eşleşen personel bulunamadı.</td></tr>
+                    <tr><td colspan="7" class="text-center text-muted py-4">Eşleşen personel bulunamadı.</td></tr>
                 }
                 @foreach (var personel in Model.Personeller)
                 {
@@ -93,12 +94,31 @@
                         <td>
                             <input form="personel-@personel.PerNo" name="PerStatu" value="@personel.PerStatu" class="form-control form-control-sm" maxlength="100" />
                         </td>
+                        <td>
+                            @if (personel.AktifMi)
+                            {
+                                <span class="badge text-bg-success">Aktif</span>
+                            }
+                            else
+                            {
+                                <span class="badge text-bg-secondary">Pasif</span>
+                            }
+                        </td>
                         <td class="text-nowrap">
                             <form id="personel-@personel.PerNo" method="post"
                                   asp-controller="SistemYonetim" asp-action="PersonelGuncelle">
                                 @Html.AntiForgeryToken()
                             </form>
                             <button form="personel-@personel.PerNo" type="submit" class="btn btn-sm btn-outline-primary">Kaydet</button>
+                            <form method="post" asp-controller="SistemYonetim" asp-action="PersonelDurumGuncelle" class="d-inline">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="perNo" value="@personel.PerNo" />
+                                <input type="hidden" name="aktifMi" value="@(!personel.AktifMi)" />
+                                <input type="hidden" name="arama" value="@Model.Arama" />
+                                <button type="submit" class="btn btn-sm @(personel.AktifMi ? "btn-outline-danger" : "btn-outline-success")">
+                                    @(personel.AktifMi ? "Pasife Al" : "Aktifleştir")
+                                </button>
+                            </form>
                         </td>
                     </tr>
                 }

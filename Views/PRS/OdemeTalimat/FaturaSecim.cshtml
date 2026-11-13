@@ -268,6 +268,9 @@
                     <div class="tutar-ozet" id="toplamTutar">Seçilen toplam: 0,00 TL</div>
                     <div style="display:flex; gap:10px; flex-wrap:wrap;">
                         <a href="/OdemeTalimat" class="ot-btn ot-btn-secondary" style="padding:10px 18px;">← Geri</a>
+                        <button type="submit" name="islem" value="taslak" class="ot-btn ot-btn-secondary" @(!bankalar.Any() ? "disabled" : "")>
+                            💾 Taslak Kaydet
+                        </button>
                         <button type="submit" class="ot-btn ot-btn-primary" @(!bankalar.Any() ? "disabled" : "")>
                             💳 Talimat Oluştur
                         </button>

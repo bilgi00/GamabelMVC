@@ -78,12 +78,12 @@ public class RaporController : Controller
             MySqlCommand command;
             if (birim == "__TUMU__" && rol == "admin")
             {
-                sql = "SELECT IFNULL(per_statu, 'Belirtilmemiş') AS statu, COUNT(*) AS toplam FROM personeller GROUP BY per_statu ORDER BY toplam DESC";
+                sql = "SELECT IFNULL(per_statu, 'Belirtilmemiş') AS statu, COUNT(*) AS toplam FROM personeller WHERE aktif_mi = 1 GROUP BY per_statu ORDER BY toplam DESC";
                 command = new MySqlCommand(sql, connection);
             }
             else
             {
-                sql = "SELECT IFNULL(per_statu, 'Belirtilmemiş') AS statu, COUNT(*) AS toplam FROM personeller WHERE birim_adi = @birim GROUP BY per_statu ORDER BY toplam DESC";
+                sql = "SELECT IFNULL(per_statu, 'Belirtilmemiş') AS statu, COUNT(*) AS toplam FROM personeller WHERE aktif_mi = 1 AND birim_adi = @birim GROUP BY per_statu ORDER BY toplam DESC";
                 command = new MySqlCommand(sql, connection);
                 command.Parameters.AddWithValue("@birim", birim);
             }
@@ -138,7 +138,7 @@ public class RaporController : Controller
                                COUNT(*) AS gun_sayisi
                         FROM puantaj_izin pi
                         INNER JOIN personeller p ON p.per_no = pi.personel_id
-                        WHERE pi.yil = @yil AND pi.ay = @ay
+                        WHERE pi.yil = @yil AND pi.ay = @ay AND p.aktif_mi = 1
                         GROUP BY pi.personel_id, CASE WHEN pi.izin_tipi = 'Öİ' THEN 'Hİ' ELSE pi.izin_tipi END
                         ORDER BY p.birim_adi, p.ad, p.soyad, izin_tipi";
                 command = new MySqlCommand(sql, connection);
@@ -150,7 +150,7 @@ public class RaporController : Controller
                                COUNT(*) AS gun_sayisi
                         FROM puantaj_izin pi
                         INNER JOIN personeller p ON p.per_no = pi.personel_id
-                        WHERE pi.yil = @yil AND pi.ay = @ay AND p.birim_adi = @birim
+                        WHERE pi.yil = @yil AND pi.ay = @ay AND p.aktif_mi = 1 AND p.birim_adi = @birim
                         GROUP BY pi.personel_id, CASE WHEN pi.izin_tipi = 'Öİ' THEN 'Hİ' ELSE pi.izin_tipi END
                         ORDER BY p.ad, p.soyad, izin_tipi";
                 command = new MySqlCommand(sql, connection);
@@ -216,7 +216,7 @@ public class RaporController : Controller
                                SUM(mk.toplam_saat) AS toplam_saat
                         FROM mesai_kayitlari mk
                         INNER JOIN personeller p ON p.per_no = mk.personel_id
-                        WHERE YEAR(mk.tarih) = @yil AND MONTH(mk.tarih) = @ay
+                        WHERE YEAR(mk.tarih) = @yil AND MONTH(mk.tarih) = @ay AND p.aktif_mi = 1
                         GROUP BY mk.personel_id
                         ORDER BY p.birim_adi, p.ad, p.soyad";
                 command = new MySqlCommand(sql, connection);
@@ -231,7 +231,7 @@ public class RaporController : Controller
                                SUM(mk.toplam_saat) AS toplam_saat
                         FROM mesai_kayitlari mk
                         INNER JOIN personeller p ON p.per_no = mk.personel_id
-                        WHERE YEAR(mk.tarih) = @yil AND MONTH(mk.tarih) = @ay AND p.birim_adi = @birim
+                        WHERE YEAR(mk.tarih) = @yil AND MONTH(mk.tarih) = @ay AND p.aktif_mi = 1 AND p.birim_adi = @birim
                         GROUP BY mk.personel_id
                         ORDER BY p.ad, p.soyad";
                 command = new MySqlCommand(sql, connection);

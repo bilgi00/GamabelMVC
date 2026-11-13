@@ -832,8 +832,32 @@
         let personelTopluModalInstance = null;
         let reportModalInstance = null;
         let silModu = false;
+        let resmiTatiller = {};
 
-        document.addEventListener('DOMContentLoaded', function() {
+        async function resmiTatillerYukle() {
+            const yil = @secilenYil;
+            const ay = @secilenAy;
+            try {
+                const response = await fetch('/Puantaj/GetResmiTatiller?yil=' + yil + '&ay=' + ay);
+                if (!response.ok) {
+                    return;
+                }
+                const data = await response.json();
+                resmiTatiller = {};
+                if (Array.isArray(data)) {
+                    for (const item of data) {
+                        const gun = Number(item.gun);
+                        if (!Number.isFinite(gun)) continue;
+                        const tarihStr = yil + '-' + String(ay).padStart(2, '0') + '-' + String(gun).padStart(2, '0');
+                        resmiTatiller[tarihStr] = true;
+                    }
+                }
+            } catch (err) {
+                console.warn('Resmi tatiller yüklenemedi:', err);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async function() {
             // Bootstrap modal init
             const modalEl = document.getElementById('mesaiModal');
             modalInstance = new bootstrap.Modal(modalEl);
@@ -860,6 +884,7 @@
                 if (seciliHucre.mode === 'new') hesaplaSure();
             });
 
+            await resmiTatillerYukle();
             hesaplaToplamlar();
             istatistikleriGuncelle();
             hesaplaDetayliToplamlar();
@@ -968,30 +993,32 @@
             const rows = document.querySelectorAll('tbody tr');
             rows.forEach(row => {
                 let normalToplamDakika = 0;
-                let haftaSonuToplamDakika = 0;
+                let ekstraToplamDakika = 0;
                 const cells = row.querySelectorAll('td[data-saat]');
                 cells.forEach(cell => {
                     const val = parseFloat(cell.getAttribute('data-saat')) || 0;
                     const dakika = Math.round(val * 60);
                     const gun = parseInt(cell.getAttribute('data-gun'));
-                    
-                    // Hafta sonu kontrolü
+
+                    const tarihKey = @secilenYil + '-' + String(@secilenAy).padStart(2, '0') + '-' + String(gun).padStart(2, '0');
                     const tarih = new Date(@secilenYil, @secilenAy - 1, gun);
                     const isWeekend = tarih.getDay() === 0 || tarih.getDay() === 6;
-                    if (isWeekend) {
-                        haftaSonuToplamDakika += dakika;
+                    const isResmiTatil = !!resmiTatiller[tarihKey];
+
+                    if (isWeekend || isResmiTatil) {
+                        ekstraToplamDakika += dakika;
                     } else {
                         normalToplamDakika += dakika;
                     }
                 });
-                
+
                 const detayCell = row.querySelector('.personel-toplam-detay');
                 if (detayCell) {
                     const normalSpan = detayCell.querySelector('.normal-saat');
                     const ekstraSpan = detayCell.querySelector('.ekstra-saat');
-                    
+
                     if (normalSpan) normalSpan.textContent = formatDakika(normalToplamDakika);
-                    if (ekstraSpan) ekstraSpan.textContent = formatDakika(haftaSonuToplamDakika);
+                    if (ekstraSpan) ekstraSpan.textContent = formatDakika(ekstraToplamDakika);
                 }
             });
         }

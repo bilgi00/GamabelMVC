@@ -238,7 +238,8 @@ SHOW TABLES;
 3. sql/migration_add_firma_field.sql         # Ürün Firma alanı
 4. sql/migration_add_silindi_status.sql      # Soft-delete (YENI - 10 Haziran)
 5. sql/migration_add_admin_email.sql         # Admin email (YENI - 10 Haziran)
-6. insert_test_user.sql                      # Test kullanıcıları
+6. sql/migration_personel_aktif_mi.sql       # Puantaj için personel aktif/pasif alanı
+7. insert_test_user.sql                      # Test kullanıcıları
 
 # ⚡ HIZLI TIP: Runtime migrations otomatik çalışıyor!
 # İlk sayfa yüklenişinde aşağıdakiler otomatik oluşturulur:
@@ -247,6 +248,17 @@ SHOW TABLES;
 ```
 
 **Migration Detayları**:
+
+#### migration_personel_aktif_mi.sql
+
+Puantaj sayfasındaki personel ve izin sorguları `personeller.aktif_mi` alanını
+kullanır. `Puantaj/Index` yüklenirken “Unknown column 'aktif_mi'” hatası
+görülüyorsa bu migration uygulamanın kullandığı uzak MySQL veritabanına henüz
+uygulanmamıştır. `sql/migration_personel_aktif_mi.sql` dosyasını aynı veritabanı
+üzerinde yetkili bir MySQL yönetim aracıyla bir kez çalıştırın; sütun mevcut
+personeller için varsayılan olarak `1` (aktif) atanır. Uygulama kodunu
+değiştirerek bu sütun filtresini kaldırmayın; pasif personellerin puantaj
+işlemlerine katılmasını engellemek için filtre gereklidir.
 
 #### migration_add_silindi_status.sql
 ```sql
@@ -289,6 +301,9 @@ mysql -u root -p gamabel_mvc < backup_20260525.sql
 ---
 
 ## 🌐 Üretim Deployment
+
+Mobil stok sayım API'sinin rota ve JSON sözleşmesi, JWT anahtarı ve gerekli
+veritabanı migrasyonu için [MOBILE_API.md](./MOBILE_API.md) dosyasına bakın.
 
 ### Linux Server (Önerilir)
 
@@ -342,6 +357,7 @@ WorkingDirectory=/var/www/gamabelmvc/publish
 ExecStart=/usr/bin/dotnet /var/www/gamabelmvc/publish/gamabelmvc.dll
 Restart=always
 RestartSec=10
+EnvironmentFile=/etc/gamabelmvc.env
 Environment="ASPNETCORE_ENVIRONMENT=Production"
 Environment="ASPNETCORE_URLS=http://localhost:5010"
 
@@ -350,13 +366,25 @@ WantedBy=multi-user.target
 ```
 
 ```bash
+# Gizli ayar dosyasını kaynak kodun dışında ve yalnızca root okuyacak şekilde oluştur
+sudo install -o root -g root -m 600 /dev/null /etc/gamabelmvc.env
+sudoedit /etc/gamabelmvc.env
+
+# Dosyaya gerçek değerleri güvenli biçimde gir:
+# ConnectionStrings__MyConnection="Server=...;Database=...;User ID=...;Password=...;"
+# MobileApi__Jwt__SigningKey="<en az 32 UTF-8 bayt; örn. openssl rand -base64 48 çıktısı>"
+
 # Enable & Start
 sudo systemctl daemon-reload
 sudo systemctl enable gamabelmvc
-sudo systemctl start gamabelmvc
+sudo systemctl restart gamabelmvc
 
 # Status kontrol
 sudo systemctl status gamabelmvc
+
+# API hazır olma kontrolü ve servis logları
+curl -i https://gamabel.xyz/api/health
+sudo journalctl -u gamabelmvc --since "15 minutes ago" --no-pager
 ```
 
 #### 4. Nginx Configuration
@@ -370,7 +398,7 @@ upstream dotnet_app {
 server {
     listen 80;
     listen [::]:80;
-    server_name gamabel.example.com;
+    server_name gamabel.xyz;
 
     # HTTP to HTTPS redirect
     return 301 https://$server_name$request_uri;
@@ -379,11 +407,11 @@ server {
 server {
     listen 443 ssl http2;
     listen [::]:443 ssl http2;
-    server_name gamabel.example.com;
+    server_name gamabel.xyz;
 
     # SSL certificates (Let's Encrypt)
-    ssl_certificate /etc/letsencrypt/live/gamabel.example.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/gamabel.example.com/privkey.pem;
+    ssl_certificate /etc/letsencrypt/live/gamabel.xyz/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/gamabel.xyz/privkey.pem;
 
     # Reverse proxy
     location / {
@@ -422,7 +450,7 @@ sudo systemctl restart nginx
 sudo apt install certbot python3-certbot-nginx -y
 
 # Sertifika al
-sudo certbot certonly --nginx -d gamabel.example.com
+sudo certbot certonly --nginx -d gamabel.xyz
 
 # Auto-renewal
 sudo systemctl enable certbot.timer
@@ -478,10 +506,12 @@ RUN dotnet publish -c Release -o /app/publish
 FROM mcr.microsoft.com/dotnet/aspnet:9.0
 WORKDIR /app
 COPY --from=publish /app/publish .
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=1 \
-    CMD curl -f http://localhost:5010/health || exit 1
+    CMD curl -f http://localhost:5010/api/health || exit 1
 
 EXPOSE 5010
 ENTRYPOINT ["dotnet", "gamabelmvc.dll"]
@@ -501,8 +531,12 @@ services:
     ports:
       - "5010:5010"
     environment:
-      - ASPNETCORE_ENVIRONMENT=Production
-      - ConnectionStrings__DefaultConnection=Server=mysql;Database=gamabel_mvc;User ID=root;Password=rootpassword;
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:5010
+      ConnectionStrings__MyConnection: ${GAMABEL_CONNECTION_STRING:?Set the application database connection string}
+      MobileApi__Jwt__SigningKey: ${MOBILE_API_JWT_SIGNING_KEY:?Set a secret signing key of at least 32 UTF-8 bytes}
+      # For an Nginx container, configure its fixed private IP here.
+      # MobileApi__TrustedProxies__0: 172.20.0.2
     depends_on:
       - mysql
     networks:
@@ -513,7 +547,7 @@ services:
     image: mysql:8.0
     container_name: gamabel_mysql
     environment:
-      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set a MySQL root password}
       MYSQL_DATABASE: gamabel_mvc
     ports:
       - "3306:3306"
@@ -583,19 +617,11 @@ builder.Services.AddLogging(logging =>
 
 ### Health Check Endpoint
 
-```csharp
-// Program.cs'de
-app.MapHealthChecks("/health");
-
-builder.Services
-    .AddHealthChecks()
-    .AddDbContextCheck<ApplicationDbContext>()
-    .AddCheck("Database", () =>
-    {
-        // Database connection check
-        return HealthCheckResult.Healthy();
-    });
-```
+Mobil API için gerçek hazır olma kontrolü `GET /api/health` adresindedir.
+`200 {"status":"healthy"}` yanıtı JWT anahtarının biçimini, DB erişimini ve
+bekleyen EF migration'larını kontrol eder; `503 {"status":"unhealthy"}`
+ayarlardan en az birinin hazır olmadığını bildirir. Yanıt ayrıntı veya sır
+içermez; kök neden için servis loglarına bakın.
 
 ### Performance Monitoring
 
@@ -629,6 +655,33 @@ telemetryClient.TrackEvent("SevkiyatEvent");
    - Connection string
    - Ports
 ```
+
+#### Mobil API 503 — "The mobile API is not configured."
+
+Bu yanıt, sunucudaki `MobileApi__Jwt__SigningKey` ayarının eksik veya 32
+UTF-8 baytından kısa olduğunu gösterir. Mobil uygulama ya da APK değişikliği
+bu sunucu ayarını düzeltemez.
+
+Linux/systemd kurulumunda:
+
+1. Sunucuda güvenli bir anahtar üretin: `openssl rand -base64 48`. Anahtarı
+   kaynak koda, Flutter uygulamasına veya destek mesajlarına koymayın.
+2. `sudoedit /etc/gamabelmvc.env` ile `MobileApi__Jwt__SigningKey` satırını
+   ekleyin veya mevcut kısa değeri değiştirin. Aynı dosyada
+   `ConnectionStrings__MyConnection` ayarının da bulunduğunu doğrulayın.
+3. Servisi yeniden başlatın ve sağlık kontrolünü çalıştırın:
+
+   ```bash
+   sudo systemctl restart gamabelmvc
+   curl -i https://gamabel.xyz/api/health
+   sudo journalctl -u gamabelmvc --since "15 minutes ago" --no-pager
+   ```
+
+`/api/health` yalnızca JWT ayarı, veritabanı bağlantısı ve EF migration'ları
+sağlıklıysa `200 {"status":"healthy"}` döndürür. Anahtar düzeltildikten sonra
+health hâlâ `503` ise DB bağlantısını ve bekleyen migration'ları servis
+loglarından inceleyin. Anahtar geçerliyken tokensız `/api/counts` için beklenen
+yanıt `401`'dir.
 
 #### Database Connection Error
 

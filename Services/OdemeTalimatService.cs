@@ -70,6 +70,189 @@ public class OdemeTalimatService
         return result;
     }
 
+    public async Task<List<OtTalimatTaslagi>> GetTaslaklarAsync()
+    {
+        var result = new List<OtTalimatTaslagi>();
+        await using var connection = new MySqlConnection(_connectionString);
+        await connection.OpenAsync();
+        var cmd = new MySqlCommand(
+            @"SELECT d.id, d.talimat_tarihi, d.banka_id, b.sube_adi,
+                     d.hazirlayan_kullanici, d.guncelleme_tarihi,
+                     s.firma_id, s.fatura_adi, s.tutar
+              FROM prs_ot_taslak_talimatlar d
+              LEFT JOIN prs_ot_bankalar b ON b.id = d.banka_id
+              LEFT JOIN prs_ot_taslak_talimat_satirlari s ON s.taslak_id = d.id
+              ORDER BY d.guncelleme_tarihi DESC, d.id DESC, s.sira, s.id",
+            connection);
+        await using var reader = await cmd.ExecuteReaderAsync();
+        var taslakById = new Dictionary<int, OtTalimatTaslagi>();
+        while (await reader.ReadAsync())
+        {
+            var id = reader.GetInt32(0);
+            if (!taslakById.TryGetValue(id, out var taslak))
+            {
+                taslak = new OtTalimatTaslagi
+                {
+                    Id = id,
+                    TalimatTarihi = reader.IsDBNull(1) ? null : reader.GetDateTime(1),
+                    BankaId = reader.IsDBNull(2) ? null : reader.GetInt32(2),
+                    BankaSubeAdi = reader.IsDBNull(3) ? "" : reader.GetString(3),
+                    HazirlayanKullanici = reader.GetString(4),
+                    GuncellemeTarihi = reader.GetDateTime(5)
+                };
+                taslakById.Add(id, taslak);
+                result.Add(taslak);
+            }
+
+            var faturaAdi = reader.IsDBNull(7) ? string.Empty : reader.GetString(7);
+            var tutarText = reader.IsDBNull(8) ? string.Empty : reader.GetString(8).Replace(',', '.');
+            if (!reader.IsDBNull(6) &&
+                !string.IsNullOrWhiteSpace(faturaAdi) &&
+                decimal.TryParse(
+                    tutarText,
+                    System.Globalization.NumberStyles.AllowDecimalPoint,
+                    System.Globalization.CultureInfo.InvariantCulture,
+                    out var tutar) &&
+                tutar >= 0.01m && tutar <= 999999999.99m)
+            {
+                taslak.ToplamAdet++;
+                taslak.ToplamTutar += tutar;
+            }
+        }
+        return result;
+    }
+
+    public async Task<ManuelTalimatModel?> GetTaslakAsync(int id)
+    {
+        await using var connection = new MySqlConnection(_connectionString);
+        await connection.OpenAsync();
+        var model = new ManuelTalimatModel
+        {
+            TaslakId = id,
+            Satirlar = new List<ManuelTalimatSatiriModel>()
+        };
+
+        var headerCmd = new MySqlCommand(
+            @"SELECT talimat_tarihi, banka_id
+              FROM prs_ot_taslak_talimatlar
+              WHERE id = @id",
+            connection);
+        headerCmd.Parameters.AddWithValue("@id", id);
+        await using (var reader = await headerCmd.ExecuteReaderAsync())
+        {
+            if (!await reader.ReadAsync())
+                return null;
+
+            model.TalimatTarihi = reader.IsDBNull(0) ? null : reader.GetDateTime(0);
+            model.BankaId = reader.IsDBNull(1) ? null : reader.GetInt32(1);
+        }
+
+        var rowsCmd = new MySqlCommand(
+            @"SELECT firma_id, fatura_adi, tutar
+              FROM prs_ot_taslak_talimat_satirlari
+              WHERE taslak_id = @id
+              ORDER BY sira, id",
+            connection);
+        rowsCmd.Parameters.AddWithValue("@id", id);
+        await using var rowsReader = await rowsCmd.ExecuteReaderAsync();
+        while (await rowsReader.ReadAsync())
+        {
+            model.Satirlar.Add(new ManuelTalimatSatiriModel
+            {
+                FirmaId = rowsReader.IsDBNull(0) ? null : rowsReader.GetInt32(0),
+                FaturaAdi = rowsReader.IsDBNull(1) ? string.Empty : rowsReader.GetString(1),
+                Tutar = rowsReader.IsDBNull(2) ? string.Empty : rowsReader.GetString(2)
+            });
+        }
+
+        if (model.Satirlar.Count == 0)
+            model.Satirlar.Add(new ManuelTalimatSatiriModel());
+
+        return model;
+    }
+
+    public async Task<int> TaslakKaydetAsync(ManuelTalimatModel model, string kullaniciAdi)
+    {
+        await using var connection = new MySqlConnection(_connectionString);
+        await connection.OpenAsync();
+        await using var tx = await connection.BeginTransactionAsync();
+
+        try
+        {
+            int taslakId;
+            if (model.TaslakId is > 0)
+            {
+                var existsCmd = new MySqlCommand(
+                    "SELECT id FROM prs_ot_taslak_talimatlar WHERE id = @id FOR UPDATE",
+                    connection, tx);
+                existsCmd.Parameters.AddWithValue("@id", model.TaslakId.Value);
+                var existingId = await existsCmd.ExecuteScalarAsync();
+                if (existingId == null || existingId == DBNull.Value)
+                    throw new InvalidOperationException("Düzenlenecek taslak bulunamadı.");
+
+                taslakId = Convert.ToInt32(existingId);
+                var updateCmd = new MySqlCommand(
+                    @"UPDATE prs_ot_taslak_talimatlar
+                      SET talimat_tarihi = @tarih, banka_id = @banka,
+                          guncelleme_tarihi = CURRENT_TIMESTAMP
+                      WHERE id = @id",
+                    connection, tx);
+                updateCmd.Parameters.AddWithValue("@tarih", (object?)model.TalimatTarihi?.Date ?? DBNull.Value);
+                updateCmd.Parameters.AddWithValue("@banka", (object?)model.BankaId ?? DBNull.Value);
+                updateCmd.Parameters.AddWithValue("@id", taslakId);
+                await updateCmd.ExecuteNonQueryAsync();
+
+                var deleteRowsCmd = new MySqlCommand(
+                    "DELETE FROM prs_ot_taslak_talimat_satirlari WHERE taslak_id = @id",
+                    connection, tx);
+                deleteRowsCmd.Parameters.AddWithValue("@id", taslakId);
+                await deleteRowsCmd.ExecuteNonQueryAsync();
+            }
+            else
+            {
+                var insertCmd = new MySqlCommand(
+                    @"INSERT INTO prs_ot_taslak_talimatlar
+                      (talimat_tarihi, banka_id, hazirlayan_kullanici)
+                      VALUES (@tarih, @banka, @kullanici)",
+                    connection, tx);
+                insertCmd.Parameters.AddWithValue("@tarih", (object?)model.TalimatTarihi?.Date ?? DBNull.Value);
+                insertCmd.Parameters.AddWithValue("@banka", (object?)model.BankaId ?? DBNull.Value);
+                insertCmd.Parameters.AddWithValue("@kullanici", kullaniciAdi);
+                await insertCmd.ExecuteNonQueryAsync();
+                taslakId = (int)insertCmd.LastInsertedId;
+            }
+
+            var satirlar = model.Satirlar ?? new List<ManuelTalimatSatiriModel>();
+            for (var index = 0; index < satirlar.Count; index++)
+            {
+                var satir = satirlar[index];
+                var insertRowCmd = new MySqlCommand(
+                    @"INSERT INTO prs_ot_taslak_talimat_satirlari
+                      (taslak_id, sira, firma_id, fatura_adi, tutar)
+                      VALUES (@taslakId, @sira, @firmaId, @faturaAdi, @tutar)",
+                    connection, tx);
+                insertRowCmd.Parameters.AddWithValue("@taslakId", taslakId);
+                insertRowCmd.Parameters.AddWithValue("@sira", index);
+                insertRowCmd.Parameters.AddWithValue("@firmaId", (object?)satir.FirmaId ?? DBNull.Value);
+                insertRowCmd.Parameters.AddWithValue(
+                    "@faturaAdi",
+                    string.IsNullOrWhiteSpace(satir.FaturaAdi) ? DBNull.Value : satir.FaturaAdi.Trim());
+                insertRowCmd.Parameters.AddWithValue(
+                    "@tutar",
+                    string.IsNullOrWhiteSpace(satir.Tutar) ? DBNull.Value : satir.Tutar.Trim());
+                await insertRowCmd.ExecuteNonQueryAsync();
+            }
+
+            await tx.CommitAsync();
+            return taslakId;
+        }
+        catch
+        {
+            await tx.RollbackAsync();
+            throw;
+        }
+    }
+
     // -----------------------------------------------------------------------
     // FATURA SEÇİM
     // -----------------------------------------------------------------------
@@ -144,6 +327,43 @@ public class OdemeTalimatService
                 ImportBatchId = reader.GetInt32(5)
             });
         }
+        return result;
+    }
+
+    public async Task<List<OtAcikFatura>> GetAcikFaturalarByIdsAsync(List<int> ids)
+    {
+        var result = new List<OtAcikFatura>();
+        if (ids == null || ids.Count == 0)
+            return result;
+
+        await using var connection = new MySqlConnection(_connectionString);
+        await connection.OpenAsync();
+
+        var inClause = string.Join(",", ids.Select((_, index) => $"@id{index}"));
+        var cmd = new MySqlCommand($@"
+            SELECT id, cari_kart, fatura_no, bakiye, odeme_durumu, import_batch_id
+            FROM prs_ot_acik_faturalar
+            WHERE id IN ({inClause})
+            ORDER BY cari_kart, fatura_no",
+            connection);
+
+        for (var index = 0; index < ids.Count; index++)
+            cmd.Parameters.AddWithValue($"@id{index}", ids[index]);
+
+        await using var reader = await cmd.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
+        {
+            result.Add(new OtAcikFatura
+            {
+                Id = reader.GetInt32(0),
+                CariKart = reader.GetString(1),
+                FaturaNo = reader.GetString(2),
+                Bakiye = reader.GetDecimal(3),
+                OdemeDurumu = reader.IsDBNull(4) ? "bekliyor" : reader.GetString(4),
+                ImportBatchId = reader.GetInt32(5)
+            });
+        }
+
         return result;
     }
 
@@ -460,7 +680,8 @@ public async Task<List<OtFaturaViewModel>> GetTumAcikFaturalarWithFirmaAsync()
     public async Task<OtTalimat?> TalimatKaydetAsync(
         OtTalimat geciciTalimat,
         List<int> secilenFaturaIdleri,
-        int batchId = 0)
+        int batchId = 0,
+        int? taslakId = null)
     {
         if (geciciTalimat == null)
             throw new InvalidOperationException("Geçersiz talimat verisi.");
@@ -475,6 +696,17 @@ public async Task<List<OtFaturaViewModel>> GetTumAcikFaturalarWithFirmaAsync()
 
         try
         {
+            if (taslakId.HasValue)
+            {
+                var taslakKontrolCmd = new MySqlCommand(
+                    "SELECT id FROM prs_ot_taslak_talimatlar WHERE id = @id FOR UPDATE",
+                    connection, tx);
+                taslakKontrolCmd.Parameters.AddWithValue("@id", taslakId.Value);
+                var taslakVarMi = await taslakKontrolCmd.ExecuteScalarAsync();
+                if (taslakVarMi == null || taslakVarMi == DBNull.Value)
+                    throw new InvalidOperationException("Talimat taslağı bulunamadı veya daha önce tamamlandı.");
+            }
+
             var faturalar = new List<OtAcikFatura>();
             if (secilenFaturaIdleri.Count > 0)
             {
@@ -588,6 +820,22 @@ public async Task<List<OtFaturaViewModel>> GetTumAcikFaturalarWithFirmaAsync()
 
                     await updateCmd.ExecuteNonQueryAsync();
                 }
+            }
+
+            if (taslakId.HasValue)
+            {
+                var taslakSatirlariSilCmd = new MySqlCommand(
+                    "DELETE FROM prs_ot_taslak_talimat_satirlari WHERE taslak_id = @id",
+                    connection, tx);
+                taslakSatirlariSilCmd.Parameters.AddWithValue("@id", taslakId.Value);
+                await taslakSatirlariSilCmd.ExecuteNonQueryAsync();
+
+                var taslakSilCmd = new MySqlCommand(
+                    "DELETE FROM prs_ot_taslak_talimatlar WHERE id = @id",
+                    connection, tx);
+                taslakSilCmd.Parameters.AddWithValue("@id", taslakId.Value);
+                if (await taslakSilCmd.ExecuteNonQueryAsync() != 1)
+                    throw new InvalidOperationException("Talimat taslağı tamamlanamadı.");
             }
 
             await tx.CommitAsync();

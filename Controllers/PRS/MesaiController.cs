@@ -105,8 +105,8 @@ public class MesaiController : Controller
             await connection.OpenAsync();
 
             var sql = (birim == "all")
-                ? "SELECT per_no, ad, soyad, per_statu, birim_adi FROM personeller ORDER BY birim_adi, ad, soyad"
-                : "SELECT per_no, ad, soyad, per_statu, birim_adi FROM personeller WHERE birim_adi = @birim ORDER BY ad, soyad";
+                ? "SELECT per_no, ad, soyad, per_statu, birim_adi FROM personeller WHERE aktif_mi = 1 ORDER BY birim_adi, ad, soyad"
+                : "SELECT per_no, ad, soyad, per_statu, birim_adi FROM personeller WHERE aktif_mi = 1 AND birim_adi = @birim ORDER BY ad, soyad";
             await using var cmd = new MySqlCommand(sql, connection);
             if (birim != "all")
                 cmd.Parameters.AddWithValue("@birim", birim);
@@ -150,8 +150,8 @@ public class MesaiController : Controller
             await connection.OpenAsync();
 
             var birimFiltre = (rol == "admin" && birim == "all")
-                ? ""
-                : "p.birim_adi = @birim AND ";
+                ? "p.aktif_mi = 1 AND "
+                : "p.aktif_mi = 1 AND p.birim_adi = @birim AND ";
             await using var cmd = new MySqlCommand(
                 $@"SELECT mk.id, mk.personel_id, p.per_no, CONCAT(p.ad, ' ', p.soyad) AS ad_soyad,
                             mk.tarih, mk.gorev, mk.baslangic, mk.bitis,
@@ -232,7 +232,7 @@ public class MesaiController : Controller
                 return Json(new { basarili = false, mesaj = "Bu ay kilitlenmiştir. Kayıt veya değişiklik yapılamaz." });
 
             await using var personelCmd = new MySqlCommand(
-                "SELECT per_no FROM personeller WHERE per_no = @perNo LIMIT 1", connection);
+                "SELECT per_no FROM personeller WHERE per_no = @perNo AND aktif_mi = 1 LIMIT 1", connection);
             personelCmd.Parameters.AddWithValue("@perNo", kayit.PerNo.Trim());
             var personelIdValue = await personelCmd.ExecuteScalarAsync();
             if (personelIdValue == null || personelIdValue == DBNull.Value)
@@ -615,7 +615,7 @@ public class MesaiController : Controller
         await using var connection = new MySqlConnection(_connectionString);
         await connection.OpenAsync();
         var tumBirimler = admin && birim == "all";
-        var filtreler = new List<string> { "YEAR(mk.tarih) = @yil", "MONTH(mk.tarih) = @ay" };
+        var filtreler = new List<string> { "p.aktif_mi = 1", "YEAR(mk.tarih) = @yil", "MONTH(mk.tarih) = @ay" };
         if (!tumBirimler)
             filtreler.Insert(0, "p.birim_adi = @birim");
         if (personelNo.Length > 0)
@@ -803,7 +803,7 @@ public class MesaiController : Controller
                   FROM personeller p
                   INNER JOIN mesai_kayitlari mk ON mk.personel_id = p.per_no
                     AND YEAR(mk.tarih) = @yil AND MONTH(mk.tarih) = @ay
-                  WHERE {birimFiltre}p.per_statu IS NOT NULL
+                  WHERE {birimFiltre}p.aktif_mi = 1 AND p.per_statu IS NOT NULL
                   GROUP BY p.per_no, p.ad, p.soyad, p.birim_adi
                   ORDER BY p.ad, p.soyad", connection);
 

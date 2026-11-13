@@ -1,0 +1,78 @@
+@model IReadOnlyList<gamabelmvc.Models.StokSayim.SayimListeSatiriViewModel>
+
+@{
+    ViewData["Title"] = "Stok Sayım Oturumları";
+}
+
+<div class="container py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+        <div>
+            <h1 class="h3 mb-1">Stok Sayım Oturumları</h1>
+            <p class="text-muted mb-0">Sayım açın, ilerlemeyi takip edin ve oturumları yönetin.</p>
+        </div>
+        <a asp-action="Yeni" class="btn btn-primary">＋ Yeni Sayım Aç</a>
+    </div>
+
+    @if (TempData["SayimBasarili"] is string basarili)
+    {
+        <div class="alert alert-success" role="status">@basarili</div>
+    }
+    @if (TempData["SayimHata"] is string hata)
+    {
+        <div class="alert alert-danger" role="alert">@hata</div>
+    }
+
+    @if (Model.Count == 0)
+    {
+        <div class="alert alert-info">Henüz sayım oturumu açılmadı.</div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>Sayım</th>
+                        <th>Durum</th>
+                        <th>Açılış</th>
+                        <th>Toplam ürün</th>
+                        <th>Sayılan</th>
+                        <th>Sayılmayan</th>
+                        <th>Sayımda eklenen</th>
+                        <th>Oluşturan</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var sayim in Model)
+                    {
+                        <tr>
+                            <td class="fw-semibold">@sayim.Ad</td>
+                            <td>
+                                @if (sayim.Durum == "Açık")
+                                {
+                                    <span class="badge text-bg-success">Açık</span>
+                                }
+                                else
+                                {
+                                    <span class="badge text-bg-secondary">Kapalı</span>
+                                }
+                            </td>
+                            <td>@sayim.AcilisZamani.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</td>
+                            <td>@sayim.ToplamUrunSayisi</td>
+                            <td>@sayim.SayilanUrunSayisi</td>
+                            <td>@sayim.SayilmayanUrunSayisi</td>
+                            <td>@sayim.SayimdaEklenenUrunSayisi</td>
+                            <td>@sayim.OlusturanKullanici</td>
+                            <td>
+                                <a asp-action="Detay" asp-route-id="@sayim.Id" class="btn btn-sm btn-outline-primary">
+                                    Detay
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

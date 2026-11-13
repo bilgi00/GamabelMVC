@@ -14,6 +14,9 @@ namespace gamabelmvc.Controllers.PRS;
 [Authorize(Policy = "PrsAdmin")]
 public class OdemeTalimatController : Controller
 {
+    private const int ManuelTalimatMaksimumSatirSayisi = 200;
+    private const decimal ManuelTalimatMaksimumTutar = 999999999.99m;
+
     private readonly OdemeFaturaImportService _importService;
     private readonly OdemeTalimatService _talimatService;
     private readonly IWebHostEnvironment _environment;
@@ -52,12 +55,14 @@ public class OdemeTalimatController : Controller
         {
             ViewBag.SonYuklemeler = await _talimatService.GetSonYuklemelerAsync();
             ViewBag.SonTalimatlar = await _talimatService.GetSonTalimatlarAsync();
+            ViewBag.Taslaklar = await _talimatService.GetTaslaklarAsync();
         }
         catch (Exception ex)
         {
             ViewBag.Hata = "Veritabanı hatası: " + ex.Message;
             ViewBag.SonYuklemeler = new List<OtImportBatch>();
             ViewBag.SonTalimatlar = new List<OtTalimat>();
+            ViewBag.Taslaklar = new List<OtTalimatTaslagi>();
         }
 
         return View();
@@ -241,25 +246,89 @@ public class OdemeTalimatController : Controller
     // MANUEL KAYIT
     // -----------------------------------------------------------------------
     [HttpGet]
-    public async Task<IActionResult> ManuelKayit()
+    public async Task<IActionResult> ManuelKayit(int? taslakId = null)
     {
         if (!IsLoggedIn()) return RedirectToAction("Login", "Account");
         if (!IsAdmin()) return Forbid();
 
         await ManuelKayitSecenekleriniYukle();
-        return View(new ManuelTalimatModel { TalimatTarihi = DateTime.Today });
+        if (taslakId is > 0)
+        {
+            var taslak = await _talimatService.GetTaslakAsync(taslakId.Value);
+            if (taslak == null)
+            {
+                TempData["Hata"] = "Düzenlenecek taslak bulunamadı.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            return View(taslak);
+        }
+
+        return View(new ManuelTalimatModel
+        {
+            TalimatTarihi = DateTime.Today,
+            Satirlar = new List<ManuelTalimatSatiriModel> { new() }
+        });
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> ManuelTalimatOlustur(ManuelTalimatModel model)
+    public async Task<IActionResult> ManuelTalimatOlustur(ManuelTalimatModel model, string islem = "olustur")
     {
         if (!IsLoggedIn()) return RedirectToAction("Login", "Account");
         if (!IsAdmin()) return Forbid();
         if (model == null) return BadRequest();
 
+        if (islem == "taslak")
+        {
+            ModelState.Clear();
+            if (model.Satirlar == null || model.Satirlar.Count == 0)
+                model.Satirlar = new List<ManuelTalimatSatiriModel> { new() };
+
+            if (model.TaslakId is <= 0)
+                model.TaslakId = null;
+
+            if (model.Satirlar.Count > ManuelTalimatMaksimumSatirSayisi)
+                ModelState.AddModelError(nameof(model.Satirlar), $"En fazla {ManuelTalimatMaksimumSatirSayisi} fatura satırı ekleyebilirsiniz.");
+
+            if (!ModelState.IsValid)
+            {
+                await ManuelKayitSecenekleriniYukle();
+                return View("ManuelKayit", model);
+            }
+
+            var taslakBankalar = await _talimatService.GetBankalarAsync();
+            if (model.BankaId.HasValue && !taslakBankalar.Any(b => b.Id == model.BankaId.Value))
+                model.BankaId = null;
+
+            var firmaIdleri = (await _talimatService.GetFirmalarAsync()).Select(f => f.Id).ToHashSet();
+            foreach (var satir in model.Satirlar)
+            {
+                if (satir.FirmaId.HasValue && !firmaIdleri.Contains(satir.FirmaId.Value))
+                    satir.FirmaId = null;
+            }
+
+            try
+            {
+                var taslakId = await _talimatService.TaslakKaydetAsync(model, KullaniciAdi());
+                TempData["Bilgi"] = "Taslak kaydedildi. Daha sonra açıp düzenleyebilirsiniz.";
+                return RedirectToAction(nameof(ManuelKayit), new { taslakId });
+            }
+            catch (InvalidOperationException ex)
+            {
+                ModelState.AddModelError(string.Empty, ex.Message);
+                await ManuelKayitSecenekleriniYukle();
+                return View("ManuelKayit", model);
+            }
+        }
+
+        if (islem != "olustur")
+            return BadRequest("Geçersiz manuel talimat işlemi.");
+
         if (model.Satirlar == null || model.Satirlar.Count == 0)
             ModelState.AddModelError(nameof(model.Satirlar), "En az bir fatura satırı ekleyin.");
+        else if (model.Satirlar.Count > ManuelTalimatMaksimumSatirSayisi)
+            ModelState.AddModelError(nameof(model.Satirlar), $"En fazla {ManuelTalimatMaksimumSatirSayisi} fatura satırı ekleyebilirsiniz.");
 
         var bankalar = await _talimatService.GetBankalarAsync();
         var firmalar = await _talimatService.GetFirmalarAsync();
@@ -271,33 +340,43 @@ public class OdemeTalimatController : Controller
 
         var satirlar = model.Satirlar ?? new List<ManuelTalimatSatiriModel>();
         var tutarBySatir = new Dictionary<ManuelTalimatSatiriModel, decimal>();
+        var gorulenFaturalar = new HashSet<(int FirmaId, string FaturaAdi)>();
         for (var i = 0; i < satirlar.Count; i++)
         {
             var satir = satirlar[i];
-            if (!firmaById.ContainsKey(satir.FirmaId))
-                ModelState.AddModelError(nameof(model.Satirlar), "Bir veya daha fazla satırda geçersiz firma seçildi.");
+            if (!satir.FirmaId.HasValue || !firmaById.ContainsKey(satir.FirmaId.Value))
+                ModelState.AddModelError($"Satirlar[{i}].FirmaId", "Geçerli bir firma seçin.");
+
+            var faturaAdi = satir.FaturaAdi?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(faturaAdi))
+                ModelState.AddModelError($"Satirlar[{i}].FaturaAdi", "Fatura adı zorunludur.");
+            else if (satir.FirmaId.HasValue &&
+                !gorulenFaturalar.Add((satir.FirmaId.Value, faturaAdi.ToUpperInvariant())))
+                ModelState.AddModelError($"Satirlar[{i}].FaturaAdi", "Aynı firma ve fatura adı başka bir satırda zaten bulunuyor.");
 
             var tutarText = (satir.Tutar ?? string.Empty).Replace(',', '.');
             if (decimal.TryParse(tutarText, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var tutar) &&
-                tutar >= 0.01m && tutar <= 9999999999999999.99m)
+                tutar >= 0.01m && tutar <= ManuelTalimatMaksimumTutar)
             {
                 tutarBySatir[satir] = tutar;
             }
             else
             {
-                ModelState.AddModelError($"Satirlar[{i}].Tutar", "Tutar 0,01 ile 9.999.999.999.999.999,99 arasında olmalıdır.");
+                ModelState.AddModelError($"Satirlar[{i}].Tutar", "Tutar 0,01 ile 999.999.999,99 arasında olmalıdır.");
             }
         }
 
         if (!ModelState.IsValid)
         {
+            if (model.Satirlar == null || model.Satirlar.Count == 0)
+                model.Satirlar = new List<ManuelTalimatSatiriModel> { new() };
             ViewBag.Bankalar = bankalar;
             ViewBag.Firmalar = firmalar;
             return View("ManuelKayit", model);
         }
 
         var talimatSatirlari = satirlar
-            .GroupBy(s => s.FirmaId)
+            .GroupBy(s => s.FirmaId!.Value)
             .Select(grup =>
             {
                 var firma = firmaById[grup.Key];
@@ -316,7 +395,7 @@ public class OdemeTalimatController : Controller
         var geciciTalimat = new OtTalimat
         {
             Id = 0,
-            TalimatNo = await _talimatService.GetSonrakiTalimatNoAsync(),
+            TalimatNo = string.Empty,
             Tarih = model.TalimatTarihi!.Value.Date,
             BankaId = banka!.Id,
             BankaSubeAdi = banka.SubeAdi,
@@ -328,13 +407,24 @@ public class OdemeTalimatController : Controller
             Satirlar = talimatSatirlari
         };
 
-        var jsonOptions = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
-        HttpContext.Session.SetString("GeciciTalimat", JsonSerializer.Serialize(geciciTalimat, jsonOptions));
-        HttpContext.Session.SetString("GeciciFaturaIdleri", JsonSerializer.Serialize(new List<int>()));
-        HttpContext.Session.SetInt32("GeciciBatchId", 0);
+        try
+        {
+            var kaydedilenTalimat = await _talimatService.TalimatKaydetAsync(
+                geciciTalimat,
+                new List<int>(),
+                taslakId: model.TaslakId);
+            if (kaydedilenTalimat == null)
+                throw new InvalidOperationException("Talimat kaydedilemedi.");
 
-        TempData["Bilgi"] = "Manuel talimat oluşturuldu. Kaydetmek için 'Talimatı Kaydet' butonuna tıklayın.";
-        return RedirectToAction("Detay", new { id = 0 });
+            TempData["Basarili"] = $"Talimat #{kaydedilenTalimat.TalimatNo} başarıyla kaydedildi.";
+            return RedirectToAction(nameof(Detay), new { id = kaydedilenTalimat.Id });
+        }
+        catch (InvalidOperationException ex)
+        {
+            ModelState.AddModelError(string.Empty, ex.Message);
+            await ManuelKayitSecenekleriniYukle();
+            return View("ManuelKayit", model);
+        }
     }
 
     private async Task ManuelKayitSecenekleriniYukle()
@@ -348,7 +438,7 @@ public class OdemeTalimatController : Controller
     // -----------------------------------------------------------------------
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public IActionResult TalimatOlustur(List<int> secilenFaturaIdleri, int bankaId, int batchId = 0, DateTime? talimatTarihi = null)
+    public async Task<IActionResult> TalimatOlustur(List<int> secilenFaturaIdleri, int bankaId, int batchId = 0, DateTime? talimatTarihi = null, string islem = "olustur")
     {
         if (!IsLoggedIn()) return RedirectToAction("Login", "Account");
         if (!IsAdmin()) return Forbid();
@@ -367,6 +457,50 @@ public class OdemeTalimatController : Controller
 
         try
         {
+            if (string.Equals(islem, "taslak", StringComparison.OrdinalIgnoreCase))
+            {
+                var bankalar = await _talimatService.GetBankalarAsync();
+                if (!bankalar.Any(b => b.Id == bankaId))
+                {
+                    TempData["SecilenFaturaIdleri"] = JsonSerializer.Serialize(secilenFaturaIdleri);
+                    TempData["SecilenBankaId"] = bankaId;
+                    TempData["Hata"] = "Seçilen banka kaydı bulunamadı. Lütfen farklı bir banka seçin.";
+                    if (batchId > 0)
+                        return RedirectToAction("FaturaSecim", new { batchId });
+                    return RedirectToAction("FaturaSecim");
+                }
+
+                var firmalar = await _talimatService.GetFirmalarAsync();
+                var firmaByCariIsmi = firmalar.ToDictionary(f => f.CariIsmi, f => f, StringComparer.OrdinalIgnoreCase);
+                var model = new ManuelTalimatModel
+                {
+                    TalimatTarihi = secilenTarih,
+                    BankaId = bankaId,
+                    Satirlar = new List<ManuelTalimatSatiriModel>()
+                };
+
+                var faturaListesi = await _talimatService.GetAcikFaturalarByIdsAsync(secilenFaturaIdleri);
+                foreach (var fatura in faturaListesi)
+                {
+                    if (!firmaByCariIsmi.TryGetValue(fatura.CariKart, out var firma))
+                        throw new InvalidOperationException($"'{fatura.CariKart}' için firma/iban kaydı bulunamadı.");
+
+                    model.Satirlar.Add(new ManuelTalimatSatiriModel
+                    {
+                        FirmaId = firma.Id,
+                        FaturaAdi = fatura.FaturaNo,
+                        Tutar = fatura.Bakiye.ToString("0.##", CultureInfo.InvariantCulture)
+                    });
+                }
+
+                if (model.Satirlar.Count == 0)
+                    throw new InvalidOperationException("Taslak için kaydedilecek fatura bulunamadı.");
+
+                var taslakId = await _talimatService.TaslakKaydetAsync(model, KullaniciAdi());
+                TempData["Bilgi"] = "Seçili faturalar taslak olarak kaydedildi.";
+                return RedirectToAction(nameof(ManuelKayit), new { taslakId });
+            }
+
             var geciciTalimat = _talimatService.TalimatOlusturGecici(
                 secilenFaturaIdleri, 
                 bankaId, 

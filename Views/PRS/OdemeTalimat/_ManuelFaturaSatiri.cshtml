@@ -1,0 +1,48 @@
+@model ManuelTalimatSatiriModel
+@using System.Globalization
+@{
+    var index = ViewData["RowIndex"]?.ToString() ?? "0";
+    var firmaField = $"Satirlar[{index}].FirmaId";
+    var faturaField = $"Satirlar[{index}].FaturaAdi";
+    var tutarField = $"Satirlar[{index}].Tutar";
+    var includeFirmaOptions = ViewData["IncludeFirmaOptions"] is not bool include || include;
+    var firmalar = ViewBag.Firmalar as List<OtFirma> ?? new List<OtFirma>();
+    var tutarValue = decimal.TryParse((Model.Tutar ?? string.Empty).Replace(',', '.'), NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var tutar)
+        ? tutar.ToString("0.00", CultureInfo.InvariantCulture)
+        : Model.Tutar;
+}
+
+<tr class="invoice-row">
+    <td data-label="Ödeme yapılacak firma">
+        <input type="search" class="form-control firm-search" placeholder="Firma ara..." aria-label="Firma ara" autocomplete="off" />
+        <select name="@firmaField" class="form-select firm-select" required aria-label="Ödeme yapılacak firma" data-val="true" data-val-required="Her satır için bir firma seçin.">
+            <option value="">Firma seçin</option>
+            @if (includeFirmaOptions)
+            {
+                @foreach (var firma in firmalar)
+                {
+                    if (firma.Id == Model.FirmaId)
+                    {
+                        <option value="@firma.Id" selected>@firma.CariIsmi — @firma.OdemeIsmi</option>
+                    }
+                    else
+                    {
+                        <option value="@firma.Id">@firma.CariIsmi — @firma.OdemeIsmi</option>
+                    }
+                }
+            }
+        </select>
+        @Html.ValidationMessage(firmaField, null, new { @class = "text-danger small" })
+    </td>
+    <td data-label="Fatura adı / numarası">
+        <input name="@faturaField" value="@Model.FaturaAdi" class="form-control" maxlength="200" placeholder="Fatura adı veya numarası" required aria-label="Fatura adı veya numarası" data-val="true" data-val-required="Fatura adı zorunludur." data-val-length="Fatura adı en fazla 200 karakter olabilir." data-val-length-max="200" />
+        @Html.ValidationMessage(faturaField, null, new { @class = "text-danger small" })
+    </td>
+    <td data-label="Tutar (TL)">
+        <input name="@tutarField" value="@tutarValue" type="text" inputmode="decimal" class="form-control text-end amount-input" placeholder="0,00" required aria-label="Tutar (TL)" data-val="true" data-val-required="Tutar zorunludur." data-val-regex="Tutar 999.999.999,99 TL sınırını aşamaz." data-val-regex-pattern="^\d{1,9}([.,]\d{1,2})?$" />
+        @Html.ValidationMessage(tutarField, null, new { @class = "text-danger small" })
+    </td>
+    <td data-label="Satır işlemi">
+        <button type="button" class="remove-row" title="Fatura satırını kaldır" aria-label="Fatura satırını kaldır">×</button>
+    </td>
+</tr>

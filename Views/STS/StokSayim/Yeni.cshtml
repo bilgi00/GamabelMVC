@@ -1,0 +1,33 @@
+@model gamabelmvc.Models.StokSayim.SayimOlusturViewModel
+
+@{
+    ViewData["Title"] = "Yeni Stok Sayımı";
+}
+
+<div class="container py-4">
+    <h1 class="h3 mb-3">Yeni Sayım Oturumu</h1>
+    <p class="text-muted">Oturum açıldıktan sonra sistem stoğu AŞAMA 3'te bu sayıma özel yüklenecektir.</p>
+
+    <form asp-action="Yeni" method="post" class="card card-body shadow-sm" style="max-width: 720px;">
+        @Html.AntiForgeryToken()
+        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+        <div class="mb-3">
+            <label asp-for="Ad" class="form-label">Sayım adı</label>
+            <input asp-for="Ad" class="form-control" maxlength="200" autofocus />
+            <span asp-validation-for="Ad" class="text-danger"></span>
+        </div>
+        <div class="mb-3">
+            <label asp-for="Aciklama" class="form-label">Açıklama (isteğe bağlı)</label>
+            <textarea asp-for="Aciklama" class="form-control" rows="3" maxlength="2000"></textarea>
+            <span asp-validation-for="Aciklama" class="text-danger"></span>
+        </div>
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">Sayım Oturumu Aç</button>
+            <a asp-action="Index" class="btn btn-outline-secondary">Vazgeç</a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

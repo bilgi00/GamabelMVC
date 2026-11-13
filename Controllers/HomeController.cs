@@ -253,7 +253,7 @@ public class HomeController : Controller
                                         ORDER BY CASE WHEN pi.izin_tipi = 'Öİ' THEN 'Hİ' ELSE pi.izin_tipi END SEPARATOR ', ') AS izin_tipleri
                     FROM puantaj_izin pi
                     INNER JOIN personeller p ON p.per_no = pi.personel_id
-                    WHERE pi.yil = @yil AND pi.ay = @ay
+                    WHERE pi.yil = @yil AND pi.ay = @ay AND p.aktif_mi = 1
                       AND (@tumBirimler = 1 OR p.birim_adi = @birim)
                     GROUP BY p.per_no, p.ad, p.soyad
                     ORDER BY p.ad, p.soyad", connection);
@@ -285,6 +285,7 @@ public class HomeController : Controller
                     FROM mesai_kayitlari mk
                     INNER JOIN personeller p ON p.per_no = mk.personel_id
                     WHERE mk.tarih >= @baslangic AND mk.tarih < @sonrakiAy
+                      AND p.aktif_mi = 1
                       AND (@tumBirimler = 1 OR p.birim_adi = @birim)
                     GROUP BY p.per_no, p.ad, p.soyad
                     ORDER BY p.ad, p.soyad", connection);

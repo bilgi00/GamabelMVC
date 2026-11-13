@@ -14,13 +14,17 @@ public class DbConnectionFactory
         _connectionString = configuration.GetConnectionString("MyConnection") ?? throw new InvalidOperationException("Connection string not configured");
     }
 
-    public async Task<MySqlConnection> CreateConnectionAsync()
+    public async Task<MySqlConnection> CreateConnectionAsync(CancellationToken cancellationToken = default)
     {
         try
         {
             var connection = new MySqlConnection(_connectionString);
-            await connection.OpenAsync();
+            await connection.OpenAsync(cancellationToken);
             return connection;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch (Exception ex)
         {

@@ -202,7 +202,7 @@ public sealed class SistemYonetimController : Controller
             }
 
             await using var command = new MySqlCommand(
-                @"SELECT per_no, ad, soyad, birim_adi, per_statu
+                @"SELECT per_no, ad, soyad, birim_adi, per_statu, aktif_mi
                   FROM personeller
                   WHERE @arama = ''
                      OR per_no LIKE @aramaPattern
@@ -224,7 +224,8 @@ public sealed class SistemYonetimController : Controller
                     Ad = reader.IsDBNull(1) ? null : reader.GetString(1),
                     Soyad = reader.IsDBNull(2) ? null : reader.GetString(2),
                     BirimAdi = reader.IsDBNull(3) ? null : reader.GetString(3),
-                    PerStatu = reader.IsDBNull(4) ? null : reader.GetString(4)
+                    PerStatu = reader.IsDBNull(4) ? null : reader.GetString(4),
+                    AktifMi = !reader.IsDBNull(5) && reader.GetBoolean(5)
                 });
             }
         }
@@ -307,6 +308,52 @@ public sealed class SistemYonetimController : Controller
         {
             _logger.LogError(ex, "Personel güncellenemedi. Personel No: {PerNo}", model.PerNo);
             TempData["Hata"] = "Personel güncellenemedi. Veritabanı hatasını kontrol edin.";
+        }
+
+        return RedirectToAction(nameof(Personeller), new { arama });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> PersonelDurumGuncelle(string? perNo, bool aktifMi, string? arama)
+    {
+        perNo = perNo?.Trim();
+        if (string.IsNullOrWhiteSpace(perNo) || perNo.Length > 50)
+        {
+            TempData["Hata"] = "Geçerli bir personel seçin.";
+            return RedirectToAction(nameof(Personeller), new { arama });
+        }
+
+        try
+        {
+            await using var connection = new MySqlConnection(_connectionString);
+            await connection.OpenAsync();
+            await using var command = new MySqlCommand(
+                "UPDATE personeller SET aktif_mi = @aktifMi WHERE per_no = @perNo",
+                connection);
+            command.Parameters.Add("@aktifMi", MySqlDbType.Byte).Value = aktifMi ? (byte)1 : (byte)0;
+            command.Parameters.Add("@perNo", MySqlDbType.VarChar, 50).Value = perNo;
+            var affectedRows = await command.ExecuteNonQueryAsync();
+
+            if (affectedRows == 0)
+            {
+                await using var existsCommand = new MySqlCommand(
+                    "SELECT COUNT(*) FROM personeller WHERE per_no = @perNo",
+                    connection);
+                existsCommand.Parameters.Add("@perNo", MySqlDbType.VarChar, 50).Value = perNo;
+                if (Convert.ToInt32(await existsCommand.ExecuteScalarAsync()) == 0)
+                {
+                    TempData["Hata"] = "Durumu güncellenecek personel bulunamadı.";
+                    return RedirectToAction(nameof(Personeller), new { arama });
+                }
+            }
+
+            TempData["Basari"] = $"{perNo} numaralı personel {(aktifMi ? "aktif" : "pasif")} duruma alındı.";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Personel durumu güncellenemedi. Personel No: {PerNo}", perNo);
+            TempData["Hata"] = "Personel durumu güncellenemedi. Veritabanı hatasını kontrol edin.";
         }
 
         return RedirectToAction(nameof(Personeller), new { arama });

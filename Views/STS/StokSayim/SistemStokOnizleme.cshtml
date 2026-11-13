@@ -1,0 +1,157 @@
+@model gamabelmvc.Models.StokSayim.SistemStokOnizlemeViewModel
+
+@{
+    ViewData["Title"] = "Sistem Stoğu Önizleme";
+}
+
+<div class="container py-4">
+    <div class="mb-4">
+        <a asp-action="Detay" asp-route-id="@Model.SayimId" class="link-secondary text-decoration-none">
+            ← Sayım detayına dön
+        </a>
+        <h1 class="h3 mt-2 mb-1">Sistem Stoğu Önizleme</h1>
+        <div class="text-muted">@Model.DosyaAdi</div>
+    </div>
+
+    @if (TempData["SayimHata"] is string hata)
+    {
+        <div class="alert alert-danger" role="alert">@hata</div>
+    }
+
+    <div class="row g-3 mb-4">
+        <div class="col-sm-4">
+            <div class="card h-100"><div class="card-body">
+                <div class="text-muted small">Toplam satır</div>
+                <div class="fs-3 fw-semibold">@Model.ToplamSatirSayisi.ToString("N0")</div>
+            </div></div>
+        </div>
+        <div class="col-sm-4">
+            <div class="card h-100"><div class="card-body">
+                <div class="text-muted small">Geçerli</div>
+                <div class="fs-3 fw-semibold text-success">@Model.GecerliSatirSayisi.ToString("N0")</div>
+            </div></div>
+        </div>
+        <div class="col-sm-4">
+            <div class="card h-100"><div class="card-body">
+                <div class="text-muted small">Hatalı</div>
+                <div class="fs-3 fw-semibold @(Model.HataliSatirSayisi > 0 ? "text-danger" : "")">
+                    @Model.HataliSatirSayisi.ToString("N0")
+                </div>
+            </div></div>
+        </div>
+    </div>
+
+    @if (Model.Kaydedilebilir)
+    {
+        <div class="alert alert-info">
+            Önizleme doğrulandı. Onayladığınızda bu dosya sayımın sistem stoğu snapshot'ı olacaktır.
+        </div>
+        <form asp-action="SistemStokKaydet" asp-route-id="@Model.SayimId" method="post" class="mb-4"
+              onsubmit="return confirm('Sistem stoğu snapshot’ı bu sayım için kaydedilsin mi?');">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="token" value="@Model.Token" />
+            <button type="submit" class="btn btn-success">Önizlemeyi Onayla ve Kaydet</button>
+        </form>
+    }
+    else
+    {
+        <div class="alert alert-warning">
+            Hatalı satırlar bulundu. Hata dosyasını indirip düzelttikten sonra Excel'i yeniden yükleyin.
+            Hatalı satır içeren bir dosyanın hiçbir satırı kaydedilmez.
+        </div>
+        @if (Model.HataliSatirSayisi > 0)
+        {
+            <a asp-action="SistemStokHatalariIndir"
+               asp-route-id="@Model.SayimId"
+               asp-route-token="@Model.Token"
+               class="btn btn-outline-danger mb-4">
+                Hatalı satırları Excel olarak indir
+            </a>
+        }
+    }
+
+    @if (Model.GecerliSatirlar.Count > 0)
+    {
+        <div class="card mb-4">
+            <div class="card-header fw-semibold">Geçerli satırlar (ilk @Model.GecerliSatirlar.Count)</div>
+            <div class="table-responsive">
+                <table class="table table-sm table-striped mb-0">
+                <thead>
+                    <tr>
+                        <th>Excel satırı</th><th>Stok kodu</th><th>Referans kodu</th><th>Aktif barkod</th>
+                        <th>Stok adı</th><th class="text-end">Giren</th><th class="text-end">Çıkan</th>
+                        <th class="text-end">Kalan</th><th>Birim</th><th class="text-end">Alış fiyatı</th>
+                        <th class="text-end">Satış fiyatı</th><th>P. cinsi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in Model.GecerliSatirlar)
+                    {
+                        <tr>
+                            <td>@row.SatirNo</td>
+                            <td>@row.StokKodu</td>
+                            <td>@row.ReferansKodu</td>
+                            <td>@row.Barkod</td>
+                            <td>@row.UrunAdi</td>
+                            <td class="text-end">@row.GirenMiktar?.ToString("N3")</td>
+                            <td class="text-end">@row.CikanMiktar?.ToString("N3")</td>
+                            <td class="text-end">@row.SistemStok?.ToString("N3")</td>
+                            <td>@row.Birim</td>
+                            <td class="text-end">@row.AlisFiyati?.ToString("N4")</td>
+                            <td class="text-end">@row.SatisFiyati?.ToString("N4")</td>
+                            <td>@row.PCinsi</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        @if (Model.GecerliSatirSayisi > Model.GecerliSatirlar.Count)
+        {
+            <p class="text-muted">Önizlemede ilk 100 geçerli satır gösteriliyor; kaydetme tüm satırları kapsar.</p>
+        }
+    }
+
+    @if (Model.HataliSatirlar.Count > 0)
+    {
+        <div class="card border-danger">
+            <div class="card-header text-danger fw-semibold">Hatalı satırlar (ilk @Model.HataliSatirlar.Count)</div>
+            <div class="table-responsive">
+                <table class="table table-sm table-striped mb-0">
+                <thead>
+                    <tr>
+                        <th>Excel satırı</th><th>Stok kodu</th><th>Referans kodu</th><th>Aktif barkod</th>
+                        <th>Stok adı</th><th class="text-end">Giren</th><th class="text-end">Çıkan</th>
+                        <th class="text-end">Kalan</th><th>Birim</th><th class="text-end">Alış fiyatı</th>
+                        <th class="text-end">Satış fiyatı</th><th>P. cinsi</th><th>Hata nedeni</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in Model.HataliSatirlar)
+                    {
+                        <tr>
+                            <td>@row.SatirNo</td>
+                            <td>@row.StokKodu</td>
+                            <td>@row.ReferansKodu</td>
+                            <td>@row.Barkod</td>
+                            <td>@row.UrunAdi</td>
+                            <td class="text-end">@row.GirenMiktar?.ToString("N3")</td>
+                            <td class="text-end">@row.CikanMiktar?.ToString("N3")</td>
+                            <td>@row.SistemStok?.ToString("N3")</td>
+                            <td>@row.Birim</td>
+                            <td class="text-end">@row.AlisFiyati?.ToString("N4")</td>
+                            <td class="text-end">@row.SatisFiyati?.ToString("N4")</td>
+                            <td>@row.PCinsi</td>
+                            <td>@row.Hata</td>
+                        </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        @if (Model.HataliSatirSayisi > Model.HataliSatirlar.Count)
+        {
+            <p class="text-muted mt-2">Önizlemede ilk 100 hatalı satır gösteriliyor; hata Excel'i tüm hataları içerir.</p>
+        }
+    }
+</div>

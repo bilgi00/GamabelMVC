@@ -1,12 +1,28 @@
 using gamabelmvc.Configuration;
+using gamabelmvc.Data;
 using gamabelmvc.Services;
+using gamabelmvc.Services.MobileApi;
 using gamabelmvc.Services.Raporlama;
+using gamabelmvc.Services.StokSayim;
+using gamabelmvc.Middleware;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc.Razor;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.IdentityModel.Tokens;
 using MySqlConnector;
+using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
+using System.Net;
+using System.Threading.RateLimiting;
+using System.Text;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,6 +31,60 @@ builder.Services.Configure<OpenRouterOptions>(
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+builder.Services.AddMemoryCache();
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.ForwardLimit = 1;
+    foreach (var trustedProxy in builder.Configuration.GetSection("MobileApi:TrustedProxies").Get<string[]>() ?? [])
+    {
+        if (!IPAddress.TryParse(trustedProxy, out var address))
+            throw new InvalidOperationException("MobileApi:TrustedProxies must contain valid IP addresses.");
+
+        options.KnownProxies.Add(address);
+    }
+});
+var stockCountConnectionString = builder.Configuration.GetConnectionString("MyConnection")
+    ?? throw new InvalidOperationException("MyConnection veritabanı bağlantısı tanımlı değil.");
+var stockCountServerVersion = ServerVersion.Parse(
+    builder.Configuration["EntityFramework:MySqlServerVersion"] ?? "8.0.0-mysql");
+builder.Services.AddDbContext<StokSayimDbContext>(options =>
+    options.UseMySql(stockCountConnectionString, stockCountServerVersion));
+builder.Services.AddHealthChecks()
+    .AddCheck<MobileApiHealthCheck>("mobile-api-readiness", tags: new[] { "mobile-api" });
+builder.Services.AddScoped<ISayimService, SayimService>();
+builder.Services.AddScoped<ISistemStokExcelService, SistemStokExcelService>();
+builder.Services.AddScoped<IMobileAuthService, MobileAuthService>();
+builder.Services.AddScoped<IMobileInventoryService, MobileInventoryService>();
+builder.Services.AddScoped<IMobileUserDirectoryService, MobileUserDirectoryService>();
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy("MobileLogin", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 5,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+                AutoReplenishment = true
+            }));
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        context.HttpContext.Response.ContentType = "application/problem+json";
+        await JsonSerializer.SerializeAsync(
+            context.HttpContext.Response.Body,
+            new Microsoft.AspNetCore.Mvc.ProblemDetails
+            {
+                Status = StatusCodes.Status429TooManyRequests,
+                Title = "Too Many Requests",
+                Detail = "Too many login attempts. Try again later."
+            },
+            new JsonSerializerOptions(JsonSerializerDefaults.Web),
+            cancellationToken);
+    };
+});
 builder.Services.AddFastReport();
 builder.Services.AddSession(options =>
 {
@@ -78,6 +148,55 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
                 context.Response.StatusCode = StatusCodes.Status403Forbidden;
 
             return Task.CompletedTask;
+        };
+    })
+    .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
+    {
+        var signingKey = MobileJwtSettings.GetSigningKey(builder.Configuration);
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = MobileJwtSettings.Issuer,
+            ValidateAudience = true,
+            ValidAudience = MobileJwtSettings.Audience,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = signingKey,
+            ClockSkew = TimeSpan.FromSeconds(30)
+        };
+        options.Events = new JwtBearerEvents
+        {
+            OnChallenge = async context =>
+            {
+                context.HandleResponse();
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                context.Response.ContentType = "application/problem+json";
+                await JsonSerializer.SerializeAsync(
+                    context.Response.Body,
+                    new Microsoft.AspNetCore.Mvc.ProblemDetails
+                    {
+                        Status = StatusCodes.Status401Unauthorized,
+                        Title = "Unauthorized",
+                        Detail = "A valid bearer token is required."
+                    },
+                    new JsonSerializerOptions(JsonSerializerDefaults.Web),
+                    context.HttpContext.RequestAborted);
+            },
+            OnForbidden = async context =>
+            {
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                context.Response.ContentType = "application/problem+json";
+                await JsonSerializer.SerializeAsync(
+                    context.Response.Body,
+                    new Microsoft.AspNetCore.Mvc.ProblemDetails
+                    {
+                        Status = StatusCodes.Status403Forbidden,
+                        Title = "Forbidden",
+                        Detail = "You are not allowed to perform this operation."
+                    },
+                    new JsonSerializerOptions(JsonSerializerDefaults.Web),
+                    context.HttpContext.RequestAborted);
+            }
         };
     });
 
@@ -206,6 +325,7 @@ if (app.Environment.IsDevelopment())
 }
 
 // Configure the HTTP request pipeline.
+app.UseForwardedHeaders();
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
@@ -213,9 +333,12 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
+app.UseMiddleware<MobileApiExceptionMiddleware>();
+app.UseMiddleware<MobileApiConfigurationMiddleware>();
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
+app.UseRateLimiter();
 
 app.UseSession();
 app.UseAuthentication();
@@ -237,6 +360,23 @@ app.Use(async (context, next) =>
 app.UseAuthorization();
 
 app.MapStaticAssets();
+app.MapControllers();
+app.MapHealthChecks("/api/health", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("mobile-api"),
+    ResponseWriter = async (context, report) =>
+    {
+        context.Response.ContentType = "application/json";
+        await JsonSerializer.SerializeAsync(
+            context.Response.Body,
+            new
+            {
+                status = report.Status == HealthStatus.Healthy ? "healthy" : "unhealthy"
+            },
+            new JsonSerializerOptions(JsonSerializerDefaults.Web),
+            context.RequestAborted);
+    }
+}).AllowAnonymous();
 
 app.MapControllerRoute(
     name: "default",

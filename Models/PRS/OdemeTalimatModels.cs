@@ -108,11 +108,14 @@ public class OtTalimatSatiri
 
 public class ManuelTalimatModel
 {
+    public int? TaslakId { get; set; }
+
     [Required(ErrorMessage = "Talimat tarihi zorunludur.")]
     public DateTime? TalimatTarihi { get; set; }
 
+    [Required(ErrorMessage = "Geçerli bir banka seçin.")]
     [Range(1, int.MaxValue, ErrorMessage = "Geçerli bir banka seçin.")]
-    public int BankaId { get; set; }
+    public int? BankaId { get; set; }
 
     [MinLength(1, ErrorMessage = "En az bir fatura satırı ekleyin.")]
     public List<ManuelTalimatSatiriModel> Satirlar { get; set; } = new() { new() };
@@ -120,14 +123,27 @@ public class ManuelTalimatModel
 
 public class ManuelTalimatSatiriModel
 {
+    [Required(ErrorMessage = "Her satır için bir firma seçin.")]
     [Range(1, int.MaxValue, ErrorMessage = "Her satır için bir firma seçin.")]
-    public int FirmaId { get; set; }
+    public int? FirmaId { get; set; }
 
     [Required(ErrorMessage = "Fatura adı zorunludur.")]
     [StringLength(200, ErrorMessage = "Fatura adı en fazla 200 karakter olabilir.")]
     public string FaturaAdi { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "Tutar zorunludur.")]
-    [RegularExpression(@"^\d{1,16}([.,]\d{1,2})?$", ErrorMessage = "Tutar en fazla iki ondalık basamak içerebilir.")]
+    [RegularExpression(@"^\d{1,9}([.,]\d{1,2})?$", ErrorMessage = "Tutar 999.999.999,99 TL sınırını aşamaz ve en fazla iki ondalık basamak içerebilir.")]
     public string Tutar { get; set; } = string.Empty;
+}
+
+public class OtTalimatTaslagi
+{
+    public int Id { get; set; }
+    public DateTime? TalimatTarihi { get; set; }
+    public int? BankaId { get; set; }
+    public string BankaSubeAdi { get; set; } = string.Empty;
+    public decimal ToplamTutar { get; set; }
+    public int ToplamAdet { get; set; }
+    public string HazirlayanKullanici { get; set; } = string.Empty;
+    public DateTime GuncellemeTarihi { get; set; }
 }

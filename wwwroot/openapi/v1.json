@@ -1,0 +1,832 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Gamabel Mobile Inventory API",
+    "version": "1.0.0",
+    "description": "Mobile endpoints for administrator user directory, stock counts, products, system stock, and count movements."
+  },
+  "servers": [
+    {
+      "url": "/api"
+    }
+  ],
+  "paths": {
+    "/auth/login": {
+      "post": {
+        "operationId": "mobileLogin",
+        "summary": "Authenticate and issue a bearer token",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MobileLoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Bearer token issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MobileLoginResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "operationId": "getMobileApiHealth",
+        "summary": "Check mobile API readiness",
+        "description": "Returns healthy only when the JWT signing key is valid, the database is reachable, and no EF Core migrations are pending. It does not expose diagnostic details.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "The mobile API is ready",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "healthy"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "A required server setting, database connection, or migration is unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "unhealthy"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/counts": {
+      "get": {
+        "operationId": "getCounts",
+        "summary": "List stock-count sessions",
+        "responses": {
+          "200": {
+            "description": "Stock-count sessions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MobileCount"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/users": {
+      "get": {
+        "operationId": "getMobileUsers",
+        "summary": "List users (Admin only)",
+        "description": "Returns only Id, KullaniciAdi, AdSoyad, and AktifMi from stok_sayim_kullanicilari. Password and hash fields are never selected or returned.",
+        "responses": {
+          "200": {
+            "description": "Safe user-directory entries",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MobileDirectoryUser"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/products": {
+      "get": {
+        "operationId": "getProducts",
+        "summary": "List active products",
+        "responses": {
+          "200": {
+            "description": "Active products",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MobileProduct"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createProduct",
+        "summary": "Add a product to the catalog",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MobileCreateProductRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Product created",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MobileProduct"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        }
+      }
+    },
+    "/counts/{id}/system-stock": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/CountId"
+        }
+      ],
+      "get": {
+        "operationId": "getSystemStock",
+        "summary": "Get system stock for a count",
+        "responses": {
+          "200": {
+            "description": "System-stock rows",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MobileSystemStock"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/counts/{id}/movements": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/CountId"
+        }
+      ],
+      "get": {
+        "operationId": "getMovements",
+        "summary": "List non-cancelled count movements",
+        "responses": {
+          "200": {
+            "description": "Count movements",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MobileMovement"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createMovement",
+        "summary": "Record an idempotent count movement",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MobileCreateMovementRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "An identical UUID and payload was already recorded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MobileMovement"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Movement created",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MobileMovement"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "Bearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "parameters": {
+      "CountId": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "format": "int32",
+          "minimum": 1
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Invalid request",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDetails"
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "A valid bearer token or credentials are required",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDetails"
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "The authenticated user does not have the Admin role",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDetails"
+            }
+          }
+        }
+      },
+      "TooManyRequests": {
+        "description": "Login rate limit exceeded",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDetails"
+            }
+          }
+        }
+      },
+      "ServiceUnavailable": {
+        "description": "The mobile API is not configured",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDetails"
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Count not found",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDetails"
+            }
+          }
+        }
+      },
+      "Conflict": {
+        "description": "Product or movement conflicts with existing data",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDetails"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "MobileLoginRequest": {
+        "type": "object",
+        "required": [
+          "username",
+          "password"
+        ],
+        "properties": {
+          "username": {
+            "type": "string",
+            "maxLength": 50
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 200,
+            "format": "password"
+          }
+        }
+      },
+      "MobileLoginResponse": {
+        "type": "object",
+        "required": [
+          "accessToken",
+          "tokenType",
+          "expiresAt",
+          "user"
+        ],
+        "properties": {
+          "accessToken": {
+            "type": "string"
+          },
+          "tokenType": {
+            "type": "string",
+            "example": "Bearer"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "user": {
+            "$ref": "#/components/schemas/MobileUser"
+          }
+        }
+      },
+      "MobileUser": {
+        "type": "object",
+        "required": [
+          "id",
+          "username",
+          "fullName",
+          "role"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "username": {
+            "type": "string"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          }
+        }
+      },
+      "MobileDirectoryUser": {
+        "type": "object",
+        "required": [
+          "id",
+          "username",
+          "fullName",
+          "isActive"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "username": {
+            "type": "string"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        }
+      },
+      "MobileCount": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "status",
+          "openedAt",
+          "createdBy"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "openedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "closedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "createdBy": {
+            "type": "string"
+          }
+        }
+      },
+      "MobileProduct": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "unit",
+          "isActive"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "barcode": {
+            "type": "string",
+            "nullable": true
+          },
+          "unit": {
+            "type": "string"
+          },
+          "company": {
+            "type": "string",
+            "nullable": true
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        }
+      },
+      "MobileCreateProductRequest": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "barcode": {
+            "type": "string",
+            "maxLength": 50,
+            "nullable": true
+          },
+          "unit": {
+            "type": "string",
+            "maxLength": 20,
+            "nullable": true
+          },
+          "company": {
+            "type": "string",
+            "maxLength": 255,
+            "nullable": true
+          }
+        }
+      },
+      "MobileSystemStock": {
+        "type": "object",
+        "required": [
+          "id",
+          "countId",
+          "barcode",
+          "productName",
+          "systemStock"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "countId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "stockCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "referenceCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "barcode": {
+            "type": "string"
+          },
+          "productName": {
+            "type": "string"
+          },
+          "incomingQuantity": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "outgoingQuantity": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "systemStock": {
+            "type": "number",
+            "format": "double"
+          },
+          "unit": {
+            "type": "string",
+            "nullable": true
+          },
+          "purchasePrice": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "salesPrice": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "pieceType": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "MobileMovement": {
+        "type": "object",
+        "required": [
+          "id",
+          "countId",
+          "barcode",
+          "productName",
+          "quantity",
+          "username",
+          "occurredAt",
+          "source",
+          "isNewProduct"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "countId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "uuid": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "barcode": {
+            "type": "string"
+          },
+          "productName": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number",
+            "format": "double"
+          },
+          "username": {
+            "type": "string"
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "comment": {
+            "type": "string",
+            "nullable": true
+          },
+          "source": {
+            "type": "string"
+          },
+          "isNewProduct": {
+            "type": "boolean"
+          }
+        }
+      },
+      "MobileCreateMovementRequest": {
+        "type": "object",
+        "required": [
+          "uuid",
+          "barcode",
+          "productName",
+          "quantity"
+        ],
+        "properties": {
+          "uuid": {
+            "type": "string",
+            "format": "uuid",
+            "maxLength": 36
+          },
+          "barcode": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "productName": {
+            "type": "string",
+            "maxLength": 300
+          },
+          "quantity": {
+            "type": "number",
+            "format": "double",
+            "minimum": 0.001
+          },
+          "comment": {
+            "type": "string",
+            "maxLength": 2000,
+            "nullable": true
+          }
+        }
+      },
+      "ProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "nullable": true
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "detail": {
+            "type": "string",
+            "nullable": true
+          },
+          "instance": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "Bearer": []
+    }
+  ]
+}

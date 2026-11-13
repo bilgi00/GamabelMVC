@@ -44,4 +44,6 @@ public sealed class PersonelYonetimSatiri
 
     [StringLength(100)]
     public string? PerStatu { get; set; }
+
+    public bool AktifMi { get; set; }
 }

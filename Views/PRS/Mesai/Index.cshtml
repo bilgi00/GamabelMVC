@@ -204,28 +204,8 @@
                 </div>
                 <div class="mb-3">
                     <label class="form-label fw-bold">Açıklama</label>
-                    <select id="modalAciklama" class="form-select">
-                        <option value="">-- Boş --</option>
-                        <option value="Vidanjör">Vidanjör</option>
-                        <option value="Süpürge">Süpürge</option>
-                        <option value="Ahtapot aracı">Ahtapot aracı</option>
-                        <option value="Evsel atık">Evsel atık</option>
-                        <option value="Terminal tuvaletler">Terminal tuvaletler</option>
-                        <option value="Akyar Sınır kapısı">Akyar Sınır kapısı</option>
-                        <option value="Derin ya sınır kapısı">Derin ya sınır kapısı</option>
-                        <option value="Dozer kamyon">Dozer kamyon</option>
-                        <option value="Çatalcı">Çatalcı</option>
-                        <option value="Açık Van">Açık Van</option>
-                        <option value="Skip">Skip</option>
-                        <option value="Anıt tuvaletler">Anıt tuvaletler</option>
-                        <option value="Cenaze İşleri">Cenaze İşleri</option>
-                        <option value="Öğrenci kontrol">Öğrenci kontrol</option>
-                        <option value="Otobüs şoförü">Otobüs şoförü</option>
-                        <option value="Tören ekibi">Tören ekibi</option>
-                        <option value="Bayrak ekibi">Bayrak ekibi</option>
-                        <option value="Konteyner tamir ekibi">Konteyner tamir ekibi</option>
-                        <option value="Konteyner yıkama">Konteyner yıkama</option>
-                    </select>
+                    <input type="text" id="modalAciklama" class="form-control"
+                           list="mesaiAciklamaSecenekleri" placeholder="Seçin veya açıklamayı yazın" />
                 </div>
             </div>
             <div class="modal-footer">
@@ -235,6 +215,7 @@
         </div>
     </div>
 </div>
+<datalist id="mesaiAciklamaSecenekleri"></datalist>
 
 @section Scripts {
 <script>
@@ -323,12 +304,11 @@
     function escapeHtml(t) {
         var d = document.createElement('div');
         d.appendChild(document.createTextNode(t || ''));
-        return d.innerHTML;
+        return d.innerHTML.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     }
 
-    function aciklamaSecenekleri(value) {
+    function aciklamaSecenekleri() {
         var secenekler = [
-            { value: '', text: '-- Boş --' },
             { value: 'Vidanjör', text: 'Vidanjör' },
             { value: 'Süpürge', text: 'Süpürge' },
             { value: 'Ahtapot aracı', text: 'Ahtapot aracı' },
@@ -344,17 +324,21 @@
             { value: 'Cenaze İşleri', text: 'Cenaze İşleri' },
             { value: 'Öğrenci kontrol', text: 'Öğrenci kontrol' },
             { value: 'Otobüs şoförü', text: 'Otobüs şoförü' },
+            { value: 'Golf Aracı', text: 'Golf Aracı' },
+            { value: 'Hemşire', text: 'Hemşire' },
+            { value: 'Büfe', text: 'Büfe' },
             { value: 'Tören ekibi', text: 'Tören ekibi' },
             { value: 'Bayrak ekibi', text: 'Bayrak ekibi' },
             { value: 'Konteyner tamir ekibi', text: 'Konteyner tamir ekibi' },
             { value: 'Konteyner yıkama', text: 'Konteyner yıkama' }
         ];
         return secenekler.map(function(secenek) {
-            return '<option value="' + escapeHtml(secenek.value) + '"' +
-                (value === secenek.value ? ' selected' : '') + '>' +
+            return '<option value="' + escapeHtml(secenek.value) + '">' +
                 escapeHtml(secenek.text) + '</option>';
         }).join('');
     }
+
+    document.getElementById('mesaiAciklamaSecenekleri').innerHTML = aciklamaSecenekleri();
 
     function kaydetMesaiKaydi(kayit) {
         return fetch('/Mesai/KaydetMesai', {
@@ -562,7 +546,7 @@
                 '<td style="width:75px" class="readonly-cell">' + parseFloat(k.zam01Saat).toFixed(2) + '</td>' +
                 '<td style="width:75px" class="readonly-cell">' + parseFloat(k.zam05Saat).toFixed(2) + '</td>' +
                 '<td style="width:85px" class="readonly-cell toplam-cell">' + parseFloat(k.toplamSaat).toFixed(2) + '</td>' +
-                '<td style="width:150px"><select class="inp-aciklama form-select form-select-sm" data-idx="' + i + '"' + (ayKilitli ? ' disabled' : '') + '>' + aciklamaSecenekleri(k.aciklama || '') + '</select></td>' +
+                '<td style="width:150px"><input type="text" class="inp-aciklama form-control form-control-sm" list="mesaiAciklamaSecenekleri" value="' + escapeHtml(k.aciklama || '') + '" placeholder="Seçin veya yazın" data-idx="' + i + '"' + (ayKilitli ? ' disabled' : '') + '></td>' +
                 '<td style="width:40px" class="no-print"><button class="btn btn-sm btn-danger btn-mesai-sil" data-idx="' + i + '"' + (ayKilitli ? ' disabled' : '') + '>X</button></td>';
 
             tbody.appendChild(tr);

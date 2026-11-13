@@ -2,6 +2,7 @@
     ViewData["Title"] = "Ödeme Talimatları";
     var sonYuklemeler = ViewBag.SonYuklemeler as List<gamabelmvc.Models.PRS.OtImportBatch> ?? new();
     var sonTalimatlar = ViewBag.SonTalimatlar as List<gamabelmvc.Models.PRS.OtTalimat> ?? new();
+    var taslaklar = ViewBag.Taslaklar as List<gamabelmvc.Models.PRS.OtTalimatTaslagi> ?? new();
     bool isAdmin = ViewBag.IsAdmin ?? false;
     var yuklemeOzetJson = TempData["YuklemeOzet"] as string;
     var yuklemeOzet = yuklemeOzetJson == null
@@ -140,6 +141,47 @@
                                         📋 Tümü
                                     </a>
                                 </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+
+        <h5 style="color:#1e3c72; margin-bottom:10px;">📝 Manuel Talimat Taslakları</h5>
+        @if (!taslaklar.Any())
+        {
+            <p style="color:#6c757d; font-size:13px;">Kaydedilmiş taslak bulunmuyor.</p>
+        }
+        else
+        {
+            <table class="ot-table" style="margin-bottom:24px;">
+                <thead>
+                    <tr>
+                        <th>Talimat Tarihi</th>
+                        <th>Banka</th>
+                        <th>Satır</th>
+                        <th>Toplam Tutar</th>
+                        <th>Hazırlayan</th>
+                        <th>Son Güncelleme</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var taslak in taslaklar)
+                    {
+                        <tr>
+                            <td>@(taslak.TalimatTarihi?.ToString("dd.MM.yyyy") ?? "Belirtilmedi")</td>
+                            <td>@(string.IsNullOrWhiteSpace(taslak.BankaSubeAdi) ? "Belirtilmedi" : taslak.BankaSubeAdi)</td>
+                            <td><span class="badge-blue">@taslak.ToplamAdet</span></td>
+                            <td style="font-weight:600; color:#1e3c72;">@taslak.ToplamTutar.ToString("N2") TL</td>
+                            <td>@taslak.HazirlayanKullanici</td>
+                            <td>@taslak.GuncellemeTarihi.ToString("dd.MM.yyyy HH:mm")</td>
+                            <td>
+                                <a href="/OdemeTalimat/ManuelKayit?taslakId=@taslak.Id"
+                                   class="ot-btn ot-btn-primary" style="padding:6px 14px; font-size:12px;">
+                                    ✏️ Düzenle
+                                </a>
                             </td>
                         </tr>
                     }

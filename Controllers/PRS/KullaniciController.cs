@@ -161,7 +161,7 @@ public class KullaniciController : Controller
             await connection.OpenAsync();
 
             await using var command = new MySqlCommand(
-                "SELECT per_no, ad, soyad, per_statu FROM personeller WHERE birim_adi = @birim ORDER BY ad, soyad", connection);
+                "SELECT per_no, ad, soyad, per_statu FROM personeller WHERE aktif_mi = 1 AND birim_adi = @birim ORDER BY ad, soyad", connection);
             command.Parameters.AddWithValue("@birim", birim);
             await using var reader = await command.ExecuteReaderAsync();
 

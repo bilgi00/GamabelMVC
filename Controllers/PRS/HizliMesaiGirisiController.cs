@@ -19,15 +19,25 @@ public class HizliMesaiGirisiController : Controller
     }
 
     private static (decimal FiiliSaat, decimal Zam01Saat, decimal Zam05Saat, decimal ToplamSaat)
-        HesaplaMesai(DateTime tarih, TimeSpan baslangic, TimeSpan bitis)
+        HesaplaMesai(DateTime tarih, TimeSpan baslangic, TimeSpan bitis, bool resmiTatilMi = false)
     {
         var fiiliSaat = Math.Round((decimal)(bitis - baslangic).TotalHours, 2);
         var haftaSonu = tarih.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday;
-        var zam01Saat = haftaSonu ? 0m : Math.Round(fiiliSaat * 0.10m, 2);
-        var zam05Saat = haftaSonu ? Math.Round(fiiliSaat * 0.50m, 2) : 0m;
+        var tatilMi = resmiTatilMi || haftaSonu;
+        var zam01Saat = tatilMi ? 0m : Math.Round(fiiliSaat * 0.10m, 2);
+        var zam05Saat = tatilMi ? Math.Round(fiiliSaat * 0.50m, 2) : 0m;
         var toplamSaat = Math.Round(fiiliSaat + zam01Saat + zam05Saat, 2);
 
         return (fiiliSaat, zam01Saat, zam05Saat, toplamSaat);
+    }
+
+    private static async Task<bool> ResmiTatilMiAsync(MySqlConnection conn, DateTime tarih)
+    {
+        const string query = "SELECT 1 FROM kktc_resmi_tatiller WHERE tatil_tarihi = @Tarih LIMIT 1";
+        await using var cmd = new MySqlCommand(query, conn);
+        cmd.Parameters.AddWithValue("@Tarih", tarih.Date);
+        var result = await cmd.ExecuteScalarAsync();
+        return result != null && result != DBNull.Value;
     }
 
     // ============================================================
@@ -95,7 +105,7 @@ public class HizliMesaiGirisiController : Controller
 
             if (!string.IsNullOrEmpty(birim))
             {
-                var statuQuery = "SELECT DISTINCT per_statu FROM personeller WHERE birim_adi = @birim AND NULLIF(TRIM(per_statu), '') IS NOT NULL ORDER BY per_statu";
+                var statuQuery = "SELECT DISTINCT per_statu FROM personeller WHERE aktif_mi = 1 AND birim_adi = @birim AND NULLIF(TRIM(per_statu), '') IS NOT NULL ORDER BY per_statu";
 
                 try
                 {
@@ -119,7 +129,7 @@ public class HizliMesaiGirisiController : Controller
 
                 var personelQuery = @"SELECT per_no, ad, soyad, per_statu
                                       FROM personeller
-                                      WHERE birim_adi = @birim
+                                      WHERE aktif_mi = 1 AND birim_adi = @birim
                                         AND (@statu = '' OR per_statu = @statu)
                                       ORDER BY ad, soyad";
 
@@ -160,7 +170,7 @@ public class HizliMesaiGirisiController : Controller
                               mk.aciklama, mk.kayit_tarihi
                     FROM mesai_kayitlari mk
                     INNER JOIN personeller p ON p.per_no = mk.personel_id
-                    WHERE p.birim_adi = @birim
+                    WHERE p.aktif_mi = 1 AND p.birim_adi = @birim
                     AND YEAR(mk.tarih) = @Yil 
                     AND MONTH(mk.tarih) = @Ay
                     ORDER BY mk.tarih ASC";
@@ -289,6 +299,14 @@ public class HizliMesaiGirisiController : Controller
             if (await AyKilitKontrol.KilitliMiAsync(conn, tarih.Year, tarih.Month))
                 return Conflict("Bu ay kilitlenmiştir. Mesai kaydı eklenemez.");
 
+            await using (var personelCmd = new MySqlCommand(
+                "SELECT 1 FROM personeller WHERE per_no = @PersonelId AND aktif_mi = 1 LIMIT 1", conn))
+            {
+                personelCmd.Parameters.AddWithValue("@PersonelId", model.PersonelId.Trim());
+                if (await personelCmd.ExecuteScalarAsync() == null)
+                    return BadRequest("Pasif veya bulunamayan personel için mesai kaydı yapılamaz.");
+            }
+
             // Aynı tarihte kayıt var mı?
             var checkQuery = "SELECT COUNT(*) FROM mesai_kayitlari WHERE personel_id = @PersonelId AND DATE(tarih) = @Tarih";
             int count = 0;
@@ -311,7 +329,8 @@ public class HizliMesaiGirisiController : Controller
                 return BadRequest("Bu tarihte zaten mesai kaydı var");
 
             // Yeni kayıt ekle
-            var hesap = HesaplaMesai(tarih, baslangic, bitis);
+            var resmiTatilMi = await ResmiTatilMiAsync(conn, tarih);
+            var hesap = HesaplaMesai(tarih, baslangic, bitis, resmiTatilMi);
 
             var insertQuery = @"
                 INSERT INTO mesai_kayitlari
@@ -387,7 +406,8 @@ public class HizliMesaiGirisiController : Controller
                 if (await AyKilitKontrol.KilitliMiAsync(conn, tarih.Year, tarih.Month))
                     return Conflict("Bu ay kilitlenmiştir. Mesai kaydı değiştirilemez.");
 
-                hesap = HesaplaMesai(tarih, baslangic, bitis);
+                var resmiTatilMi = await ResmiTatilMiAsync(conn, tarih);
+                hesap = HesaplaMesai(tarih, baslangic, bitis, resmiTatilMi);
             }
 
             using (var cmd = new MySqlCommand(updateQuery, conn))
@@ -515,6 +535,7 @@ public class HizliMesaiGirisiController : Controller
                       mk.toplam_saat, mk.aciklama, mk.kayit_tarihi
                 FROM mesai_kayitlari mk
                 WHERE mk.personel_id = @PersonelId 
+                AND EXISTS (SELECT 1 FROM personeller p WHERE p.per_no = mk.personel_id AND p.aktif_mi = 1)
                 AND YEAR(mk.tarih) = @Yil 
                 AND MONTH(mk.tarih) = @Ay
                 ORDER BY mk.tarih ASC";
@@ -582,6 +603,7 @@ public class HizliMesaiGirisiController : Controller
                 SELECT COALESCE(SUM(mk.toplam_saat), 0) as Toplam
                 FROM mesai_kayitlari mk
                 WHERE mk.personel_id = @PersonelId 
+                AND EXISTS (SELECT 1 FROM personeller p WHERE p.per_no = mk.personel_id AND p.aktif_mi = 1)
                 AND YEAR(mk.tarih) = @Yil 
                 AND MONTH(mk.tarih) = @Ay";
 
@@ -656,6 +678,14 @@ public class HizliMesaiGirisiController : Controller
 
             await using var conn = await _dbFactory.CreateConnectionAsync();
 
+            await using (var personelCmd = new MySqlCommand(
+                "SELECT 1 FROM personeller WHERE per_no = @PersonelId AND aktif_mi = 1 LIMIT 1", conn))
+            {
+                personelCmd.Parameters.AddWithValue("@PersonelId", personelId);
+                if (await personelCmd.ExecuteScalarAsync() == null)
+                    return BadRequest("Pasif veya bulunamayan personel için mesai aktarımı yapılamaz.");
+            }
+
             foreach (var donem in kayitlar.Select(k => (k.tarih.Year, k.tarih.Month)).Distinct())
             {
                 if (await AyKilitKontrol.KilitliMiAsync(conn, donem.Year, donem.Month))
@@ -725,7 +755,7 @@ public class HizliMesaiGirisiController : Controller
 
             await using var conn = await _dbFactory.CreateConnectionAsync();
 
-            var subeQuery = "SELECT DISTINCT birim_adi AS Ad FROM personeller ORDER BY birim_adi";
+            var subeQuery = "SELECT DISTINCT birim_adi AS Ad FROM personeller WHERE aktif_mi = 1 ORDER BY birim_adi";
             try
             {
                 using (var subeCmd = new MySqlCommand(subeQuery, conn))
@@ -749,7 +779,7 @@ public class HizliMesaiGirisiController : Controller
                       mk.toplam_saat, mk.aciklama, mk.kayit_tarihi
                 FROM mesai_kayitlari mk
                 LEFT JOIN personeller p ON mk.personel_id = p.per_no
-                WHERE 1=1";
+                WHERE p.aktif_mi = 1";
 
             if (!string.IsNullOrWhiteSpace(subeAdi))
                 query += " AND p.birim_adi = @SubeAdi";

@@ -108,8 +108,8 @@ public class PuantajController : Controller
             await connection.OpenAsync();
 
             var sql = (rol == "admin" && birim == "all")
-                ? "SELECT per_no, ad, soyad, birim_adi, per_statu FROM personeller ORDER BY birim_adi, ad, soyad"
-                : "SELECT per_no, ad, soyad, birim_adi, per_statu FROM personeller WHERE birim_adi = @birim ORDER BY ad, soyad";
+                ? "SELECT per_no, ad, soyad, birim_adi, per_statu FROM personeller WHERE aktif_mi = 1 ORDER BY birim_adi, ad, soyad"
+                : "SELECT per_no, ad, soyad, birim_adi, per_statu FROM personeller WHERE aktif_mi = 1 AND birim_adi = @birim ORDER BY ad, soyad";
 
             await using var cmd = new MySqlCommand(sql, connection);
             if (!(rol == "admin" && birim == "all"))
@@ -155,7 +155,7 @@ public class PuantajController : Controller
                          pi.gun, pi.izin_tipi, pi.aciklama
                   FROM puantaj_izin pi
                   INNER JOIN personeller p ON p.per_no = pi.personel_id
-                  WHERE pi.yil = @yil AND pi.ay = @ay",
+                  WHERE pi.yil = @yil AND pi.ay = @ay AND p.aktif_mi = 1",
                 connection);
             cmd.Parameters.AddWithValue("@yil", yil);
             cmd.Parameters.AddWithValue("@ay", ay);
@@ -217,6 +217,24 @@ public class PuantajController : Controller
             {
                 if (await AyKilitKontrol.KilitliMiAsync(connection, donem.Yil, donem.Ay))
                     return Json(new { basarili = false, mesaj = $"{donem.Yil} yılı {donem.Ay}. ay kilitlenmiştir. Kayıt veya değişiklik yapılamaz." });
+            }
+
+            var personelIds = izinler.Select(izin => izin.PersonelId.Trim()).Distinct().ToList();
+            var personelParametreleri = string.Join(",", personelIds.Select((_, index) => $"@personel{index}"));
+            await using (var personelCmd = new MySqlCommand(
+                $"SELECT per_no FROM personeller WHERE aktif_mi = 1 AND per_no IN ({personelParametreleri})",
+                connection))
+            {
+                for (var index = 0; index < personelIds.Count; index++)
+                    personelCmd.Parameters.AddWithValue($"@personel{index}", personelIds[index]);
+
+                var aktifPersonelIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                await using var reader = await personelCmd.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                    aktifPersonelIds.Add(Convert.ToString(reader.GetValue(0)) ?? string.Empty);
+
+                if (personelIds.Any(id => !aktifPersonelIds.Contains(id)))
+                    return Json(new { basarili = false, mesaj = "Pasif veya bulunamayan personel için puantaj kaydı yapılamaz." });
             }
 
             foreach (var izin in izinler)
@@ -378,8 +396,8 @@ public class PuantajController : Controller
 
         var tumBirimler = rol == "admin" && birim == "all";
         var personelSql = tumBirimler
-            ? "SELECT per_no, ad, soyad, birim_adi, per_statu FROM personeller ORDER BY birim_adi, ad, soyad"
-            : "SELECT per_no, ad, soyad, birim_adi, per_statu FROM personeller WHERE birim_adi = @birim ORDER BY ad, soyad";
+            ? "SELECT per_no, ad, soyad, birim_adi, per_statu FROM personeller WHERE aktif_mi = 1 ORDER BY birim_adi, ad, soyad"
+            : "SELECT per_no, ad, soyad, birim_adi, per_statu FROM personeller WHERE aktif_mi = 1 AND birim_adi = @birim ORDER BY ad, soyad";
         await using (var personelCmd = new MySqlCommand(personelSql, connection))
         {
             if (!tumBirimler)

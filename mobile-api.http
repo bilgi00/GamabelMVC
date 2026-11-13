@@ -1,0 +1,74 @@
+@baseUrl = http://localhost:5010/api
+@token = replace-with-access-token
+
+### Readiness: 200 when JWT configuration, database connectivity, and migrations are valid
+GET {{baseUrl}}/health
+
+### No token must be rejected before database access
+GET {{baseUrl}}/counts
+
+### No token must be rejected before database access
+GET {{baseUrl}}/products
+
+### Login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "depo-kullanici",
+  "password": "replace-me"
+}
+
+### List counts
+GET {{baseUrl}}/counts
+Authorization: Bearer {{token}}
+
+### List products
+GET {{baseUrl}}/products
+Authorization: Bearer {{token}}
+
+### Add a product
+POST {{baseUrl}}/products
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Örnek ürün",
+  "barcode": "8690000000000",
+  "unit": "Adet",
+  "company": null
+}
+
+### Get a count's system stock
+GET {{baseUrl}}/counts/1/system-stock
+Authorization: Bearer {{token}}
+
+### Get a count's movements
+GET {{baseUrl}}/counts/1/movements
+Authorization: Bearer {{token}}
+
+### Create a movement
+POST {{baseUrl}}/counts/1/movements
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "uuid": "ad080953-2ee4-4eca-94de-d2751acd987b",
+  "barcode": "8690000000000",
+  "productName": "Örnek ürün",
+  "quantity": 2,
+  "comment": null
+}
+
+### Repeating the previous request with the same UUID is safe
+POST {{baseUrl}}/counts/1/movements
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "uuid": "ad080953-2ee4-4eca-94de-d2751acd987b",
+  "barcode": "8690000000000",
+  "productName": "Örnek ürün",
+  "quantity": 2,
+  "comment": null
+}
