@@ -64,9 +64,14 @@ public class StokSayimDbContext(DbContextOptions<StokSayimDbContext> options) : 
             entity.HasIndex(x => x.Zaman);
             entity.HasIndex(x => x.YuklemeGrubuId);
             entity.HasIndex(x => x.MobileRequestId).IsUnique();
+            entity.HasIndex(x => x.SayimSistemStokId);
             entity.HasOne(x => x.Sayim)
                 .WithMany(x => x.Hareketler)
                 .HasForeignKey(x => x.SayimId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(x => x.SistemStok)
+                .WithMany()
+                .HasForeignKey(x => x.SayimSistemStokId)
                 .OnDelete(DeleteBehavior.Restrict);
             entity.HasOne(x => x.YuklemeGrubu)
                 .WithMany(x => x.Hareketler)

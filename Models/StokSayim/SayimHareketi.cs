@@ -4,6 +4,7 @@ public class SayimHareketi
 {
     public int Id { get; set; }
     public int SayimId { get; set; }
+    public int? SayimSistemStokId { get; set; }
     public Guid? MobileRequestId { get; set; }
     public string Barkod { get; set; } = string.Empty;
     public string UrunAdi { get; set; } = string.Empty;
@@ -19,5 +20,6 @@ public class SayimHareketi
     public DateTime? IptalZamani { get; set; }
 
     public Sayim Sayim { get; set; } = null!;
+    public SayimSistemStok? SistemStok { get; set; }
     public SayimYuklemeGrubu? YuklemeGrubu { get; set; }
 }

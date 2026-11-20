@@ -56,18 +56,35 @@ public class SayimEkraniViewModel
     public int SayimId { get; set; }
     public string SayimAdi { get; set; } = string.Empty;
     public string Durum { get; set; } = string.Empty;
+    public string? UrunArama { get; set; }
+    public bool UrunAramaYapildi { get; set; }
+    public int? SeciliStokId { get; set; }
     public string? Barkod { get; set; }
     public bool BarkodArandi { get; set; }
     public string? UrunAdi { get; set; }
     public string? StokKodu { get; set; }
     public string? Birim { get; set; }
     public decimal? KalanMiktar { get; set; }
+    public IReadOnlyList<SayimEkraniUrunViewModel> UrunAramaSonuclari { get; set; } =
+        Array.Empty<SayimEkraniUrunViewModel>();
     public IReadOnlyList<SayimEkraniHareketViewModel> SonHareketler { get; set; } =
         Array.Empty<SayimEkraniHareketViewModel>();
+    public SayimEkraniHareketViewModel? DuzenlenecekHareket { get; set; }
+}
+
+public class SayimEkraniUrunViewModel
+{
+    public int Id { get; set; }
+    public string? StokKodu { get; set; }
+    public string? Barkod { get; set; }
+    public string UrunAdi { get; set; } = string.Empty;
+    public string? Birim { get; set; }
+    public decimal SistemStok { get; set; }
 }
 
 public class SayimEkraniHareketViewModel
 {
+    public int Id { get; set; }
     public DateTime Zaman { get; set; }
     public string Barkod { get; set; } = string.Empty;
     public string UrunAdi { get; set; } = string.Empty;

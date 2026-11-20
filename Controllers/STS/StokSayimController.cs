@@ -59,9 +59,16 @@ public class StokSayimController(
     }
 
     [HttpGet]
-    public async Task<IActionResult> SayimEkrani(int id, string? barkod, CancellationToken cancellationToken)
+    public async Task<IActionResult> SayimEkrani(
+        int id,
+        string? barkod,
+        string? urunAdi,
+        int? stokId,
+        int? hareketId,
+        CancellationToken cancellationToken)
     {
-        var model = await sayimService.GetSayimEkraniAsync(id, barkod, cancellationToken);
+        var model = await sayimService.GetSayimEkraniAsync(
+            id, barkod, urunAdi, stokId, hareketId, cancellationToken);
         return model == null ? NotFound() : View(model);
     }
 
@@ -69,32 +76,86 @@ public class StokSayimController(
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> SayimEkle(
         int id,
-        string barkod,
+        int? stokId,
+        string? barkod,
+        string? urunAdi,
         decimal? miktar,
         CancellationToken cancellationToken)
     {
         if (!ModelState.IsValid || !miktar.HasValue)
         {
             TempData["SayimHata"] = "Geçerli bir sayım miktarı girin.";
-            return RedirectToAction(nameof(SayimEkrani), new { id, barkod });
+            return RedirectToAction(nameof(SayimEkrani), new { id, barkod, urunAdi, stokId });
         }
 
         try
         {
-            var urunAdi = await sayimService.SayimEkleAsync(
+            var kaydedilenUrunAdi = await sayimService.SayimEkleAsync(
                 id,
+                stokId,
                 barkod,
                 miktar.Value,
                 KullaniciAdi,
                 cancellationToken);
-            TempData["SayimBasarili"] = $"{urunAdi} için {miktar.Value:N3} sayım miktarı kaydedildi.";
-            return RedirectToAction(nameof(SayimEkrani), new { id });
+            TempData["SayimBasarili"] = $"{kaydedilenUrunAdi} için {miktar.Value:N3} sayım miktarı kaydedildi.";
+            return RedirectToAction(nameof(SayimEkrani), new { id, urunAdi });
         }
         catch (InvalidOperationException ex)
         {
             TempData["SayimHata"] = ex.Message;
-            return RedirectToAction(nameof(SayimEkrani), new { id, barkod });
+            return RedirectToAction(nameof(SayimEkrani), new { id, barkod, urunAdi, stokId });
         }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SayimHareketiGuncelle(
+        int id,
+        int hareketId,
+        string? urunAdi,
+        decimal? miktar,
+        CancellationToken cancellationToken)
+    {
+        if (!ModelState.IsValid || !miktar.HasValue)
+        {
+            TempData["SayimHata"] = "Geçerli bir sayım miktarı girin.";
+            return RedirectToAction(nameof(SayimEkrani), new { id, urunAdi, hareketId });
+        }
+
+        try
+        {
+            await sayimService.SayimHareketiGuncelleAsync(
+                id, hareketId, miktar.Value, KullaniciAdi, cancellationToken);
+            TempData["SayimBasarili"] = "Sayım kaydı güncellendi.";
+        }
+        catch (InvalidOperationException ex)
+        {
+            TempData["SayimHata"] = ex.Message;
+        }
+
+        return RedirectToAction(nameof(SayimEkrani), new { id, urunAdi });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SayimHareketiSil(
+        int id,
+        int hareketId,
+        string? urunAdi,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            await sayimService.SayimHareketiIptalEtAsync(
+                id, hareketId, KullaniciAdi, cancellationToken);
+            TempData["SayimBasarili"] = "Sayım kaydı silindi.";
+        }
+        catch (InvalidOperationException ex)
+        {
+            TempData["SayimHata"] = ex.Message;
+        }
+
+        return RedirectToAction(nameof(SayimEkrani), new { id, urunAdi });
     }
 
     [HttpGet]

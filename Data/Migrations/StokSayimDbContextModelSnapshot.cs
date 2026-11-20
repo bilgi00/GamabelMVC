@@ -146,6 +146,9 @@ namespace gamabelmvc.Data.Migrations
                     b.Property<int>("SayimId")
                         .HasColumnType("int");
 
+                    b.Property<int?>("SayimSistemStokId")
+                        .HasColumnType("int");
+
                     b.Property<string>("UrunAdi")
                         .IsRequired()
                         .HasMaxLength(300)
@@ -164,6 +167,8 @@ namespace gamabelmvc.Data.Migrations
 
                     b.HasIndex("MobileRequestId")
                         .IsUnique();
+
+                    b.HasIndex("SayimSistemStokId");
 
                     b.HasIndex("YuklemeGrubuId");
 
@@ -291,12 +296,19 @@ namespace gamabelmvc.Data.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("gamabelmvc.Models.StokSayim.SayimSistemStok", "SistemStok")
+                        .WithMany()
+                        .HasForeignKey("SayimSistemStokId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("gamabelmvc.Models.StokSayim.SayimYuklemeGrubu", "YuklemeGrubu")
                         .WithMany("Hareketler")
                         .HasForeignKey("YuklemeGrubuId")
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Sayim");
+
+                    b.Navigation("SistemStok");
 
                     b.Navigation("YuklemeGrubu");
                 });

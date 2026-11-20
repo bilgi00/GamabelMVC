@@ -114,6 +114,9 @@ public sealed class SayimService(StokSayimDbContext dbContext) : ISayimService
     public async Task<SayimEkraniViewModel?> GetSayimEkraniAsync(
         int id,
         string? barkod,
+        string? urunAdi,
+        int? stokId,
+        int? hareketId,
         CancellationToken cancellationToken = default)
     {
         var sayim = await dbContext.Sayimlar
@@ -128,19 +131,60 @@ public sealed class SayimService(StokSayimDbContext dbContext) : ISayimService
         {
             SayimId = id,
             SayimAdi = sayim.Ad,
-            Durum = sayim.Durum
+            Durum = sayim.Durum,
+            UrunArama = string.IsNullOrWhiteSpace(urunAdi) ? null : urunAdi.Trim(),
+            UrunAramaYapildi = !string.IsNullOrWhiteSpace(urunAdi)
         };
-        if (!string.IsNullOrWhiteSpace(barkod))
+
+        if (model.UrunArama is not null)
+        {
+            model.UrunAramaSonuclari = await dbContext.SayimSistemStoklari
+                .AsNoTracking()
+                .Where(s => s.SayimId == id && s.UrunAdi.Contains(model.UrunArama))
+                .OrderBy(s => s.UrunAdi)
+                .ThenBy(s => s.StokKodu)
+                .Take(51)
+                .Select(s => new SayimEkraniUrunViewModel
+                {
+                    Id = s.Id,
+                    StokKodu = s.StokKodu,
+                    Barkod = s.Barkod,
+                    UrunAdi = s.UrunAdi,
+                    Birim = s.Birim,
+                    SistemStok = s.SistemStok
+                })
+                .ToListAsync(cancellationToken);
+        }
+
+        if (stokId.HasValue)
+        {
+            var urun = await dbContext.SayimSistemStoklari
+                .AsNoTracking()
+                .Where(s => s.SayimId == id && s.Id == stokId.Value)
+                .Select(s => new { s.Id, s.StokKodu, s.Barkod, s.UrunAdi, s.Birim, s.SistemStok })
+                .SingleOrDefaultAsync(cancellationToken);
+            if (urun != null)
+            {
+                model.SeciliStokId = urun.Id;
+                model.StokKodu = urun.StokKodu;
+                model.Barkod = urun.Barkod;
+                model.UrunAdi = urun.UrunAdi;
+                model.Birim = urun.Birim;
+                model.KalanMiktar = urun.SistemStok;
+            }
+        }
+        else if (!string.IsNullOrWhiteSpace(barkod))
         {
             model.BarkodArandi = true;
             model.Barkod = barkod.Trim();
             var urun = await dbContext.SayimSistemStoklari
                 .AsNoTracking()
                 .Where(s => s.SayimId == id && s.Barkod == model.Barkod)
-                .Select(s => new { s.StokKodu, s.UrunAdi, s.Birim, s.SistemStok })
+                .Select(s => new { s.Id, s.StokKodu, s.UrunAdi, s.Birim, s.SistemStok })
                 .SingleOrDefaultAsync(cancellationToken);
             if (urun != null)
             {
+                model.SeciliStokId = urun.Id;
                 model.StokKodu = urun.StokKodu;
                 model.UrunAdi = urun.UrunAdi;
                 model.Birim = urun.Birim;
@@ -148,13 +192,39 @@ public sealed class SayimService(StokSayimDbContext dbContext) : ISayimService
             }
         }
 
-        model.SonHareketler = await dbContext.SayimHareketleri
+        if (hareketId.HasValue)
+        {
+            model.DuzenlenecekHareket = await dbContext.SayimHareketleri
+                .AsNoTracking()
+                .Where(h => h.Id == hareketId.Value && h.SayimId == id && !h.Iptal)
+                .Select(h => new SayimEkraniHareketViewModel
+                {
+                    Id = h.Id,
+                    Zaman = h.Zaman,
+                    Barkod = h.Barkod,
+                    UrunAdi = h.UrunAdi,
+                    Miktar = h.Miktar,
+                    KullaniciAdi = h.KullaniciAdi
+                })
+                .SingleOrDefaultAsync(cancellationToken);
+        }
+
+        var hareketSorgusu = dbContext.SayimHareketleri
             .AsNoTracking()
-            .Where(h => h.SayimId == id && !h.Iptal)
+            .Where(h => h.SayimId == id && !h.Iptal);
+        if (model.UrunArama is not null)
+            hareketSorgusu = hareketSorgusu.Where(h => h.UrunAdi.Contains(model.UrunArama));
+
+        IQueryable<SayimHareketi> siraliHareketler = hareketSorgusu
             .OrderByDescending(h => h.Zaman)
-            .Take(20)
+            .ThenByDescending(h => h.Id);
+        if (model.UrunArama is null)
+            siraliHareketler = siraliHareketler.Take(20);
+
+        model.SonHareketler = await siraliHareketler
             .Select(h => new SayimEkraniHareketViewModel
             {
+                Id = h.Id,
                 Zaman = h.Zaman,
                 Barkod = h.Barkod,
                 UrunAdi = h.UrunAdi,
@@ -168,16 +238,16 @@ public sealed class SayimService(StokSayimDbContext dbContext) : ISayimService
 
     public async Task<string> SayimEkleAsync(
         int id,
-        string barkod,
+        int? stokId,
+        string? barkod,
         decimal miktar,
         string kullanici,
         CancellationToken cancellationToken = default)
     {
         var normalizedBarcode = barkod?.Trim() ?? string.Empty;
-        if (string.IsNullOrWhiteSpace(normalizedBarcode) || normalizedBarcode.Length > 100)
+        if (!stokId.HasValue && (string.IsNullOrWhiteSpace(normalizedBarcode) || normalizedBarcode.Length > 100))
             throw new InvalidOperationException("Geçerli bir barkod okutun.");
-        if (miktar < 0 || miktar > 999999999999999.999m || decimal.Round(miktar, 3) != miktar)
-            throw new InvalidOperationException("Sayım miktarı 0 veya daha büyük ve en fazla üç ondalık basamaklı olmalıdır.");
+        SayimMiktariniDogrula(miktar);
 
         await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
         var sayimDurumu = await dbContext.Sayimlar
@@ -189,18 +259,26 @@ public sealed class SayimService(StokSayimDbContext dbContext) : ISayimService
         if (!string.Equals(sayimDurumu, "Açık", StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException("Kapalı sayıma sayım hareketi eklenemez.");
 
-        var urun = await dbContext.SayimSistemStoklari
+        var urunSorgusu = dbContext.SayimSistemStoklari
             .AsNoTracking()
-            .Where(s => s.SayimId == id && s.Barkod == normalizedBarcode)
-            .Select(s => new { s.UrunAdi })
+            .Where(s => s.SayimId == id);
+        urunSorgusu = stokId.HasValue
+            ? urunSorgusu.Where(s => s.Id == stokId.Value)
+            : urunSorgusu.Where(s => s.Barkod == normalizedBarcode);
+        var urun = await urunSorgusu
+            .Select(s => new { s.Id, s.Barkod, s.UrunAdi })
             .SingleOrDefaultAsync(cancellationToken);
         if (urun == null)
-            throw new InvalidOperationException("Okutulan barkod bu sayımın sistem stoğunda bulunamadı.");
+            throw new InvalidOperationException(
+                stokId.HasValue
+                    ? "Seçilen ürün bu sayımın sistem stoğunda bulunamadı."
+                    : "Okutulan barkod bu sayımın sistem stoğunda bulunamadı.");
 
         dbContext.SayimHareketleri.Add(new SayimHareketi
         {
             SayimId = id,
-            Barkod = normalizedBarcode,
+            SayimSistemStokId = urun.Id,
+            Barkod = urun.Barkod ?? string.Empty,
             UrunAdi = urun.UrunAdi,
             Miktar = miktar,
             KullaniciAdi = kullanici,
@@ -211,6 +289,86 @@ public sealed class SayimService(StokSayimDbContext dbContext) : ISayimService
         await transaction.CommitAsync(cancellationToken);
 
         return urun.UrunAdi;
+    }
+
+    public async Task SayimHareketiGuncelleAsync(
+        int id,
+        int hareketId,
+        decimal miktar,
+        string kullanici,
+        CancellationToken cancellationToken = default)
+    {
+        SayimMiktariniDogrula(miktar);
+        await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
+        await SayimAcikliginiDogrulaAsync(id, cancellationToken);
+
+        var hareket = await dbContext.SayimHareketleri
+            .SingleOrDefaultAsync(h => h.Id == hareketId && h.SayimId == id && !h.Iptal, cancellationToken);
+        if (hareket == null)
+            throw new InvalidOperationException("Düzenlenecek sayım kaydı bulunamadı.");
+
+        var eskiMiktar = hareket.Miktar;
+        hareket.Miktar = miktar;
+        dbContext.DenetimKayitlari.Add(new DenetimKaydi
+        {
+            Zaman = DateTime.UtcNow,
+            Kullanici = kullanici,
+            Islem = "Sayım hareketi güncellendi",
+            HedefId = id,
+            Detay = $"Hareket #{hareket.Id}: {hareket.UrunAdi}, miktar {eskiMiktar:N3} → {miktar:N3} olarak değiştirildi."
+        });
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+    }
+
+    public async Task SayimHareketiIptalEtAsync(
+        int id,
+        int hareketId,
+        string kullanici,
+        CancellationToken cancellationToken = default)
+    {
+        await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
+        await SayimAcikliginiDogrulaAsync(id, cancellationToken);
+
+        var hareket = await dbContext.SayimHareketleri
+            .SingleOrDefaultAsync(h => h.Id == hareketId && h.SayimId == id && !h.Iptal, cancellationToken);
+        if (hareket == null)
+            throw new InvalidOperationException("Silinecek sayım kaydı bulunamadı.");
+
+        var now = DateTime.UtcNow;
+        hareket.Iptal = true;
+        hareket.IptalEden = kullanici;
+        hareket.IptalZamani = now;
+        dbContext.DenetimKayitlari.Add(new DenetimKaydi
+        {
+            Zaman = now,
+            Kullanici = kullanici,
+            Islem = "Sayım hareketi silindi",
+            HedefId = id,
+            Detay = $"Hareket #{hareket.Id} iptal edildi: {hareket.UrunAdi}, miktar {hareket.Miktar:N3}."
+        });
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+    }
+
+    private async Task SayimAcikliginiDogrulaAsync(int id, CancellationToken cancellationToken)
+    {
+        var sayimDurumu = await dbContext.Sayimlar
+            .Where(s => s.Id == id)
+            .Select(s => s.Durum)
+            .SingleOrDefaultAsync(cancellationToken);
+        if (sayimDurumu == null)
+            throw new InvalidOperationException("Sayım kaydı bulunamadı.");
+        if (!string.Equals(sayimDurumu, "Açık", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("Kapalı sayımın hareketleri değiştirilemez.");
+    }
+
+    private static void SayimMiktariniDogrula(decimal miktar)
+    {
+        if (miktar < 0 || miktar > 999999999999999.999m || decimal.Round(miktar, 3) != miktar)
+            throw new InvalidOperationException("Sayım miktarı 0 veya daha büyük ve en fazla üç ondalık basamaklı olmalıdır.");
     }
 
     public async Task<SayimRaporViewModel?> GetSayimRaporuAsync(
@@ -231,6 +389,7 @@ public sealed class SayimService(StokSayimDbContext dbContext) : ISayimService
             .OrderBy(s => s.UrunAdi)
             .Select(s => new
             {
+                s.Id,
                 s.StokKodu,
                 s.ReferansKodu,
                 s.Barkod,
@@ -245,18 +404,27 @@ public sealed class SayimService(StokSayimDbContext dbContext) : ISayimService
             })
             .ToListAsync(cancellationToken);
 
-        var sayilanMiktarlar = await dbContext.SayimHareketleri
+        var sayilanStokMiktarlari = await dbContext.SayimHareketleri
             .AsNoTracking()
-            .Where(h => h.SayimId == id && !h.Iptal)
+            .Where(h => h.SayimId == id && !h.Iptal && h.SayimSistemStokId.HasValue)
+            .GroupBy(h => h.SayimSistemStokId!.Value)
+            .Select(g => new { StokId = g.Key, Miktar = g.Sum(h => h.Miktar) })
+            .ToDictionaryAsync(x => x.StokId, x => x.Miktar, cancellationToken);
+
+        var barkodSayimMiktarlari = await dbContext.SayimHareketleri
+            .AsNoTracking()
+            .Where(h => h.SayimId == id && !h.Iptal && !h.SayimSistemStokId.HasValue && h.Barkod != "")
             .GroupBy(h => h.Barkod)
             .Select(g => new { Barkod = g.Key, Miktar = g.Sum(h => h.Miktar) })
             .ToDictionaryAsync(x => x.Barkod, x => x.Miktar, cancellationToken);
 
         var satirlar = stokSatirlari.Select(stok =>
         {
-            var miktar = 0m;
-            var sayildiMi = stok.Barkod != null &&
-                sayilanMiktarlar.TryGetValue(stok.Barkod, out miktar);
+            var miktar = sayilanStokMiktarlari.GetValueOrDefault(stok.Id);
+            if (stok.Barkod != null)
+                miktar += barkodSayimMiktarlari.GetValueOrDefault(stok.Barkod);
+            var sayildiMi = sayilanStokMiktarlari.ContainsKey(stok.Id) ||
+                (stok.Barkod != null && barkodSayimMiktarlari.ContainsKey(stok.Barkod));
             return new SayimRaporSatiriViewModel
             {
                 StokKodu = stok.StokKodu,
@@ -305,7 +473,25 @@ public sealed class SayimService(StokSayimDbContext dbContext) : ISayimService
             .Select(g => new { SayimId = g.Key, Sayisi = g.Count() })
             .ToDictionaryAsync(x => x.SayimId, x => x.Sayisi, cancellationToken);
 
-        var sayilanlar = await hareketQuery
+        var sistemStokSayilanlar = await hareketQuery
+            .Where(h => h.SayimSistemStokId.HasValue)
+            .GroupBy(h => h.SayimId)
+            .Select(g => new
+            {
+                SayimId = g.Key,
+                Sayisi = g.Select(h => h.SayimSistemStokId).Distinct().Count()
+            })
+            .ToDictionaryAsync(x => x.SayimId, x => x.Sayisi, cancellationToken);
+
+        var barkodSayilanlar = await hareketQuery
+            .Where(h =>
+                !h.SayimSistemStokId.HasValue &&
+                h.Barkod != "" &&
+                !dbContext.SayimHareketleri.Any(linked =>
+                    linked.SayimId == h.SayimId &&
+                    !linked.Iptal &&
+                    linked.SayimSistemStokId.HasValue &&
+                    linked.Barkod == h.Barkod))
             .GroupBy(h => h.SayimId)
             .Select(g => new
             {
@@ -313,12 +499,16 @@ public sealed class SayimService(StokSayimDbContext dbContext) : ISayimService
                 Sayisi = g.Select(h => h.Barkod).Distinct().Count()
             })
             .ToDictionaryAsync(x => x.SayimId, x => x.Sayisi, cancellationToken);
+        var sayilanlar = sistemStokSayilanlar;
+        foreach (var (hareketSayimId, sayisi) in barkodSayilanlar)
+            sayilanlar[hareketSayimId] = sayilanlar.GetValueOrDefault(hareketSayimId) + sayisi;
 
         var sayilmayanlarQuery = stokQuery.Where(stok =>
             !dbContext.SayimHareketleri.Any(h =>
                 h.SayimId == stok.SayimId &&
-                h.Barkod == stok.Barkod &&
-                !h.Iptal));
+                !h.Iptal &&
+                (h.SayimSistemStokId == stok.Id ||
+                    (!h.SayimSistemStokId.HasValue && stok.Barkod != null && h.Barkod == stok.Barkod))));
         var sayilmayanlar = await sayilmayanlarQuery
             .GroupBy(s => s.SayimId)
             .Select(g => new { SayimId = g.Key, Sayisi = g.Count() })
@@ -326,6 +516,7 @@ public sealed class SayimService(StokSayimDbContext dbContext) : ISayimService
 
         var yeniUrunQuery = hareketQuery.Where(h => h.YeniUrunMu);
         var yeniUrunler = await yeniUrunQuery
+            .Where(h => h.Barkod != "")
             .GroupBy(h => h.SayimId)
             .Select(g => new
             {
