@@ -31,7 +31,7 @@ public class StokSayimDbContext(DbContextOptions<StokSayimDbContext> options) : 
             entity.HasKey(x => x.Id);
             entity.Property(x => x.StokKodu).HasMaxLength(100);
             entity.Property(x => x.ReferansKodu).HasMaxLength(100);
-            entity.Property(x => x.Barkod).HasMaxLength(100).UseCollation("utf8mb4_bin").IsRequired();
+            entity.Property(x => x.Barkod).HasMaxLength(100).UseCollation("utf8mb4_bin");
             entity.Property(x => x.UrunAdi).HasMaxLength(300).IsRequired();
             entity.Property(x => x.GirenMiktar).HasPrecision(18, 3);
             entity.Property(x => x.CikanMiktar).HasPrecision(18, 3);

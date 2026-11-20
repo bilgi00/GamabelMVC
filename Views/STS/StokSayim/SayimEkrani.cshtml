@@ -1,0 +1,142 @@
+@model gamabelmvc.Models.StokSayim.SayimEkraniViewModel
+
+@{
+    ViewData["Title"] = "Barkod ile Sayım";
+    var acikMi = Model.Durum == "Açık";
+    var urunBulundu = !string.IsNullOrEmpty(Model.UrunAdi);
+}
+
+<div class="container py-4">
+    <div class="mb-4">
+        <a asp-action="Detay" asp-route-id="@Model.SayimId" class="link-secondary text-decoration-none">
+            ← Sayım detayına dön
+        </a>
+        <h1 class="h3 mt-2 mb-1">Barkod ile Sayım</h1>
+        <div class="text-muted">@Model.SayimAdi</div>
+    </div>
+
+    @if (TempData["SayimBasarili"] is string basarili)
+    {
+        <div class="alert alert-success" role="status">@basarili</div>
+    }
+    @if (TempData["SayimHata"] is string hata)
+    {
+        <div class="alert alert-danger" role="alert">@hata</div>
+    }
+
+    @if (!acikMi)
+    {
+        <div class="alert alert-warning">Bu sayım kapalı olduğu için yeni sayım hareketi eklenemez.</div>
+    }
+    else if (Model.BarkodArandi && !urunBulundu)
+    {
+        <div class="alert alert-danger">Bu barkod sayımın sistem stoğunda bulunamadı. Barkodu kontrol edin.</div>
+    }
+
+    @if (acikMi)
+    {
+        <div class="card mb-4">
+            <div class="card-header fw-semibold">Ürün bul</div>
+            <div class="card-body">
+                <form asp-action="SayimEkrani" asp-route-id="@Model.SayimId" method="get"
+                      class="row g-2 align-items-end">
+                    <div class="col-12 col-md-8">
+                        <label for="barkod" class="form-label">Ürün barkodu</label>
+                        <input id="barkod" name="barkod" value="@(Model.BarkodArandi && !urunBulundu ? Model.Barkod : null)"
+                               class="form-control form-control-lg" autocomplete="off" required />
+                    </div>
+                    <div class="col-12 col-md-auto">
+                        <button type="submit" class="btn btn-primary btn-lg">Barkodu Bul</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    }
+
+    @if (urunBulundu)
+    {
+        <div class="card border-primary mb-4">
+            <div class="card-header fw-semibold">Ürün bulundu</div>
+            <div class="card-body">
+                <h2 class="h5">@Model.UrunAdi</h2>
+                <dl class="row mb-4">
+                    <dt class="col-sm-3">Barkod</dt>
+                    <dd class="col-sm-9">@Model.Barkod</dd>
+                    <dt class="col-sm-3">Stok kodu</dt>
+                    <dd class="col-sm-9">@(string.IsNullOrWhiteSpace(Model.StokKodu) ? "—" : Model.StokKodu)</dd>
+                    <dt class="col-sm-3">Birim</dt>
+                    <dd class="col-sm-9">@(string.IsNullOrWhiteSpace(Model.Birim) ? "—" : Model.Birim)</dd>
+                    <dt class="col-sm-3">Kalan miktar</dt>
+                    <dd class="col-sm-9">@Model.KalanMiktar?.ToString("N3")</dd>
+                </dl>
+
+                @if (acikMi)
+                {
+                    <form asp-action="SayimEkle" asp-route-id="@Model.SayimId" method="post"
+                          class="row g-2 align-items-end">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="barkod" value="@Model.Barkod" />
+                        <div class="col-12 col-md-5">
+                            <label for="miktar" class="form-label">Sayım miktarı (@Model.Birim)</label>
+                            <input id="miktar" name="miktar" type="number" min="0" max="999999999999999.999"
+                                   step="0.001" class="form-control form-control-lg" required />
+                        </div>
+                        <div class="col-12 col-md-auto">
+                            <button type="submit" class="btn btn-success btn-lg">Sayımı Kaydet</button>
+                        </div>
+                    </form>
+                }
+            </div>
+        </div>
+    }
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <h2 class="h5 mb-0">Son sayım kayıtları</h2>
+        <a asp-action="Rapor" asp-route-id="@Model.SayimId" class="btn btn-outline-primary">Sayım Raporu</a>
+    </div>
+
+    @if (Model.SonHareketler.Count == 0)
+    {
+        <div class="alert alert-info">Henüz sayım kaydı yok.</div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-sm table-striped align-middle">
+                <thead>
+                    <tr>
+                        <th>Zaman</th>
+                        <th>Barkod</th>
+                        <th>Ürün</th>
+                        <th class="text-end">Sayım miktarı</th>
+                        <th>Kullanıcı</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var hareket in Model.SonHareketler)
+                    {
+                        <tr>
+                            <td>@hareket.Zaman.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss")</td>
+                            <td>@hareket.Barkod</td>
+                            <td>@hareket.UrunAdi</td>
+                            <td class="text-end">@hareket.Miktar.ToString("N3")</td>
+                            <td>@hareket.KullaniciAdi</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const target = document.getElementById('miktar') || document.getElementById('barkod');
+            if (target) {
+                target.focus();
+                target.select();
+            }
+        });
+    </script>
+}

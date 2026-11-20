@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Report ScriptLanguage="CSharp" DoublePass="true"
+        ReportInfo.Created="11/19/2026 00:00:00" ReportInfo.Modified="11/19/2026 00:00:00"
+        ReportInfo.CreatorVersion="2026.2.3" ReportInfo.Version="1.0.0" ReportInfo.Description="A4 yatay stok sayım ve fark raporu">
+  <Dictionary>
+    <TableDataSource Name="Satirlar" ReferenceName="Data.Satirlar" DataType="System.Int32" Enabled="true">
+      <Column Name="SiraNo" DataType="System.Int32"/>
+      <Column Name="StokKodu" DataType="System.String"/>
+      <Column Name="Barkod" DataType="System.String"/>
+      <Column Name="UrunAdi" DataType="System.String"/>
+      <Column Name="GirenMiktar" DataType="System.Decimal"/>
+      <Column Name="CikanMiktar" DataType="System.Decimal"/>
+      <Column Name="KalanMiktar" DataType="System.Decimal"/>
+      <Column Name="SayimMiktari" DataType="System.Decimal"/>
+      <Column Name="Fark" DataType="System.Decimal"/>
+      <Column Name="Birim" DataType="System.String"/>
+    </TableDataSource>
+    <Parameter Name="BaslikAdi" DataType="System.String"/>
+    <Parameter Name="SayimAdi" DataType="System.String"/>
+    <Parameter Name="SayimDurumu" DataType="System.String"/>
+    <Parameter Name="SayimNo" DataType="System.String"/>
+    <Parameter Name="Tarih" DataType="System.String"/>
+    <Parameter Name="OlusturanAd" DataType="System.String"/>
+    <Parameter Name="UrunSayisi" DataType="System.Int32"/>
+    <Parameter Name="SayilanUrunSayisi" DataType="System.Int32"/>
+    <Parameter Name="SablonSurum" DataType="System.String"/>
+    <Total Name="ToplamKalan" Expression="[Satirlar.KalanMiktar]" Evaluator="Data1" PrintOn="ReportSummary1"/>
+    <Total Name="ToplamSayim" Expression="[Satirlar.SayimMiktari]" Evaluator="Data1" PrintOn="ReportSummary1"/>
+    <Total Name="ToplamFark" Expression="[Satirlar.Fark]" Evaluator="Data1" PrintOn="ReportSummary1"/>
+  </Dictionary>
+
+  <ReportPage Name="Page1" Landscape="true" PaperWidth="297" PaperHeight="210"
+              LeftMargin="10" TopMargin="10" RightMargin="10" BottomMargin="10"
+              Watermark.Font="Arial, 60pt">
+    <PageHeaderBand Name="PageHeader1" Width="1047.06" Height="66.15">
+      <TextObject Name="TxtKurum" Width="600" Height="18.9" Text="GAMABEL YATIRIM" Font="Arial, 9pt, style=Bold"/>
+      <TextObject Name="TxtBelgeNo" Left="847.26" Width="199.8" Height="18.9" Text="Sayım No: [SayimNo]"
+                  HorzAlign="Right" Font="Arial, 8pt"/>
+      <TextObject Name="TxtBaslik" Top="18.9" Width="700" Height="22.68" Text="[BaslikAdi]"
+                  VertAlign="Center" Font="Arial, 15pt, style=Bold"/>
+      <TextObject Name="TxtTarih" Left="847.26" Top="18.9" Width="199.8" Height="22.68" Text="[Tarih]"
+                  HorzAlign="Right" VertAlign="Center" Font="Arial, 8pt"/>
+      <TextObject Name="TxtSayimAdi" Top="44" Width="700" Height="18.9"
+                  Text="Sayım: [SayimAdi] · Durum: [SayimDurumu]" VertAlign="Center" Font="Arial, 8.5pt"/>
+      <TextObject Name="TxtUrunSayisi" Left="777.26" Top="44" Width="269.8" Height="18.9"
+                  Text="Ürün: [UrunSayisi] · Sayılan: [SayilanUrunSayisi]" HorzAlign="Right"
+                  VertAlign="Center" Font="Arial, 8.5pt"/>
+    </PageHeaderBand>
+
+    <DataBand Name="Data1" Width="1047.06" Height="22.68" CanGrow="true" DataSource="Satirlar">
+      <TextObject Name="ColSira" Width="35" Height="22.68" Border.Lines="All" GrowToBottom="true"
+                  Text="[Satirlar.SiraNo]" HorzAlign="Center" VertAlign="Center" Font="Arial, 7pt"/>
+      <TextObject Name="ColStokKodu" Left="35" Width="90" Height="22.68" Border.Lines="All" GrowToBottom="true"
+                  Text="[Satirlar.StokKodu]" VertAlign="Center" WordWrap="true" Font="Arial, 7pt"/>
+      <TextObject Name="ColBarkod" Left="125" Width="130" Height="22.68" Border.Lines="All" GrowToBottom="true"
+                  Text="[Satirlar.Barkod]" VertAlign="Center" WordWrap="true" Font="Arial, 7pt"/>
+      <TextObject Name="ColUrunAdi" Left="255" Width="300" Height="22.68" Border.Lines="All" GrowToBottom="true"
+                  Text="[Satirlar.UrunAdi]" VertAlign="Center" WordWrap="true" CanGrow="true" Font="Arial, 7pt"/>
+      <TextObject Name="ColGiren" Left="555" Width="80" Height="22.68" Border.Lines="All" GrowToBottom="true"
+                  Text="[Satirlar.GirenMiktar]" HorzAlign="Right" VertAlign="Center"
+                  Format="Number" Format.UseLocale="false" Format.DecimalDigits="3"
+                  Format.DecimalSeparator="," Format.GroupSeparator="." Format.NegativePattern="1" Font="Arial, 7pt"/>
+      <TextObject Name="ColCikan" Left="635" Width="80" Height="22.68" Border.Lines="All" GrowToBottom="true"
+                  Text="[Satirlar.CikanMiktar]" HorzAlign="Right" VertAlign="Center"
+                  Format="Number" Format.UseLocale="false" Format.DecimalDigits="3"
+                  Format.DecimalSeparator="," Format.GroupSeparator="." Format.NegativePattern="1" Font="Arial, 7pt"/>
+      <TextObject Name="ColKalan" Left="715" Width="85" Height="22.68" Border.Lines="All" GrowToBottom="true"
+                  Text="[Satirlar.KalanMiktar]" HorzAlign="Right" VertAlign="Center"
+                  Format="Number" Format.UseLocale="false" Format.DecimalDigits="3"
+                  Format.DecimalSeparator="," Format.GroupSeparator="." Format.NegativePattern="1" Font="Arial, 7pt"/>
+      <TextObject Name="ColSayim" Left="800" Width="85" Height="22.68" Border.Lines="All" GrowToBottom="true"
+                  Text="[Satirlar.SayimMiktari]" HorzAlign="Right" VertAlign="Center"
+                  Format="Number" Format.UseLocale="false" Format.DecimalDigits="3"
+                  Format.DecimalSeparator="," Format.GroupSeparator="." Format.NegativePattern="1" Font="Arial, 7pt"/>
+      <TextObject Name="ColFark" Left="885" Width="90" Height="22.68" Border.Lines="All" GrowToBottom="true"
+                  Text="[Satirlar.Fark]" HorzAlign="Right" VertAlign="Center"
+                  Format="Number" Format.UseLocale="false" Format.DecimalDigits="3"
+                  Format.DecimalSeparator="," Format.GroupSeparator="." Format.NegativePattern="1"
+                  Font="Arial, 7pt, style=Bold"/>
+      <TextObject Name="ColBirim" Left="975" Width="72.06" Height="22.68" Border.Lines="All" GrowToBottom="true"
+                  Text="[Satirlar.Birim]" HorzAlign="Center" VertAlign="Center" WordWrap="true" Font="Arial, 7pt"/>
+
+      <DataHeaderBand Name="DataHeader1" Width="1047.06" Height="28.35" RepeatOnEveryPage="true">
+        <TextObject Name="HdrSira" Width="35" Height="28.35" Border.Lines="All" Fill.Color="Gainsboro"
+                    Text="No" HorzAlign="Center" VertAlign="Center" Font="Arial, 7pt, style=Bold"/>
+        <TextObject Name="HdrStokKodu" Left="35" Width="90" Height="28.35" Border.Lines="All" Fill.Color="Gainsboro"
+                    Text="Stok kodu" VertAlign="Center" WordWrap="true" Font="Arial, 7pt, style=Bold"/>
+        <TextObject Name="HdrBarkod" Left="125" Width="130" Height="28.35" Border.Lines="All" Fill.Color="Gainsboro"
+                    Text="Barkod" VertAlign="Center" WordWrap="true" Font="Arial, 7pt, style=Bold"/>
+        <TextObject Name="HdrUrunAdi" Left="255" Width="300" Height="28.35" Border.Lines="All" Fill.Color="Gainsboro"
+                    Text="Ürün adı" VertAlign="Center" WordWrap="true" Font="Arial, 7pt, style=Bold"/>
+        <TextObject Name="HdrGiren" Left="555" Width="80" Height="28.35" Border.Lines="All" Fill.Color="Gainsboro"
+                    Text="Giren" HorzAlign="Right" VertAlign="Center" Font="Arial, 7pt, style=Bold"/>
+        <TextObject Name="HdrCikan" Left="635" Width="80" Height="28.35" Border.Lines="All" Fill.Color="Gainsboro"
+                    Text="Çıkan" HorzAlign="Right" VertAlign="Center" Font="Arial, 7pt, style=Bold"/>
+        <TextObject Name="HdrKalan" Left="715" Width="85" Height="28.35" Border.Lines="All" Fill.Color="Gainsboro"
+                    Text="Kalan" HorzAlign="Right" VertAlign="Center" Font="Arial, 7pt, style=Bold"/>
+        <TextObject Name="HdrSayim" Left="800" Width="85" Height="28.35" Border.Lines="All" Fill.Color="Gainsboro"
+                    Text="Sayım" HorzAlign="Right" VertAlign="Center" Font="Arial, 7pt, style=Bold"/>
+        <TextObject Name="HdrFark" Left="885" Width="90" Height="28.35" Border.Lines="All" Fill.Color="Gainsboro"
+                    Text="Fark" HorzAlign="Right" VertAlign="Center" Font="Arial, 7pt, style=Bold"/>
+        <TextObject Name="HdrBirim" Left="975" Width="72.06" Height="28.35" Border.Lines="All" Fill.Color="Gainsboro"
+                    Text="Birim" HorzAlign="Center" VertAlign="Center" Font="Arial, 7pt, style=Bold"/>
+      </DataHeaderBand>
+    </DataBand>
+
+    <ReportSummaryBand Name="ReportSummary1" Width="1047.06" Height="52.92" KeepWithData="true">
+      <TextObject Name="TxtToplamEtiket" Width="715" Height="22.68" Border.Lines="All" Fill.Color="Gainsboro"
+                  Text="GENEL TOPLAM" HorzAlign="Right" VertAlign="Center" Font="Arial, 8pt, style=Bold"/>
+      <TextObject Name="TxtToplamKalan" Left="715" Width="85" Height="22.68" Border.Lines="All" Fill.Color="Gainsboro"
+                  Text="[ToplamKalan]" HorzAlign="Right" VertAlign="Center" Format="Number"
+                  Format.UseLocale="false" Format.DecimalDigits="3" Format.DecimalSeparator=","
+                  Format.GroupSeparator="." Format.NegativePattern="1" Font="Arial, 7pt, style=Bold"/>
+      <TextObject Name="TxtToplamSayim" Left="800" Width="85" Height="22.68" Border.Lines="All" Fill.Color="Gainsboro"
+                  Text="[ToplamSayim]" HorzAlign="Right" VertAlign="Center" Format="Number"
+                  Format.UseLocale="false" Format.DecimalDigits="3" Format.DecimalSeparator=","
+                  Format.GroupSeparator="." Format.NegativePattern="1" Font="Arial, 7pt, style=Bold"/>
+      <TextObject Name="TxtToplamFark" Left="885" Width="90" Height="22.68" Border.Lines="All" Fill.Color="Gainsboro"
+                  Text="[ToplamFark]" HorzAlign="Right" VertAlign="Center" Format="Number"
+                  Format.UseLocale="false" Format.DecimalDigits="3" Format.DecimalSeparator=","
+                  Format.GroupSeparator="." Format.NegativePattern="1" Font="Arial, 7pt, style=Bold"/>
+      <TextObject Name="TxtFarkNotu" Top="28.35" Width="1047.06" Height="18.9"
+                  Text="Fark = Sayım miktarı - Kalan miktar" Font="Arial, 8pt"/>
+    </ReportSummaryBand>
+
+    <PageFooterBand Name="PageFooter1" Width="1047.06" Height="18.9">
+      <TextObject Name="TxtAltSol" Width="800" Height="18.9"
+                  Text="[OlusturanAd] · Şablon v[SablonSurum]" Font="Arial, 8pt"/>
+      <TextObject Name="TxtSayfa" Left="847.26" Width="199.8" Height="18.9"
+                  Text="Sayfa [Page#] / [TotalPages#]" HorzAlign="Right" Font="Arial, 8pt"/>
+    </PageFooterBand>
+  </ReportPage>
+</Report>

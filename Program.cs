@@ -58,6 +58,7 @@ builder.Services.AddScoped<ISistemStokExcelService, SistemStokExcelService>();
 builder.Services.AddScoped<IMobileAuthService, MobileAuthService>();
 builder.Services.AddScoped<IMobileInventoryService, MobileInventoryService>();
 builder.Services.AddScoped<IMobileUserDirectoryService, MobileUserDirectoryService>();
+builder.Services.AddScoped<IBirimDirectoryService, BirimDirectoryService>();
 builder.Services.AddScoped<IPersonelDirectoryService, PersonelDirectoryService>();
 builder.Services.AddRateLimiter(options =>
 {

@@ -32,6 +32,7 @@ sunucu tarafındaki veri akışını ve kurulum gereksinimlerini açıklamak iç
 | `stk_Kullanici` | Login sırasında etkin STS kullanıcısı ve BCrypt parola hash'i doğrulanır. |
 | `stok_sayim_kullanicilari` | Yalnızca `Admin` rolü için `Id`, `KullaniciAdi`, `AdSoyad`, `AktifMi` alanları okunur. |
 | `personeller` | `GET /api2/personeller` aktif personellerin numara, ad, soyad, görev ve birim alanlarını salt-okunur listeler; yalnızca `Admin` rolü erişebilir. |
+| `birimler` | `GET /api2/birimler` birim `id` ve `birim_adi` alanlarını salt-okunur listeler; yalnızca `Admin` rolü erişebilir. |
 | `stk_Urun` | `GET products` etkin ürünleri okur; `POST products` yeni ürün ekler. |
 | `stok_sayimlar` | `GET counts` sayım oturumlarını listeler; diğer sayım işlemlerinde sayımın varlığı/durumu kontrol edilir. |
 | `stok_sayim_sistem_stok` | `GET counts/{id}/system-stock` sistem stoklarını okur; hareketin sayımda yeni ürün olup olmadığı belirlenir. |
@@ -450,6 +451,27 @@ kayıtlarını oluşturmaz veya güncellemez.
     "ad": "Örnek",
     "soyad": "Personel",
     "gorev": "Uzman",
+    "birimAdi": "Merkez"
+  }
+]
+```
+
+Token yoksa `401`, Admin rolü yoksa `403`, API anahtarı yapılandırılmamışsa
+`503` döner. İstek örneği [mobile-api.http](./mobile-api.http) dosyasındadır.
+
+### 5.7 API2 birim listesi — `GET /api2/birimler`
+
+Geçerli bearer token ve `Admin` rolü gerekir. Sunucudaki
+`ConnectionStrings:MyConnection` üzerinden uzak MySQL veritabanındaki
+`birimler` tablosunun `id` ve `birim_adi` alanları alfabetik sırada salt-okunur
+olarak döndürülür.
+
+Örnek yanıt:
+
+```json
+[
+  {
+    "id": 1,
     "birimAdi": "Merkez"
   }
 ]

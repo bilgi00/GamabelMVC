@@ -1061,7 +1061,7 @@ Bu proje için gerçek rapor geliştirmede uygulanacak kısa yol haritası:
 
 > Bu kontrol listesi, mevcut proje notlarıyla uyumlu şekilde yalnızca uygulama için kullanılır. Bir raporun gerçek üretim için “tamam” sayılabilmesi için aslında FastReport Designer’da ve PDF çıktısında doğrulama yapılmalıdır.
 
-## 20. Projede Uygulanan Raporlar (12 Ekim 2026)
+## 20. Projede Uygulanan Raporlar (12 Ekim 2026; Stok Sayım 19 Kasım 2026)
 
 Bu bölüm, standardın projeye **fiilen uygulandığı** raporların ve ortak katmanın gerçek halini belgeler.
 
@@ -1089,6 +1089,10 @@ public static readonly RaporTanimi Mesai =
 // PUANTAJ TAKVİMİ — 36 kolon (AdSoyad, Birim, 30 gün, X/İ/H/Hakediş); yalnızca yatay şablon.
 public static readonly RaporTanimi Puantaj =
     new("Puantaj", "Puantaj", new[] { "Puantaj" }, "PrsMenuPuantaj", null, RaporYonu.Yatay, new[] { RaporYonu.Yatay });
+
+// STOK SAYIM — stok ve sayım fark detayları; yalnızca yatay şablon.
+public static readonly RaporTanimi StokSayim =
+    new("StokSayim", "StokSayim", new[] { "Satirlar" }, "StsAdmin", null, RaporYonu.Yatay, new[] { RaporYonu.Yatay });
 ```
 
 ### 20.3 Uçlar, şablonlar ve kaldırılanlar
@@ -1097,6 +1101,7 @@ public static readonly RaporTanimi Puantaj =
 |---|---|---|---|---|---|---|---|
 | Mesai | `GET /Mesai/Rapor` | `GET /Mesai/RaporPdf` | `GET /Mesai/RaporHtml` | `GET /Mesai/RaporExcel` (C#) | `Reports/Mesai/Mesai.Yatay.frx` | `FastReportPreview`, `FastReportPdf`, `FastReportExcel` | `Reports/Mesai.frx`, `Reports/Mesai/EkMesaiCizelgesi.frx`, `Reports/Mesai/EkMesaiPersonelBazli.frx`, `Views/PRS/Mesai/FastReportPreview.cshtml` |
 | Puantaj | `GET /Puantaj/Rapor` | `GET /Puantaj/RaporPdf` | — | — | `Reports/Puantaj/Puantaj.Yatay.frx` | `Preview`, `Pdf`, `Excel`, `Cikti` | `Reports/Puantaj/Puantaj.frx`, `Views/PRS/Puantaj/Preview.cshtml`, `Views/PRS/Puantaj/Cikti.cshtml` |
+| Stok Sayım | `GET /StokSayim/Rapor/{id}` | `GET /StokSayim/RaporPdf/{id}` | — | — | `Reports/StokSayim/StokSayim.Yatay.frx` | Eski Razor tablo raporu | `Views/STS/StokSayim/Rapor.cshtml` |
 
 Her iki şablon: A4 yatay (297×210), `DoublePass="true"`,
 `<Total>` genel toplamlar, `DataHeaderBand RepeatOnEveryPage="true"`, `Sayfa [Page#] / [TotalPages#]`,

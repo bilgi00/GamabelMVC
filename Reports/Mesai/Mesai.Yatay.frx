@@ -63,7 +63,7 @@
       <TextObject Name="TxtGenelToplam" Width="1047.06" Height="24" Border.Lines="All" Fill.Color="233, 238, 248" Text="GENEL TOPLAM    Fiili: [GenelFiili]    |    Zam 0,1: [GenelZam01]    |    Zam 0,5: [GenelZam05]    |    TOPLAM: [GenelToplam] saat" HorzAlign="Right" VertAlign="Center" Font="Arial, 9pt, style=Bold" TextFill.Color="30, 58, 114"/>
       <TextObject Name="TxtImzaBirimUnvan" Left="60" Top="60.9" Width="400" Height="14" Text="BİRİM SORUMLUSU" HorzAlign="Center" Font="Arial, 8.5pt, style=Bold" TextFill.Color="30, 58, 114"/>
       <TextObject Name="TxtImzaBirimCizgi" Left="60" Top="96.9" Width="400" Height="19" Border.Lines="Top" Text="[ImzaBirimSorumlusu]" HorzAlign="Center" VertAlign="Center" Font="Arial, 8pt" TextFill.Color="51, 65, 85"/>
-      <TextObject Name="TxtImzaBasUnvan" Left="587.06" Top="60.9" Width="400" Height="14" Text="BELEDİYE BAŞKANI" HorzAlign="Center" Font="Arial, 8.5pt, style=Bold" TextFill.Color="30, 58, 114"/>
+      <TextObject Name="TxtImzaBasUnvan" Left="587.06" Top="60.9" Width="400" Height="14" Text="DR. SÜLEYMAN ULUÇAY" HorzAlign="Center" Font="Arial, 8.5pt, style=Bold" TextFill.Color="30, 58, 114"/>
       <TextObject Name="TxtImzaBasCizgi" Left="587.06" Top="96.9" Width="400" Height="19" Border.Lines="Top" Text="[ImzaBelediyeBaskani]" HorzAlign="Center" VertAlign="Center" Font="Arial, 8pt" TextFill.Color="51, 65, 85"/>
     </ReportSummaryBand>
     <PageFooterBand Name="PageFooter1" Top="280.33" Width="1047.06" Height="18.9">

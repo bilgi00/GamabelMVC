@@ -36,4 +36,7 @@ public static class RaporKaydi
     /// <summary>PUANTAJ TAKVİMİ — 36 kolon (AdSoyad, Birim, 30 gün, X/İ/H/Hakediş); yalnızca yatay şablon üretilir.</summary>
     public static readonly RaporTanimi Puantaj =
         new("Puantaj", "Puantaj", new[] { "Puantaj" }, "PrsMenuPuantaj", null, RaporYonu.Yatay, new[] { RaporYonu.Yatay });
+
+    public static readonly RaporTanimi StokSayim =
+        new("StokSayim", "StokSayim", new[] { "Satirlar" }, "StsAdmin", null, RaporYonu.Yatay, new[] { RaporYonu.Yatay });
 }

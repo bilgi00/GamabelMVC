@@ -111,6 +111,183 @@ public sealed class SayimService(StokSayimDbContext dbContext) : ISayimService
         return sayim;
     }
 
+    public async Task<SayimEkraniViewModel?> GetSayimEkraniAsync(
+        int id,
+        string? barkod,
+        CancellationToken cancellationToken = default)
+    {
+        var sayim = await dbContext.Sayimlar
+            .AsNoTracking()
+            .Where(s => s.Id == id)
+            .Select(s => new { s.Ad, s.Durum })
+            .SingleOrDefaultAsync(cancellationToken);
+        if (sayim == null)
+            return null;
+
+        var model = new SayimEkraniViewModel
+        {
+            SayimId = id,
+            SayimAdi = sayim.Ad,
+            Durum = sayim.Durum
+        };
+        if (!string.IsNullOrWhiteSpace(barkod))
+        {
+            model.BarkodArandi = true;
+            model.Barkod = barkod.Trim();
+            var urun = await dbContext.SayimSistemStoklari
+                .AsNoTracking()
+                .Where(s => s.SayimId == id && s.Barkod == model.Barkod)
+                .Select(s => new { s.StokKodu, s.UrunAdi, s.Birim, s.SistemStok })
+                .SingleOrDefaultAsync(cancellationToken);
+            if (urun != null)
+            {
+                model.StokKodu = urun.StokKodu;
+                model.UrunAdi = urun.UrunAdi;
+                model.Birim = urun.Birim;
+                model.KalanMiktar = urun.SistemStok;
+            }
+        }
+
+        model.SonHareketler = await dbContext.SayimHareketleri
+            .AsNoTracking()
+            .Where(h => h.SayimId == id && !h.Iptal)
+            .OrderByDescending(h => h.Zaman)
+            .Take(20)
+            .Select(h => new SayimEkraniHareketViewModel
+            {
+                Zaman = h.Zaman,
+                Barkod = h.Barkod,
+                UrunAdi = h.UrunAdi,
+                Miktar = h.Miktar,
+                KullaniciAdi = h.KullaniciAdi
+            })
+            .ToListAsync(cancellationToken);
+
+        return model;
+    }
+
+    public async Task<string> SayimEkleAsync(
+        int id,
+        string barkod,
+        decimal miktar,
+        string kullanici,
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedBarcode = barkod?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(normalizedBarcode) || normalizedBarcode.Length > 100)
+            throw new InvalidOperationException("Geçerli bir barkod okutun.");
+        if (miktar < 0 || miktar > 999999999999999.999m || decimal.Round(miktar, 3) != miktar)
+            throw new InvalidOperationException("Sayım miktarı 0 veya daha büyük ve en fazla üç ondalık basamaklı olmalıdır.");
+
+        await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
+        var sayimDurumu = await dbContext.Sayimlar
+            .Where(s => s.Id == id)
+            .Select(s => s.Durum)
+            .SingleOrDefaultAsync(cancellationToken);
+        if (sayimDurumu == null)
+            throw new InvalidOperationException("Sayım kaydı bulunamadı.");
+        if (!string.Equals(sayimDurumu, "Açık", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("Kapalı sayıma sayım hareketi eklenemez.");
+
+        var urun = await dbContext.SayimSistemStoklari
+            .AsNoTracking()
+            .Where(s => s.SayimId == id && s.Barkod == normalizedBarcode)
+            .Select(s => new { s.UrunAdi })
+            .SingleOrDefaultAsync(cancellationToken);
+        if (urun == null)
+            throw new InvalidOperationException("Okutulan barkod bu sayımın sistem stoğunda bulunamadı.");
+
+        dbContext.SayimHareketleri.Add(new SayimHareketi
+        {
+            SayimId = id,
+            Barkod = normalizedBarcode,
+            UrunAdi = urun.UrunAdi,
+            Miktar = miktar,
+            KullaniciAdi = kullanici,
+            Zaman = DateTime.UtcNow,
+            Kaynak = "Ekran"
+        });
+        await dbContext.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+
+        return urun.UrunAdi;
+    }
+
+    public async Task<SayimRaporViewModel?> GetSayimRaporuAsync(
+        int id,
+        CancellationToken cancellationToken = default)
+    {
+        var sayim = await dbContext.Sayimlar
+            .AsNoTracking()
+            .Where(s => s.Id == id)
+            .Select(s => new { s.Ad, s.Durum })
+            .SingleOrDefaultAsync(cancellationToken);
+        if (sayim == null)
+            return null;
+
+        var stokSatirlari = await dbContext.SayimSistemStoklari
+            .AsNoTracking()
+            .Where(s => s.SayimId == id)
+            .OrderBy(s => s.UrunAdi)
+            .Select(s => new
+            {
+                s.StokKodu,
+                s.ReferansKodu,
+                s.Barkod,
+                s.UrunAdi,
+                s.GirenMiktar,
+                s.CikanMiktar,
+                s.SistemStok,
+                s.Birim,
+                s.AlisFiyati,
+                s.SatisFiyati,
+                s.PCinsi
+            })
+            .ToListAsync(cancellationToken);
+
+        var sayilanMiktarlar = await dbContext.SayimHareketleri
+            .AsNoTracking()
+            .Where(h => h.SayimId == id && !h.Iptal)
+            .GroupBy(h => h.Barkod)
+            .Select(g => new { Barkod = g.Key, Miktar = g.Sum(h => h.Miktar) })
+            .ToDictionaryAsync(x => x.Barkod, x => x.Miktar, cancellationToken);
+
+        var satirlar = stokSatirlari.Select(stok =>
+        {
+            var miktar = 0m;
+            var sayildiMi = stok.Barkod != null &&
+                sayilanMiktarlar.TryGetValue(stok.Barkod, out miktar);
+            return new SayimRaporSatiriViewModel
+            {
+                StokKodu = stok.StokKodu,
+                ReferansKodu = stok.ReferansKodu,
+                Barkod = stok.Barkod,
+                UrunAdi = stok.UrunAdi,
+                GirenMiktar = stok.GirenMiktar,
+                CikanMiktar = stok.CikanMiktar,
+                KalanMiktar = stok.SistemStok,
+                Birim = stok.Birim,
+                AlisFiyati = stok.AlisFiyati,
+                SatisFiyati = stok.SatisFiyati,
+                PCinsi = stok.PCinsi,
+                SayimMiktari = miktar,
+                Fark = miktar - stok.SistemStok,
+                SayildiMi = sayildiMi
+            };
+        }).ToList();
+
+        return new SayimRaporViewModel
+        {
+            SayimId = id,
+            SayimAdi = sayim.Ad,
+            Durum = sayim.Durum,
+            SistemStokToplami = satirlar.Sum(s => s.KalanMiktar),
+            SayimToplami = satirlar.Sum(s => s.SayimMiktari),
+            FarkToplami = satirlar.Sum(s => s.Fark),
+            Satirlar = satirlar
+        };
+    }
+
     private async Task<SayimIstatistikleri> GetSayimIstatistikleriAsync(
         int? sayimId,
         CancellationToken cancellationToken)

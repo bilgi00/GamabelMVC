@@ -50,3 +50,57 @@ public class SayimDetayViewModel
     public IReadOnlyList<SayimDenetimSatiriViewModel> DenetimKayitlari { get; set; } =
         Array.Empty<SayimDenetimSatiriViewModel>();
 }
+
+public class SayimEkraniViewModel
+{
+    public int SayimId { get; set; }
+    public string SayimAdi { get; set; } = string.Empty;
+    public string Durum { get; set; } = string.Empty;
+    public string? Barkod { get; set; }
+    public bool BarkodArandi { get; set; }
+    public string? UrunAdi { get; set; }
+    public string? StokKodu { get; set; }
+    public string? Birim { get; set; }
+    public decimal? KalanMiktar { get; set; }
+    public IReadOnlyList<SayimEkraniHareketViewModel> SonHareketler { get; set; } =
+        Array.Empty<SayimEkraniHareketViewModel>();
+}
+
+public class SayimEkraniHareketViewModel
+{
+    public DateTime Zaman { get; set; }
+    public string Barkod { get; set; } = string.Empty;
+    public string UrunAdi { get; set; } = string.Empty;
+    public decimal Miktar { get; set; }
+    public string KullaniciAdi { get; set; } = string.Empty;
+}
+
+public class SayimRaporViewModel
+{
+    public int SayimId { get; set; }
+    public string SayimAdi { get; set; } = string.Empty;
+    public string Durum { get; set; } = string.Empty;
+    public decimal SistemStokToplami { get; set; }
+    public decimal SayimToplami { get; set; }
+    public decimal FarkToplami { get; set; }
+    public IReadOnlyList<SayimRaporSatiriViewModel> Satirlar { get; set; } =
+        Array.Empty<SayimRaporSatiriViewModel>();
+}
+
+public class SayimRaporSatiriViewModel
+{
+    public string? StokKodu { get; set; }
+    public string? ReferansKodu { get; set; }
+    public string? Barkod { get; set; }
+    public string UrunAdi { get; set; } = string.Empty;
+    public decimal? GirenMiktar { get; set; }
+    public decimal? CikanMiktar { get; set; }
+    public decimal KalanMiktar { get; set; }
+    public string? Birim { get; set; }
+    public decimal? AlisFiyati { get; set; }
+    public decimal? SatisFiyati { get; set; }
+    public string? PCinsi { get; set; }
+    public decimal SayimMiktari { get; set; }
+    public decimal Fark { get; set; }
+    public bool SayildiMi { get; set; }
+}

@@ -187,7 +187,6 @@ namespace gamabelmvc.Data.Migrations
                         .HasColumnType("decimal(18,4)");
 
                     b.Property<string>("Barkod")
-                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)")
                         .UseCollation("utf8mb4_bin");

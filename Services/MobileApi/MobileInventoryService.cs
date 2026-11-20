@@ -118,7 +118,7 @@ public sealed class MobileInventoryService(
                 stock.SayimId,
                 stock.StokKodu,
                 stock.ReferansKodu,
-                stock.Barkod,
+                stock.Barkod ?? string.Empty,
                 stock.UrunAdi,
                 stock.GirenMiktar,
                 stock.CikanMiktar,

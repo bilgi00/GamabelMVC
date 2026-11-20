@@ -29,6 +29,10 @@ Authorization: Bearer {{adminToken}}
 GET {{api2BaseUrl}}/personeller
 Authorization: Bearer {{adminToken}}
 
+### API2: read units from the MyConnection database (Admin token required)
+GET {{api2BaseUrl}}/birimler
+Authorization: Bearer {{adminToken}}
+
 ### List counts
 GET {{baseUrl}}/counts
 Authorization: Bearer {{token}}

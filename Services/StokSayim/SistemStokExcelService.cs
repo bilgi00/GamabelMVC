@@ -147,7 +147,7 @@ public sealed class SistemStokExcelService(
             var referansKodu = ReadOptionalText(worksheet, rowNumber, referansKoduColumn, 100, "Referans Kodu", errorReasons);
             if (!string.IsNullOrEmpty(barcodeError))
                 errorReasons.Add(barcodeError);
-            else if (!seenBarcodes.Add(barcode))
+            else if (!string.IsNullOrEmpty(barcode) && !seenBarcodes.Add(barcode))
                 errorReasons.Add("Barkod dosyada birden fazla kez kullanılmış.");
 
             if (string.IsNullOrWhiteSpace(name))
@@ -158,10 +158,11 @@ public sealed class SistemStokExcelService(
             var stockCell = worksheet.Cell(rowNumber, stokColumn);
             var stockIsValid = TryReadStock(stockCell, out var stock);
             if (!stockIsValid)
-                errorReasons.Add("Kalan miktar 0 veya daha büyük, en fazla üç ondalık basamaklı bir sayı olmalıdır.");
+                errorReasons.Add("Kalan miktar negatif veya pozitif olabilir ve en fazla üç ondalık basamaklı olmalıdır.");
 
             var girenMiktar = ReadOptionalDecimal(
-                worksheet, rowNumber, girenMiktarColumn, 3, 999999999999999.999m, "Giren Miktar", errorReasons);
+                worksheet, rowNumber, girenMiktarColumn, 3, 999999999999999.999m, "Giren Miktar", errorReasons,
+                allowNegative: true);
             var cikanMiktar = ReadOptionalDecimal(
                 worksheet, rowNumber, cikanMiktarColumn, 3, 999999999999999.999m, "Çıkan Miktar", errorReasons);
             var birim = ReadOptionalText(worksheet, rowNumber, birimColumn, 50, "Birim", errorReasons);
@@ -352,7 +353,9 @@ public sealed class SistemStokExcelService(
                 command.Parameters.AddWithValue($"@sayim{parameterPrefix}", sayimId);
                 command.Parameters.AddWithValue($"@stokKodu{parameterPrefix}", (object?)row.StokKodu ?? DBNull.Value);
                 command.Parameters.AddWithValue($"@referansKodu{parameterPrefix}", (object?)row.ReferansKodu ?? DBNull.Value);
-                command.Parameters.AddWithValue($"@barkod{parameterPrefix}", row.Barkod);
+                command.Parameters.AddWithValue(
+                    $"@barkod{parameterPrefix}",
+                    string.IsNullOrWhiteSpace(row.Barkod) ? DBNull.Value : row.Barkod);
                 command.Parameters.AddWithValue($"@urun{parameterPrefix}", row.UrunAdi);
                 command.Parameters.AddWithValue($"@giren{parameterPrefix}", (object?)row.GirenMiktar ?? DBNull.Value);
                 command.Parameters.AddWithValue($"@cikan{parameterPrefix}", (object?)row.CikanMiktar ?? DBNull.Value);
@@ -443,7 +446,8 @@ public sealed class SistemStokExcelService(
         int decimalPlaces,
         decimal maximumValue,
         string label,
-        List<string> errors)
+        List<string> errors,
+        bool allowNegative = false)
     {
         if (column == 0)
             return null;
@@ -463,9 +467,12 @@ public sealed class SistemStokExcelService(
             XLDataType.Text => TryParseLocalizedDecimal(cell.GetString().Trim(), out value),
             _ => SetDefault(out value)
         };
-        if (!parsed || value < 0 || value > maximumValue || decimal.Round(value, decimalPlaces) != value)
+        var belowMinimum = allowNegative ? value < -maximumValue : value < 0;
+        if (!parsed || belowMinimum || value > maximumValue || decimal.Round(value, decimalPlaces) != value)
         {
-            errors.Add($"{label} 0 veya daha büyük, en fazla {decimalPlaces} ondalık basamaklı bir sayı olmalıdır.");
+            errors.Add(allowNegative
+                ? $"{label} negatif veya pozitif olabilir, en fazla {decimalPlaces} ondalık basamaklı bir sayı olmalıdır."
+                : $"{label} 0 veya daha büyük, en fazla {decimalPlaces} ondalık basamaklı bir sayı olmalıdır.");
             return null;
         }
 
@@ -482,17 +489,12 @@ public sealed class SistemStokExcelService(
     {
         error = string.Empty;
         if (cell.IsEmpty())
-        {
-            error = "Barkod boş olamaz.";
             return string.Empty;
-        }
 
         if (cell.DataType == XLDataType.Text)
         {
             var text = cell.GetString().Trim();
-            if (string.IsNullOrWhiteSpace(text))
-                error = "Barkod boş olamaz.";
-            else if (text.Length > 100)
+            if (text.Length > 100)
                 error = "Barkod en fazla 100 karakter olabilir.";
             else if (Regex.IsMatch(text, @"^\d+(?:[.,]\d+)?[Ee][+-]?\d+$"))
                 error = "Barkod bilimsel gösterimde olamaz; Excel hücresini metin biçiminde girin.";
@@ -544,7 +546,7 @@ public sealed class SistemStokExcelService(
             return false;
         }
 
-        return stock >= 0 &&
+        return stock >= -999999999999999.999m &&
             stock <= 999999999999999.999m &&
             decimal.Round(stock, 3) == stock;
     }

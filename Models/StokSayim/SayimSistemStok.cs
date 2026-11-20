@@ -6,7 +6,7 @@ public class SayimSistemStok
     public int SayimId { get; set; }
     public string? StokKodu { get; set; }
     public string? ReferansKodu { get; set; }
-    public string Barkod { get; set; } = string.Empty;
+    public string? Barkod { get; set; }
     public string UrunAdi { get; set; } = string.Empty;
     public decimal? GirenMiktar { get; set; }
     public decimal? CikanMiktar { get; set; }

@@ -32,6 +32,21 @@
         </div>
     </div>
 
+    @if (Model.ToplamUrunSayisi > 0)
+    {
+        <div class="d-flex flex-wrap gap-2 mb-4">
+            @if (acikMi)
+            {
+                <a asp-action="SayimEkrani" asp-route-id="@Model.Id" class="btn btn-primary">
+                    Barkod ile Sayım Yap
+                </a>
+            }
+            <a asp-action="Rapor" asp-route-id="@Model.Id" class="btn btn-outline-primary">
+                Sayım Raporu
+            </a>
+        </div>
+    }
+
     @if (TempData["SayimBasarili"] is string basarili)
     {
         <div class="alert alert-success" role="status">@basarili</div>
@@ -91,6 +106,7 @@
                     Excel'deki stok bilgileri bu sayıma özel kopyalanır. Kalan miktar sistem stoğu olarak kullanılır.
                     İlk sayım hareketi başladıktan sonra snapshot değiştirilemez.
                     En fazla 50.000 ürün satırı ve 20 MB desteklenir.
+                    Aktif Barkod alanı boş olan satırlar da kaydedilebilir.
                 </p>
                 <div class="d-flex flex-wrap align-items-end gap-3">
                     <a asp-action="SistemStokSablonu" class="btn btn-outline-secondary">
